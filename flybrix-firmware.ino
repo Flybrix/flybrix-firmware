@@ -15,9 +15,7 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <i2c_t3.h>
-#include <spi4teensy3.h>
 #include <ADC.h>
-#include <SPI.h>
 
 // octoteensy custom library imports
 #include "power.h"
