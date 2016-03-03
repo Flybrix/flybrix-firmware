@@ -23,12 +23,12 @@ LED::LED(State* __state) : state(__state) {
     pinMode(RED_LED, OUTPUT);
 }
 
-void LED::set(Pattern pattern, uint8_t red_a, uint8_t green_a, uint8_t blue_a, uint8_t red_b, uint8_t green_b, uint8_t blue_b) {
+void LED::set(Pattern pattern, uint8_t red_a, uint8_t green_a, uint8_t blue_a, uint8_t red_b, uint8_t green_b, uint8_t blue_b, bool red_indicator, bool green_indicator) {
     override = pattern != LED::NO_OVERRIDE;
     if (!override)
         return;
-    indicatorRedOff();
-    indicatorGreenOff();
+    red_indicator ? indicatorRedOn() : indicatorRedOff();
+    green_indicator ? indicatorGreenOn() : indicatorGreenOff();
     use(pattern, red_a, green_a, blue_a, red_b, green_b, blue_b);
 }
 

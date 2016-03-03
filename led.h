@@ -29,7 +29,7 @@ class LED {
         SOLID = 5,
     };
 
-    void set(Pattern pattern, uint8_t red_a, uint8_t green_a, uint8_t blue_a, uint8_t red_b, uint8_t green_b, uint8_t blue_b);
+    void set(Pattern pattern, uint8_t red_a, uint8_t green_a, uint8_t blue_a, uint8_t red_b, uint8_t green_b, uint8_t blue_b, bool red_indicator, bool green_indicator);
 
     void update();  // update using the state STATUS bitfield
 

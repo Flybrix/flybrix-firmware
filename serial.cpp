@@ -132,9 +132,9 @@ void SerialComm::ProcessData() {
         ack_data |= COM_REQ_HISTORY;
     }
     if (mask & COM_SET_LED) {
-        uint8_t mode, r1, g1, b1, r2, g2, b2;
-        if (data_input.ParseInto(mode, r1, g1, b1, r2, g2, b2)) {
-            led->set(LED::Pattern(mode), r1, g1, b1, r2, g2, b2);
+        uint8_t mode, r1, g1, b1, r2, g2, b2, ind_r, ind_g;
+        if (data_input.ParseInto(mode, r1, g1, b1, r2, g2, b2, ind_r, ind_g)) {
+            led->set(LED::Pattern(mode), r1, g1, b1, r2, g2, b2, ind_r, ind_g);
             ack_data |= COM_SET_LED;
         }
     }
