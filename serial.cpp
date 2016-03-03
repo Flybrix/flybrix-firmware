@@ -9,6 +9,7 @@
 
 #include "config.h"  //CONFIG variable
 #include "control.h"
+#include "led.h"
 
 namespace {
 using CobsPayloadGeneric = CobsPayload<500>;  // impacts memory use only; packet size should be <= client packet size
@@ -33,7 +34,7 @@ inline void WritePIDData(CobsPayload<N>& payload, const PID& pid) {
 }
 }
 
-SerialComm::SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, const CONFIG_union* config) : state{state}, ppm{ppm}, control{control}, config{config} {
+SerialComm::SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, const CONFIG_union* config, LED* led) : state{state}, ppm{ppm}, control{control}, config{config}, led{led} {
 }
 
 void SerialComm::ReadData() {
@@ -129,6 +130,13 @@ void SerialComm::ProcessData() {
             eeprom_data += char(EEPROM[i]);
         SendDebugString(eeprom_data, MessageType::HistoryData);
         ack_data |= COM_REQ_HISTORY;
+    }
+    if (mask & COM_SET_LED) {
+        uint8_t mode, r1, g1, b1, r2, g2, b2;
+        if (data_input.ParseInto(mode, r1, g1, b1, r2, g2, b2)) {
+            led->set(LED::Pattern(mode), r1, g1, b1, r2, g2, b2);
+            ack_data |= COM_SET_LED;
+        }
     }
 
     if (mask & COM_REQ_RESPONSE) {
