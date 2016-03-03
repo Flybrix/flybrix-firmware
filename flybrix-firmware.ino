@@ -34,6 +34,7 @@
 #include "i2cManager.h"
 #include "localization.h"
 #include "debug.h"
+#include "version.h"
 
 struct Systems {
     // subsystem objects initialize pins when created

@@ -5,6 +5,7 @@
 */
 
 #include "config.h"
+#include "version.h"
 
 void(*config_handler)(CONFIG_struct&) {nullptr};
 
@@ -42,7 +43,7 @@ void initializeEEPROM(void) {  // Default Settings
     CONFIG.data.mixTableFz[5] =  0; CONFIG.data.mixTableTx[5] =  0; CONFIG.data.mixTableTy[5] =  0; CONFIG.data.mixTableTz[5] =  0;
     CONFIG.data.mixTableFz[6] =  0; CONFIG.data.mixTableTx[6] =  0; CONFIG.data.mixTableTy[6] =  0; CONFIG.data.mixTableTz[6] =  0;
     CONFIG.data.mixTableFz[7] =  0; CONFIG.data.mixTableTx[7] =  0; CONFIG.data.mixTableTy[7] =  0; CONFIG.data.mixTableTz[7] =  0;
-     
+
     CONFIG.data.magBias[0] = 0.0f;  // Bx (milligauss)
     CONFIG.data.magBias[1] = 0.0f;  // By (milligauss)
     CONFIG.data.magBias[2] = 0.0f;  // Bz (milligauss)
