@@ -93,21 +93,6 @@ void PilotCommand::processCommands(void) {
         }
     }
 
-    // look for trim adjustment
-    if (throttle.isExtraLow()) {
-        static const int16_t trimGain = 3; //consider exposing in CONFIG
-        state->Tx_trim = trimGain * (1-2*((CONFIG.data.commandInversion >> 0) & 1)) * ((int16_t)pitch.untrimmed_mid - (int16_t)pitch.val);
-        state->Ty_trim = trimGain * (1-2*((CONFIG.data.commandInversion >> 1) & 1)) * ((int16_t)roll.untrimmed_mid - (int16_t)roll.val);
-        state->Tz_trim = trimGain * (1-2*((CONFIG.data.commandInversion >> 2) & 1)) * ((int16_t)yaw.untrimmed_mid - (int16_t)yaw.val);
-        pitch.mid = pitch.val;
-        roll.mid = roll.val;
-        yaw.mid = yaw.val;
-        //copy the midpoint values to state for logging purposes
-        state->PPMchannel_pitch_mid = pitch.mid;
-        state->PPMchannel_roll_mid = roll.mid;
-        state->PPMchannel_yaw_mid = yaw.mid;
-    }
-
     if (recentlyEnabled || throttle.isLow()) {
         *throttle_command = 0;
         *pitch_command = 0;
