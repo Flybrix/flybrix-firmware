@@ -31,9 +31,6 @@ class PPMchannel {
         val = newVal;
     };
 
-    boolean isExtraLow() {
-        return ((val - min) < (max - min) / 5);
-    };
     boolean isLow() {
         return ((val - min) < (max - min) / 10);
     };
