@@ -27,6 +27,7 @@ void LED::set(Pattern pattern, uint8_t red_a, uint8_t green_a, uint8_t blue_a, u
     override = pattern != LED::NO_OVERRIDE;
     if (!override)
         return;
+    oldStatus = 0;
     red_indicator ? indicatorRedOn() : indicatorRedOff();
     green_indicator ? indicatorGreenOn() : indicatorGreenOff();
     use(pattern, red_a, green_a, blue_a, red_b, green_b, blue_b);
