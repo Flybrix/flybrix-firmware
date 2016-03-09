@@ -47,12 +47,10 @@ class State {
     // Command
     uint8_t AUX_chan_mask = 0;  // bitfield order is {AUX1_low, AUX1_mid, AUX1_high, AUX2_low, AUX2_mid, AUX2_high, x, x} (LSB-->MSB)
     int16_t invalidRXcount = 0;
-    int16_t PPMchannel_pitch_mid, PPMchannel_roll_mid, PPMchannel_yaw_mid; //copies of PPMchannel variables we would like to expose for logging
     int16_t command_throttle = 0, command_pitch = 0, command_roll = 0, command_yaw = 0;
 
     // Control
     float Fz = 0, Tx = 0, Ty = 0, Tz = 0;  // control vectors (forces/torques)
-    float Tx_trim = 0, Ty_trim = 0, Tz_trim = 0;  // feed-forward control vectors (offset torques)
 
     // Airframe
     uint16_t MotorOut[8] = {0, 0, 0, 0, 0, 0, 0, 0};

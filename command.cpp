@@ -93,21 +93,6 @@ void PilotCommand::processCommands(void) {
         }
     }
 
-    // look for trim adjustment
-    if (throttle.isExtraLow()) {
-        static const int16_t trimGain = 3; //consider exposing in CONFIG
-        state->Tx_trim = trimGain * (1-2*((CONFIG.data.commandInversion >> 0) & 1)) * ((int16_t)pitch.untrimmed_mid - (int16_t)pitch.val);
-        state->Ty_trim = trimGain * (1-2*((CONFIG.data.commandInversion >> 1) & 1)) * ((int16_t)roll.untrimmed_mid - (int16_t)roll.val);
-        state->Tz_trim = trimGain * (1-2*((CONFIG.data.commandInversion >> 2) & 1)) * ((int16_t)yaw.untrimmed_mid - (int16_t)yaw.val);
-        pitch.mid = pitch.val;
-        roll.mid = roll.val;
-        yaw.mid = yaw.val;
-        //copy the midpoint values to state for logging purposes
-        state->PPMchannel_pitch_mid = pitch.mid;
-        state->PPMchannel_roll_mid = roll.mid;
-        state->PPMchannel_yaw_mid = yaw.mid;
-    }
-
     if (recentlyEnabled || throttle.isLow()) {
         *throttle_command = 0;
         *pitch_command = 0;
@@ -130,6 +115,16 @@ void PilotCommand::processCommands(void) {
         *pitch_command =    constrain((1-2*((CONFIG.data.commandInversion >> 0) & 1))*(pitch.val - pitch.mid) * 4095 / (pitch.max - pitch.min), -2047, 2047);
         *roll_command =     constrain((1-2*((CONFIG.data.commandInversion >> 1) & 1))*( roll.val - roll.mid ) * 4095 / (roll.max - roll.min), -2047, 2047);
         *yaw_command =      constrain((1-2*((CONFIG.data.commandInversion >> 2) & 1))*(  yaw.val - yaw.mid  ) * 4095 / (yaw.max - yaw.min), -2047, 2047);
+        
+        //
+        // in some cases it is impossible to get a ppm channel to be exactly 1500 usec because the controller trim is too coarse to correct a small error
+        // we can get around by creating a small dead zone on the commands that are potentially effected
+        
+        int16_t dead_zone_half_width = 30;
+        *pitch_command = *pitch_command > 0 ? max(0, *pitch_command - dead_zone_half_width) : min(*pitch_command + dead_zone_half_width, 0);
+        *roll_command  = *roll_command > 0  ? max(0, *roll_command  - dead_zone_half_width) : min(*roll_command  + dead_zone_half_width, 0);
+        *yaw_command   = *yaw_command > 0   ? max(0, *yaw_command   - dead_zone_half_width) : min(*yaw_command   + dead_zone_half_width, 0);
+
     }
 
     if (state->is(STATUS_OVERRIDE))

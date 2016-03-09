@@ -23,34 +23,56 @@ LED::LED(State* __state) : state(__state) {
     pinMode(RED_LED, OUTPUT);
 }
 
+void LED::set(Pattern pattern, uint8_t red_a, uint8_t green_a, uint8_t blue_a, uint8_t red_b, uint8_t green_b, uint8_t blue_b, bool red_indicator, bool green_indicator) {
+    override = pattern != LED::NO_OVERRIDE;
+    if (!override)
+        return;
+    oldStatus = 0;
+    red_indicator ? indicatorRedOn() : indicatorRedOff();
+    green_indicator ? indicatorGreenOn() : indicatorGreenOff();
+    use(pattern, red_a, green_a, blue_a, red_b, green_b, blue_b);
+}
+
 void LED::update() {
-    cycleIndex++;  // 500Hz update
+    cycleIndex++;        // 500Hz update
     cycleIndex &= 4095;  // ~8 second period
 
-    if (oldStatus != state->status) {
+    if (!override && oldStatus != state->status) {
         oldStatus = state->status;
         changeLights();
     }
 
-    if (lightType == 1) {
-        updateFlash();
-    } else if (lightType == 2) {
-        updateBeacon();
+    switch (lightType) {
+        case LED::FLASH:
+            updateFlash();
+            break;
+        case LED::BEACON:
+            updateBeacon();
+            break;
+        case LED::BREATHE:
+            updateBreathe();
+            break;
+        case LED::ALTERNATE:
+            updateAlternate();
+            break;
+        case LED::SOLID:
+            updateSolid();
+            break;
     }
 }
 
-void LED::beacon(uint8_t red, uint8_t green, uint8_t blue) {
-    lightType = 2;
-    this->red = red;
-    this->green = green;
-    this->blue = blue;
+void LED::use(Pattern pattern, uint8_t red, uint8_t green, uint8_t blue) {
+    use(pattern, red, green, blue, red, green, blue);
 }
 
-void LED::flash(uint8_t red, uint8_t green, uint8_t blue) {
-    lightType = 1;
-    this->red = red;
-    this->green = green;
-    this->blue = blue;
+void LED::use(Pattern pattern, uint8_t red_a, uint8_t green_a, uint8_t blue_a, uint8_t red_b, uint8_t green_b, uint8_t blue_b) {
+    lightType = pattern;
+    this->red_a_ = red_a;
+    this->green_a_ = green_a;
+    this->blue_a_ = blue_a;
+    this->red_b_ = red_b;
+    this->green_b_ = green_b;
+    this->blue_b_ = blue_b;
 }
 
 void LED::changeLights() {
@@ -69,30 +91,30 @@ void LED::changeLights() {
         digitalWriteFast(LED_A_GRN, LOW);
         digitalWriteFast(LED_B_GRN, LOW);
     } else if (state->is(STATUS_UNPAIRED)) {
-        // flash(255,180,20); //orange
-        flash(255, 255, 255);  // for pcba testing purposes -- a "good" board will end up in this state
-        indicatorGreenOn();    // for pcba testing purposes -- a "good" board will end up in this state
+        // use(LED::FLASH, 255,180,20); //orange
+        use(LED::FLASH, 255, 255, 255);  // for pcba testing purposes -- a "good" board will end up in this state
+        indicatorGreenOn();              // for pcba testing purposes -- a "good" board will end up in this state
     } else if (state->is(STATUS_RX_FAIL)) {
-        flash(255, 0, 0);  // red
+        use(LED::FLASH, 255, 0, 0);  // red
     } else if (state->is(STATUS_FAIL_STABILITY) || state->is(STATUS_FAIL_ANGLE)) {
-        flash(100, 110, 250);  // yellow
+        use(LED::FLASH, 100, 110, 250);  // yellow
     } else if (state->is(STATUS_OVERRIDE)) {
-        beacon(255, 0, 0);  // red
+        use(LED::BEACON, 255, 0, 0);  // red
     } else if (state->is(STATUS_ENABLING)) {
-        flash(0, 0, 255);  // blue
+        use(LED::FLASH, 0, 0, 255);  // blue
     } else if (state->is(STATUS_ENABLED)) {
-        beacon(0, 0, 255);  // blue for enable
+        use(LED::BEACON, 0, 0, 255);  // blue for enable
     }
 
     else if (state->is(STATUS_TEMP_WARNING)) {
-        flash(100, 150, 250);  // yellow
+        use(LED::FLASH, 100, 150, 250);  // yellow
     } else if (state->is(STATUS_LOG_FULL)) {
-        flash(0, 0, 250);
+        use(LED::FLASH, 0, 0, 250);
     } else if (state->is(STATUS_BATTERY_LOW)) {
-        beacon(255, 180, 20);
+        use(LED::BEACON, 255, 180, 20);
     } else if (state->is(STATUS_IDLE)) {
-        indicatorRedOff();  // clear boot test
-        beacon(0, 255, 0);  // breathe instead?
+        indicatorRedOff();            // clear boot test
+        use(LED::BEACON, 0, 255, 0);  // breathe instead?
     } else {
         // ERROR: ("NO STATUS BITS SET???");
     }
@@ -106,31 +128,17 @@ uint8_t LED::getLightThreshold() {
 }
 
 void LED::rgb() {
+    rgb(red_a_, green_a_, blue_a_, red_b_, green_b_, blue_b_);
+}
+
+void LED::rgb(uint8_t red_a, uint8_t green_a, uint8_t blue_a, uint8_t red_b, uint8_t green_b, uint8_t blue_b) {
     uint8_t threshold = getLightThreshold();
-
-    if (red > threshold) {
-        digitalWriteFast(LED_A_RED, LOW);
-        digitalWriteFast(LED_B_RED, LOW);
-    } else {
-        digitalWriteFast(LED_A_RED, HIGH);
-        digitalWriteFast(LED_B_RED, HIGH);
-    }
-
-    if (green > threshold) {
-        digitalWriteFast(LED_A_GRN, LOW);
-        digitalWriteFast(LED_B_GRN, LOW);
-    } else {
-        digitalWriteFast(LED_A_GRN, HIGH);
-        digitalWriteFast(LED_B_GRN, HIGH);
-    }
-
-    if (blue > threshold) {
-        digitalWriteFast(LED_A_BLU, LOW);
-        digitalWriteFast(LED_B_BLU, LOW);
-    } else {
-        digitalWriteFast(LED_A_BLU, HIGH);
-        digitalWriteFast(LED_B_BLU, HIGH);
-    }
+    digitalWriteFast(LED_A_RED, (red_a > threshold) ? LOW : HIGH);
+    digitalWriteFast(LED_B_RED, (red_b > threshold) ? LOW : HIGH);
+    digitalWriteFast(LED_A_GRN, (green_a > threshold) ? LOW : HIGH);
+    digitalWriteFast(LED_B_GRN, (green_b > threshold) ? LOW : HIGH);
+    digitalWriteFast(LED_A_BLU, (blue_a > threshold) ? LOW : HIGH);
+    digitalWriteFast(LED_B_BLU, (blue_b > threshold) ? LOW : HIGH);
 }
 
 void LED::updateFlash() {
@@ -157,6 +165,29 @@ void LED::updateBeacon() {
         default:
             break;
     }
+}
+
+void LED::updateBreathe() {
+    uint16_t multiplier = cycleIndex & 2047;
+    if (cycleIndex > 511) {
+        allOff();
+        return;
+    }
+    if (multiplier > 255)
+        multiplier = 512 - multiplier;
+
+    rgb((multiplier * red_a_) >> 8, (multiplier * green_a_) >> 8, (multiplier * blue_a_) >> 8, (multiplier * red_b_) >> 8, (multiplier * green_b_) >> 8, (multiplier * blue_b_) >> 8);
+}
+
+void LED::updateAlternate() {
+    if (cycleIndex & 128)
+        rgb(red_a_, green_a_, blue_a_, 0, 0, 0);
+    else
+        rgb(0, 0, 0, red_b_, green_b_, blue_b_);
+}
+
+void LED::updateSolid() {
+    rgb();
 }
 
 void LED::allOff() {

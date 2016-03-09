@@ -16,6 +16,7 @@
 
 union CONFIG_union;
 class Control;
+class LED;
 class State;
 
 class SerialComm {
@@ -50,6 +51,7 @@ class SerialComm {
         COM_SET_STATE_MASK = 1 << 14,
         COM_SET_STATE_DELAY = 1 << 15,
         COM_REQ_HISTORY = 1 << 16,
+        COM_SET_LED = 1 << 17,
     };
 
     enum StateFields : uint32_t {
@@ -69,7 +71,6 @@ class SerialComm {
         STATE_AUX_CHAN_MASK = 1 << 11,
         STATE_COMMANDS = 1 << 12,
         STATE_F_AND_T = 1 << 13,
-        STATE_T_TRIM = 1 << 14,
         STATE_PID_FZ_MASTER = 1 << 15,
         STATE_PID_TX_MASTER = 1 << 16,
         STATE_PID_TY_MASTER = 1 << 17,
@@ -85,7 +86,7 @@ class SerialComm {
         STATE_LOOP_COUNT = 1 << 27,
     };
 
-    explicit SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, const CONFIG_union* config);
+    explicit SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, const CONFIG_union* config, LED* led);
 
     void ReadData();
 
@@ -108,6 +109,7 @@ class SerialComm {
     const volatile uint16_t* ppm;
     const Control* control;
     const CONFIG_union* config;
+    LED* led;
     uint16_t send_state_delay{1001}; //anything over 1000 turns off state messages
     uint32_t state_mask{0x7fffff};
     CobsReader<500> data_input;
