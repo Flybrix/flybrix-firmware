@@ -66,7 +66,7 @@ void initializeEEPROM(void) {  // Default Settings
     CONFIG.data.thrustMasterPIDParameters[3] = 0.0f;  // Windup guard
     CONFIG.data.thrustMasterPIDParameters[4] = 0.005f;  // D filter usec (15Hz)
     CONFIG.data.thrustMasterPIDParameters[5] = 0.005f;  // setpoint filter usec (30Hz)
-    CONFIG.data.thrustMasterPIDParameters[6] = 1.0f;  // ppm to value scaling
+    CONFIG.data.thrustMasterPIDParameters[6] = 1.0f;  // (meters / full stick action)
 
     CONFIG.data.pitchMasterPIDParameters[0] = 12.0f;  // P
     CONFIG.data.pitchMasterPIDParameters[1] = 1.0f;  // I
@@ -74,7 +74,7 @@ void initializeEEPROM(void) {  // Default Settings
     CONFIG.data.pitchMasterPIDParameters[3] = 10.0f;  // Windup guard
     CONFIG.data.pitchMasterPIDParameters[4] = 0.005f;  // D filter usec (15Hz)
     CONFIG.data.pitchMasterPIDParameters[5] = 0.005f;  // setpoint filter usec (30Hz)
-    CONFIG.data.pitchMasterPIDParameters[6] = 10.0f / 2047.0f;  // ppm to value scaling
+    CONFIG.data.pitchMasterPIDParameters[6] = 10.0f;  // (degrees / full stick action)
 
     CONFIG.data.rollMasterPIDParameters[0] = 12.0f;  // P
     CONFIG.data.rollMasterPIDParameters[1] = 1.0f;  // I
@@ -82,7 +82,7 @@ void initializeEEPROM(void) {  // Default Settings
     CONFIG.data.rollMasterPIDParameters[3] = 10.0f;  // Windup guard
     CONFIG.data.rollMasterPIDParameters[4] = 0.005f;  // D filter usec (15Hz)
     CONFIG.data.rollMasterPIDParameters[5] = 0.005f;  // setpoint filter usec (30Hz)
-    CONFIG.data.rollMasterPIDParameters[6] = 10.0f / 2047.0f;  // ppm to value scaling
+    CONFIG.data.rollMasterPIDParameters[6] = 10.0f;  // (degrees / full stick action)
 
     CONFIG.data.yawMasterPIDParameters[0] = 1.0f;  // P
     CONFIG.data.yawMasterPIDParameters[1] = 0.0f;  // I
@@ -90,7 +90,7 @@ void initializeEEPROM(void) {  // Default Settings
     CONFIG.data.yawMasterPIDParameters[3] = 10.0f;  // Windup guard
     CONFIG.data.yawMasterPIDParameters[4] = 0.005f;  // D filter usec (15Hz)
     CONFIG.data.yawMasterPIDParameters[5] = 0.005f;  // setpoint filter usec (30Hz)
-    CONFIG.data.yawMasterPIDParameters[6] = 10.0f / 2047.0f;  // ppm to value scaling
+    CONFIG.data.yawMasterPIDParameters[6] = 180.0f;  // (degrees / full stick action)
 
     CONFIG.data.thrustSlavePIDParameters[0] = 1.0f;  // P
     CONFIG.data.thrustSlavePIDParameters[1] = 0.0f;  // I
@@ -98,7 +98,7 @@ void initializeEEPROM(void) {  // Default Settings
     CONFIG.data.thrustSlavePIDParameters[3] = 10.0f;  // Windup guard
     CONFIG.data.thrustSlavePIDParameters[4] = 0.001f;  // D filter usec (150Hz)
     CONFIG.data.thrustSlavePIDParameters[5] = 0.001f;  // setpoint filter usec (300Hz)
-    CONFIG.data.thrustSlavePIDParameters[6] = 1.0f;  // ppm to value scaling
+    CONFIG.data.thrustSlavePIDParameters[6] = 0.3f;  // (meters/sec / full stick action)
 
     CONFIG.data.pitchSlavePIDParameters[0] = 40.0f;  // P
     CONFIG.data.pitchSlavePIDParameters[1] = 5.0f;  // I
@@ -106,7 +106,7 @@ void initializeEEPROM(void) {  // Default Settings
     CONFIG.data.pitchSlavePIDParameters[3] = 30.0f;  // Windup guard
     CONFIG.data.pitchSlavePIDParameters[4] = 0.001f;  // D filter usec (150Hz)
     CONFIG.data.pitchSlavePIDParameters[5] = 0.001f;  // setpoint filter usec (300Hz)
-    CONFIG.data.pitchSlavePIDParameters[6] = 360.0f / 2047.0f;  // ppm to value scaling
+    CONFIG.data.pitchSlavePIDParameters[6] = 30.0f;  // (deg/sec / full stick action)
 
     CONFIG.data.rollSlavePIDParameters[0] = 40.0f;  // P
     CONFIG.data.rollSlavePIDParameters[1] = 5.0f;  // I
@@ -114,7 +114,7 @@ void initializeEEPROM(void) {  // Default Settings
     CONFIG.data.rollSlavePIDParameters[3] = 30.0f;  // Windup guard
     CONFIG.data.rollSlavePIDParameters[4] = 0.001f;  // D filter usec (150Hz)
     CONFIG.data.rollSlavePIDParameters[5] = 0.001f;  // setpoint filter usec (300Hz)
-    CONFIG.data.rollSlavePIDParameters[6] = 360.0f / 2047.0f;  // ppm to value scaling
+    CONFIG.data.rollSlavePIDParameters[6] = 30.0f;  // (deg/sec / full stick action)
 
     CONFIG.data.yawSlavePIDParameters[0] = 20.0f;  // P
     CONFIG.data.yawSlavePIDParameters[1] = 1.0f;  // I
@@ -122,7 +122,7 @@ void initializeEEPROM(void) {  // Default Settings
     CONFIG.data.yawSlavePIDParameters[3] = 20.0f;  // Windup guard
     CONFIG.data.yawSlavePIDParameters[4] = 0.001f;  // D filter usec (150Hz)
     CONFIG.data.yawSlavePIDParameters[5] = 0.001f;  // setpoint filter usec (300Hz)
-    CONFIG.data.yawSlavePIDParameters[6] = 360.0f / 2047.0f;  // ppm to value scaling
+    CONFIG.data.yawSlavePIDParameters[6] = 120.0f;  // (deg/sec / full stick action)
 
     CONFIG.data.pidBypass = 25; //AHRS/Horizon mode
 
