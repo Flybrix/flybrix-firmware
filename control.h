@@ -29,7 +29,9 @@ class Control {
 
     State *state;
     uint32_t lastUpdateMicros = 0;  // 1.2 hrs should be enough
-    bool nonzero_input_[8]{false, false, false, false, false, false, false, false};
+    
+    // unpack config.pidBypass for convenience
+    bool pidEnabled[8]{false, false, false, false, false, false, false, false};
 
     // controllers
     CascadedPID thrust_pid, pitch_pid, roll_pid, yaw_pid;
