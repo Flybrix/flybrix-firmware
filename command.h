@@ -23,8 +23,7 @@ class PPMchannel {
     PPMchannel(){};
 
     uint16_t val = 1500;
-    uint16_t mid = 1500;  // we allow the midpoint to be overwritten using trim
-    static const uint16_t untrimmed_mid = 1500;
+    static const uint16_t mid = 1500;
     static const uint16_t min = 1100;
     static const uint16_t max = 1900;
 
@@ -32,9 +31,6 @@ class PPMchannel {
         val = newVal;
     };
 
-    boolean isExtraLow() {
-        return ((val - min) < (max - min) / 5);
-    };
     boolean isLow() {
         return ((val - min) < (max - min) / 10);
     };

@@ -183,31 +183,29 @@ uint16_t SerialComm::PacketSize(uint32_t mask) const {
     if (mask & SerialComm::STATE_PRESSURE)
         sum += 4;
     if (mask & SerialComm::STATE_RX_PPM)
-        sum += 9 * 2;  // six channels and three midpoints
+        sum += 6 * 2;
     if (mask & SerialComm::STATE_AUX_CHAN_MASK)
         sum += 1;
     if (mask & SerialComm::STATE_COMMANDS)
         sum += 4 * 2;
     if (mask & SerialComm::STATE_F_AND_T)
         sum += 4 * 4;
-    if (mask & SerialComm::STATE_T_TRIM)
-        sum += 3 * 4;
     if (mask & SerialComm::STATE_PID_FZ_MASTER)
-        sum += 6 * 4;
+        sum += 7 * 4;
     if (mask & SerialComm::STATE_PID_TX_MASTER)
-        sum += 6 * 4;
+        sum += 7 * 4;
     if (mask & SerialComm::STATE_PID_TY_MASTER)
-        sum += 6 * 4;
+        sum += 7 * 4;
     if (mask & SerialComm::STATE_PID_TZ_MASTER)
-        sum += 6 * 4;
+        sum += 7 * 4;
     if (mask & SerialComm::STATE_PID_FZ_SLAVE)
-        sum += 6 * 4;
+        sum += 7 * 4;
     if (mask & SerialComm::STATE_PID_TX_SLAVE)
-        sum += 6 * 4;
+        sum += 7 * 4;
     if (mask & SerialComm::STATE_PID_TY_SLAVE)
-        sum += 6 * 4;
+        sum += 7 * 4;
     if (mask & SerialComm::STATE_PID_TZ_SLAVE)
-        sum += 6 * 4;
+        sum += 7 * 4;
     if (mask & SerialComm::STATE_MOTOR_OUT)
         sum += 8 * 2;
     if (mask & SerialComm::STATE_KINE_ANGLE)
@@ -255,9 +253,6 @@ void SerialComm::SendState(uint32_t timestamp_us, void (*extra_handler)(uint8_t*
     if (mask & SerialComm::STATE_RX_PPM) {
         for (int i = 0; i < 6; ++i)
             payload.Append(ppm[i]);
-        payload.Append(state->PPMchannel_pitch_mid);
-        payload.Append(state->PPMchannel_roll_mid);
-        payload.Append(state->PPMchannel_yaw_mid);
     }
     if (mask & SerialComm::STATE_AUX_CHAN_MASK)
         payload.Append(state->AUX_chan_mask);
@@ -265,8 +260,6 @@ void SerialComm::SendState(uint32_t timestamp_us, void (*extra_handler)(uint8_t*
         payload.Append(state->command_throttle, state->command_pitch, state->command_roll, state->command_yaw);
     if (mask & SerialComm::STATE_F_AND_T)
         payload.Append(state->Fz, state->Tx, state->Ty, state->Tz);
-    if (mask & SerialComm::STATE_T_TRIM)
-        payload.Append(state->Tx_trim, state->Ty_trim, state->Tz_trim);
     if (mask & SerialComm::STATE_PID_FZ_MASTER)
         WritePIDData(payload, control->thrust_pid.master());
     if (mask & SerialComm::STATE_PID_TX_MASTER)

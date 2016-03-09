@@ -71,7 +71,6 @@ class SerialComm {
         STATE_AUX_CHAN_MASK = 1 << 11,
         STATE_COMMANDS = 1 << 12,
         STATE_F_AND_T = 1 << 13,
-        STATE_T_TRIM = 1 << 14,
         STATE_PID_FZ_MASTER = 1 << 15,
         STATE_PID_TX_MASTER = 1 << 16,
         STATE_PID_TY_MASTER = 1 << 17,

@@ -52,37 +52,34 @@ void Control::parseConfig(CONFIG_struct& config) {
 
 void Control::calculateControlVectors() {
     thrust_pid.setMasterInput(state->kinematicsAltitude);
-    thrust_pid.setSlaveInput(0.0f);  // TODO: where would be get this data from?
-    pitch_pid.setMasterInput(state->kinematicsAngle[0] * 57.2957795f);
-    pitch_pid.setSlaveInput(state->kinematicsRate[0] * 57.2957795f);
-    roll_pid.setMasterInput(state->kinematicsAngle[1] * 57.2957795f);
-    roll_pid.setSlaveInput(state->kinematicsRate[1] * 57.2957795f);
-    yaw_pid.setMasterInput(state->kinematicsAngle[2] * 57.2957795f);
-    yaw_pid.setSlaveInput(state->kinematicsRate[2] * 57.2957795f);
+    thrust_pid.setSlaveInput(0.0f); //state->kinematicsClimbRate
+    pitch_pid.setMasterInput(state->kinematicsAngle[0] * 57.2957795);
+    pitch_pid.setSlaveInput(state->kinematicsRate[0] * 57.2957795);
+    roll_pid.setMasterInput(state->kinematicsAngle[1] * 57.2957795);
+    roll_pid.setSlaveInput(state->kinematicsRate[1] * 57.2957795);
+    yaw_pid.setMasterInput(state->kinematicsAngle[2] * 57.2957795);
+    yaw_pid.setSlaveInput(state->kinematicsRate[2] * 57.2957795);
 
     thrust_pid.setSetpoint(state->command_throttle * 4095.0f * thrust_pid.getScalingFactor(pidEnabled[THRUST_MASTER], pidEnabled[THRUST_SLAVE]));
     pitch_pid.setSetpoint(state->command_pitch * 2047.0f * pitch_pid.getScalingFactor(pidEnabled[PITCH_MASTER], pidEnabled[PITCH_SLAVE]));
     roll_pid.setSetpoint(state->command_roll * 2047.0f * roll_pid.getScalingFactor(pidEnabled[ROLL_MASTER], pidEnabled[ROLL_SLAVE]));
     yaw_pid.setSetpoint(state->command_yaw * 2047.0f * yaw_pid.getScalingFactor(pidEnabled[YAW_MASTER], pidEnabled[YAW_SLAVE]));
 
+    // compute new output levels for state
     uint32_t now = micros();
-
-    // compute new slave setpoints in the master PIDs
-    // and compute state control torques
     state->Fz = thrust_pid.Compute(now, pidEnabled[THRUST_MASTER], pidEnabled[THRUST_SLAVE]);
     state->Tx = pitch_pid.Compute(now, pidEnabled[PITCH_MASTER], pidEnabled[PITCH_SLAVE]);
     state->Ty = roll_pid.Compute(now, pidEnabled[ROLL_MASTER], pidEnabled[ROLL_SLAVE]);
     state->Tz = yaw_pid.Compute(now, pidEnabled[YAW_MASTER], pidEnabled[YAW_SLAVE]);
 
-    // add in the feedforward torques
-    state->Tx += state->Tx_trim;
-    state->Ty += state->Ty_trim;
-    state->Tz += state->Tz_trim;
-
-    // use the updated pid outputs to calculate the motor drive terms
     if (state->Fz == 0) {  // throttle is in low condition
         state->Tx = 0;
         state->Ty = 0;
         state->Tz = 0;
+
+        thrust_pid.IntegralReset();
+        pitch_pid.IntegralReset();
+        roll_pid.IntegralReset();
+        yaw_pid.IntegralReset();
     }
 }
