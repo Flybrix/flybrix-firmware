@@ -68,6 +68,7 @@ union CONFIG_union {
 #define EEPROM_LOG_END 2048
 
 extern void(*config_handler)(CONFIG_struct&);
+extern bool(*config_verifier)(const CONFIG_struct&);
 
 extern CONFIG_union CONFIG;
 extern void initializeEEPROM(void);
