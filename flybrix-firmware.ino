@@ -79,6 +79,12 @@ void setup() {
       sys.control.parseConfig(config);
     };
 
+    config_verifier = [&](const CONFIG_struct& config) {
+        bool retval{true};
+        retval &= sys.control.verifyConfig(config);
+        return retval;
+    };
+
     debug_serial_comm = &sys.conf;
 
     // setup USB debug serial

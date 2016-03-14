@@ -23,13 +23,14 @@ class Control {
    public:
     Control(State *state, CONFIG_struct& config);
 
+    bool verifyConfig(const CONFIG_struct& config) const;
     void parseConfig(CONFIG_struct& config);
 
     void calculateControlVectors();
 
     State *state;
     uint32_t lastUpdateMicros = 0;  // 1.2 hrs should be enough
-    
+
     // unpack config.pidBypass for convenience
     bool pidEnabled[8]{false, false, false, false, false, false, false, false};
 

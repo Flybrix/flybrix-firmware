@@ -34,7 +34,7 @@ inline void WritePIDData(CobsPayload<N>& payload, const PID& pid) {
 }
 }
 
-SerialComm::SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, const CONFIG_union* config, LED* led) : state{state}, ppm{ppm}, control{control}, config{config}, led{led} {
+SerialComm::SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, CONFIG_union* config, LED* led) : state{state}, ppm{ppm}, control{control}, config{config}, led{led} {
 }
 
 void SerialComm::ReadData() {
@@ -59,9 +59,15 @@ void SerialComm::ProcessData() {
 
     uint32_t ack_data{0};
 
-    if (mask & COM_SET_EEPROM_DATA && data_input.ParseInto(config->raw)) {
-        writeEEPROM();  // TODO: deal with side effect code
-        ack_data |= COM_SET_EEPROM_DATA;
+    if (mask & COM_SET_EEPROM_DATA) {
+        CONFIG_union tmp_config;
+        if (data_input.ParseInto(tmp_config.raw)) {
+            if (!config_verifier || config_verifier(tmp_config.data)) {
+                config->data = tmp_config.data;
+                writeEEPROM();  // TODO: deal with side effect code
+                ack_data |= COM_SET_EEPROM_DATA;
+            }
+        }
     }
     if (mask & COM_REINIT_EEPROM_DATA) {
         initializeEEPROM();  // TODO: deal with side effect code
@@ -157,6 +163,7 @@ void SerialComm::SendDebugString(const String& string, MessageType type) const {
     size_t str_len = string.length();
     for (size_t i = 0; i < str_len; ++i)
         payload.Append(string.charAt(i));
+    payload.Append(uint8_t(0));
     WriteToOutput(payload);
 }
 

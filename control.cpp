@@ -6,6 +6,7 @@
 
 #include "control.h"
 #include "config.h"
+#include "debug.h"
 #include "state.h"
 
 namespace {
@@ -28,6 +29,16 @@ Control::Control(State* __state, CONFIG_struct& config)
       roll_pid{config.rollMasterPIDParameters, config.rollSlavePIDParameters},
       yaw_pid{config.yawMasterPIDParameters, config.yawSlavePIDParameters} {
     parseConfig(config);
+}
+
+bool Control::verifyConfig(const CONFIG_struct& config) const {
+    bool retval{true};
+    if (!(config.pidBypass & (1 << THRUST_SLAVE))) {
+        // If the thrust slave is enabled
+        DebugPrint("The slave PID of the thrust regulator must be disabled for now");
+        retval = false;
+    }
+    return retval;
 }
 
 void Control::parseConfig(CONFIG_struct& config) {

@@ -8,6 +8,7 @@
 #include "version.h"
 
 void(*config_handler)(CONFIG_struct&) {nullptr};
+bool(*config_verifier)(const CONFIG_struct&) {nullptr};
 
 CONFIG_union CONFIG;  // global CONFIG variable
 

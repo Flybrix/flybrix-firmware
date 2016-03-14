@@ -86,7 +86,7 @@ class SerialComm {
         STATE_LOOP_COUNT = 1 << 27,
     };
 
-    explicit SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, const CONFIG_union* config, LED* led);
+    explicit SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, CONFIG_union* config, LED* led);
 
     void ReadData();
 
@@ -108,7 +108,7 @@ class SerialComm {
     State* state;
     const volatile uint16_t* ppm;
     const Control* control;
-    const CONFIG_union* config;
+    CONFIG_union* config;
     LED* led;
     uint16_t send_state_delay{1001}; //anything over 1000 turns off state messages
     uint32_t state_mask{0x7fffff};
