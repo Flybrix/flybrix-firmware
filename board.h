@@ -50,6 +50,12 @@ constexpr uint8_t PWM[]{
     9,   // 46
     5,   // 64
 };
+
+constexpr uint8_t FTM[]{
+    // TODO: properly consider right FTM pins
+    25,  // 42 | PWM[0]
+    22,  // 44 | PWM[2]
+};
 }
 }
 
