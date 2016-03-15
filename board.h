@@ -12,6 +12,7 @@
 #define BOARD_H
 
 #include <Arduino.h>
+#include <i2c_t3.h>
 
 namespace board {
 inline namespace alpha {
@@ -32,7 +33,13 @@ enum Pins : uint8_t {
     I1_DETECT = A11,  // ADC0_DM0
 
     RX_DAT = 3,  // 28  --- MUST BE PIN 3
+
+    MPU_INTERRUPT = 17,  // 36
 };
+
+constexpr i2c_pins I2C_PINS{I2C_PINS_18_19};
+constexpr i2c_pullup I2C_PULLUP{I2C_PULLUP_EXT};
+
 constexpr uint8_t PWM[]{
     25,  // 42
     32,  // 41

@@ -73,8 +73,6 @@ class MPU9250 : public CallbackProcessor {
 
 #define DEG2RAD 0.01745329251f
 
-#define MPU_INTERRUPT 17  // 36
-
 //*************************************************************
 //
 // MPU Registers (See Table 1 Register Map on page 7)
