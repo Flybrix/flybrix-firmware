@@ -67,17 +67,4 @@ class LED {
 
 };  // class LED
 
-// pin definitions
-
-#define LED_B_BLU 30  // 56
-#define LED_B_GRN 26  // 2
-#define LED_B_RED 31  // 1
-
-#define LED_A_BLU 11  // 51
-#define LED_A_GRN 12  // 52
-#define LED_A_RED 28  // 53
-
-#define GREEN_LED 13  // 50
-#define RED_LED 27    // 54
-
 #endif

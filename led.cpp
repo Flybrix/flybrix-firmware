@@ -4,9 +4,8 @@
     *  License and other details available at: http://www.flybrix.com/firmware
 */
 
-//#define LED_SERIAL_DEBUG
-
 #include "led.h"
+#include "board.h"
 #include "state.h"
 
 LED::LED(State* __state) : state(__state) {

@@ -5,6 +5,7 @@
 */
 
 #include "power.h"
+#include "board.h"
 #include "state.h"
 
 PowerMonitor::PowerMonitor(State* __state) {

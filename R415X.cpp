@@ -5,6 +5,7 @@
 */
 
 #include "R415X.h"
+#include "board.h"
 
 volatile uint16_t RX[RC_CHANNEL_COUNT];  // filled by the interrupt with valid data
 volatile uint16_t RX_errors = 0;  // count dropped frames

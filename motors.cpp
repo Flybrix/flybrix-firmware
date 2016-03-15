@@ -5,6 +5,7 @@
 */
 
 #include "motors.h"
+#include "board.h"
 #include "state.h"
 
 Motors::Motors(State* __state) {
@@ -55,6 +56,6 @@ void Motors::updateAllChannels() {
         analogWrite(PWM5, 0);
         analogWrite(PWM6, 0);
         analogWrite(PWM7, 0);
-    
+
 	}
 }
