@@ -27,20 +27,21 @@ enum Pins : uint8_t {
     GREEN_LED = 13,  // 50
     RED_LED = 27,    // 54
 
-    PWM7 = 5,   // 64
-    PWM6 = 9,   // 46
-    PWM5 = 21,  // 63
-    PWM4 = 23,  // 45
-    PWM3 = 20,  // 62
-    PWM2 = 22,  // 44
-    PWM1 = 32,  // 41
-    PWM0 = 25,  // 42
-
     V0_DETECT = A13,  // ADC0_DM3
     I0_DETECT = A10,  // ADC0_DP0
     I1_DETECT = A11,  // ADC0_DM0
 
     RX_DAT = 3,  // 28  --- MUST BE PIN 3
+};
+constexpr uint8_t PWM[]{
+    25,  // 42
+    32,  // 41
+    22,  // 44
+    20,  // 62
+    23,  // 45
+    21,  // 63
+    9,   // 46
+    5,   // 64
 };
 }
 }

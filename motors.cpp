@@ -15,18 +15,18 @@ Motors::Motors(State* __state) {
     analogWriteResolution(12);  // actual resolution depends on frequency
 
     // FTM2
-    pinMode(board::PWM0, OUTPUT);
-    pinMode(board::PWM1, OUTPUT);
-    analogWriteFrequency(board::PWM0, 11718);  // changes all pins on FTM2
+    pinMode(board::PWM[0], OUTPUT);
+    pinMode(board::PWM[1], OUTPUT);
+    analogWriteFrequency(board::PWM[0], 11718);  // changes all pins on FTM2
 
     // FTM0
-    pinMode(board::PWM2, OUTPUT);
-    pinMode(board::PWM3, OUTPUT);
-    pinMode(board::PWM4, OUTPUT);
-    pinMode(board::PWM5, OUTPUT);
-    pinMode(board::PWM6, OUTPUT);
-    pinMode(board::PWM7, OUTPUT);
-    analogWriteFrequency(board::PWM2, 11718);  // changes all pins on FTM0
+    pinMode(board::PWM[2], OUTPUT);
+    pinMode(board::PWM[3], OUTPUT);
+    pinMode(board::PWM[4], OUTPUT);
+    pinMode(board::PWM[5], OUTPUT);
+    pinMode(board::PWM[6], OUTPUT);
+    pinMode(board::PWM[7], OUTPUT);
+    analogWriteFrequency(board::PWM[2], 11718);  // changes all pins on FTM0
 }
 
 void Motors::updateAllChannels() {
@@ -37,25 +37,25 @@ void Motors::updateAllChannels() {
     }
 
     if (state->is(STATUS_ENABLED) || state->is(STATUS_OVERRIDE)) {
-        analogWrite(board::PWM0, state->MotorOut[0]);
-        analogWrite(board::PWM1, state->MotorOut[1]);
-        analogWrite(board::PWM2, state->MotorOut[2]);
-        analogWrite(board::PWM3, state->MotorOut[3]);
-        analogWrite(board::PWM4, state->MotorOut[4]);
-        analogWrite(board::PWM5, state->MotorOut[5]);
-        analogWrite(board::PWM6, state->MotorOut[6]);
-        analogWrite(board::PWM7, state->MotorOut[7]);
+        analogWrite(board::PWM[0], state->MotorOut[0]);
+        analogWrite(board::PWM[1], state->MotorOut[1]);
+        analogWrite(board::PWM[2], state->MotorOut[2]);
+        analogWrite(board::PWM[3], state->MotorOut[3]);
+        analogWrite(board::PWM[4], state->MotorOut[4]);
+        analogWrite(board::PWM[5], state->MotorOut[5]);
+        analogWrite(board::PWM[6], state->MotorOut[6]);
+        analogWrite(board::PWM[7], state->MotorOut[7]);
     }
 	else
 	{
-		analogWrite(board::PWM0, 0);
-        analogWrite(board::PWM1, 0);
-        analogWrite(board::PWM2, 0);
-        analogWrite(board::PWM3, 0);
-        analogWrite(board::PWM4, 0);
-        analogWrite(board::PWM5, 0);
-        analogWrite(board::PWM6, 0);
-        analogWrite(board::PWM7, 0);
+		analogWrite(board::PWM[0], 0);
+        analogWrite(board::PWM[1], 0);
+        analogWrite(board::PWM[2], 0);
+        analogWrite(board::PWM[3], 0);
+        analogWrite(board::PWM[4], 0);
+        analogWrite(board::PWM[5], 0);
+        analogWrite(board::PWM[6], 0);
+        analogWrite(board::PWM[7], 0);
 
 	}
 }
