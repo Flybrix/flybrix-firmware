@@ -11,33 +11,38 @@
 #ifndef BOARD_H
 #define BOARD_H
 
-#define LED_B_BLU 30  // 56
-#define LED_B_GRN 26  // 2
-#define LED_B_RED 31  // 1
+#include <Arduino.h>
 
-#define LED_A_BLU 11  // 51
-#define LED_A_GRN 12  // 52
-#define LED_A_RED 28  // 53
+inline namespace board {
+inline namespace alpha {
+enum Pins : uint8_t {
+    LED_B_BLU = 30,  // 56
+    LED_B_GRN = 26,  // 2
+    LED_B_RED = 31,  // 1
 
-#define GREEN_LED 13  // 50
-#define RED_LED 27    // 54
+    LED_A_BLU = 11,  // 51
+    LED_A_GRN = 12,  // 52
+    LED_A_RED = 28,  // 53
 
+    GREEN_LED = 13,  // 50
+    RED_LED = 27,    // 54
 
-#define PWM7 5  // 64
-#define PWM6 9  // 46
-#define PWM5 21  // 63
-#define PWM4 23  // 45
-#define PWM3 20  // 62
-#define PWM2 22  // 44
-#define PWM1 32  // 41
-#define PWM0 25  // 42
+    PWM7 = 5,   // 64
+    PWM6 = 9,   // 46
+    PWM5 = 21,  // 63
+    PWM4 = 23,  // 45
+    PWM3 = 20,  // 62
+    PWM2 = 22,  // 44
+    PWM1 = 32,  // 41
+    PWM0 = 25,  // 42
 
+    V0_DETECT = A13,  // ADC0_DM3
+    I0_DETECT = A10,  // ADC0_DP0
+    I1_DETECT = A11,  // ADC0_DM0
 
-#define V0_DETECT A13  // ADC0_DM3
-#define I0_DETECT A10  // ADC0_DP0
-#define I1_DETECT A11  // ADC0_DM0
-
-
-#define RX_DAT 3  // 28  --- MUST BE PIN 3
+    RX_DAT = 3,  // 28  --- MUST BE PIN 3
+};
+}
+}
 
 #endif
