@@ -10,16 +10,16 @@
 
 LED::LED(State* __state) : state(__state) {
     // RGB leds A and B are inverted
-    pinMode(LED_A_RED, OUTPUT);
-    pinMode(LED_A_GRN, OUTPUT);
-    pinMode(LED_A_BLU, OUTPUT);
-    pinMode(LED_B_RED, OUTPUT);
-    pinMode(LED_B_GRN, OUTPUT);
-    pinMode(LED_B_BLU, OUTPUT);
+    pinMode(board::LED_A_RED, OUTPUT);
+    pinMode(board::LED_A_GRN, OUTPUT);
+    pinMode(board::LED_A_BLU, OUTPUT);
+    pinMode(board::LED_B_RED, OUTPUT);
+    pinMode(board::LED_B_GRN, OUTPUT);
+    pinMode(board::LED_B_BLU, OUTPUT);
 
     // indicator leds are not inverted
-    pinMode(GREEN_LED, OUTPUT);
-    pinMode(RED_LED, OUTPUT);
+    pinMode(board::GREEN_LED, OUTPUT);
+    pinMode(board::RED_LED, OUTPUT);
 }
 
 void LED::set(Pattern pattern, uint8_t red_a, uint8_t green_a, uint8_t blue_a, uint8_t red_b, uint8_t green_b, uint8_t blue_b, bool red_indicator, bool green_indicator) {
@@ -79,16 +79,16 @@ void LED::changeLights() {
 
     if (state->is(STATUS_MPU_FAIL)) {
         allOff();  // no dithering during setup!
-        digitalWriteFast(LED_A_RED, LOW);
+        digitalWriteFast(board::LED_A_RED, LOW);
         indicatorRedOn();
     } else if (state->is(STATUS_BMP_FAIL)) {
         allOff();  // no dithering during setup!
-        digitalWriteFast(LED_B_RED, LOW);
+        digitalWriteFast(board::LED_B_RED, LOW);
         indicatorRedOn();
     } else if (state->is(STATUS_BOOT)) {
         allOff();  // no dithering during setup!
-        digitalWriteFast(LED_A_GRN, LOW);
-        digitalWriteFast(LED_B_GRN, LOW);
+        digitalWriteFast(board::LED_A_GRN, LOW);
+        digitalWriteFast(board::LED_B_GRN, LOW);
     } else if (state->is(STATUS_UNPAIRED)) {
         // use(LED::FLASH, 255,180,20); //orange
         use(LED::FLASH, 255, 255, 255);  // for pcba testing purposes -- a "good" board will end up in this state
@@ -132,12 +132,12 @@ void LED::rgb() {
 
 void LED::rgb(uint8_t red_a, uint8_t green_a, uint8_t blue_a, uint8_t red_b, uint8_t green_b, uint8_t blue_b) {
     uint8_t threshold = getLightThreshold();
-    digitalWriteFast(LED_A_RED, (red_a > threshold) ? LOW : HIGH);
-    digitalWriteFast(LED_B_RED, (red_b > threshold) ? LOW : HIGH);
-    digitalWriteFast(LED_A_GRN, (green_a > threshold) ? LOW : HIGH);
-    digitalWriteFast(LED_B_GRN, (green_b > threshold) ? LOW : HIGH);
-    digitalWriteFast(LED_A_BLU, (blue_a > threshold) ? LOW : HIGH);
-    digitalWriteFast(LED_B_BLU, (blue_b > threshold) ? LOW : HIGH);
+    digitalWriteFast(board::LED_A_RED, (red_a > threshold) ? LOW : HIGH);
+    digitalWriteFast(board::LED_B_RED, (red_b > threshold) ? LOW : HIGH);
+    digitalWriteFast(board::LED_A_GRN, (green_a > threshold) ? LOW : HIGH);
+    digitalWriteFast(board::LED_B_GRN, (green_b > threshold) ? LOW : HIGH);
+    digitalWriteFast(board::LED_A_BLU, (blue_a > threshold) ? LOW : HIGH);
+    digitalWriteFast(board::LED_B_BLU, (blue_b > threshold) ? LOW : HIGH);
 }
 
 void LED::updateFlash() {
@@ -190,26 +190,26 @@ void LED::updateSolid() {
 }
 
 void LED::allOff() {
-    digitalWriteFast(LED_A_RED, HIGH);
-    digitalWriteFast(LED_A_GRN, HIGH);
-    digitalWriteFast(LED_A_BLU, HIGH);
-    digitalWriteFast(LED_B_RED, HIGH);
-    digitalWriteFast(LED_B_GRN, HIGH);
-    digitalWriteFast(LED_B_BLU, HIGH);
+    digitalWriteFast(board::LED_A_RED, HIGH);
+    digitalWriteFast(board::LED_A_GRN, HIGH);
+    digitalWriteFast(board::LED_A_BLU, HIGH);
+    digitalWriteFast(board::LED_B_RED, HIGH);
+    digitalWriteFast(board::LED_B_GRN, HIGH);
+    digitalWriteFast(board::LED_B_BLU, HIGH);
 }
 
 void LED::indicatorRedOn() {
-    digitalWriteFast(RED_LED, HIGH);
+    digitalWriteFast(board::RED_LED, HIGH);
 }
 
 void LED::indicatorGreenOn() {
-    digitalWriteFast(GREEN_LED, HIGH);
+    digitalWriteFast(board::GREEN_LED, HIGH);
 }
 
 void LED::indicatorRedOff() {
-    digitalWriteFast(RED_LED, LOW);
+    digitalWriteFast(board::RED_LED, LOW);
 }
 
 void LED::indicatorGreenOff() {
-    digitalWriteFast(GREEN_LED, LOW);
+    digitalWriteFast(board::GREEN_LED, LOW);
 }

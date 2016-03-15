@@ -12,9 +12,9 @@ PowerMonitor::PowerMonitor(State* __state) {
     state = __state;
 
     // REFERENCE: https://github.com/pedvide/ADC
-    pinMode(V0_DETECT, INPUT);
-    pinMode(I0_DETECT, INPUT);
-    pinMode(I1_DETECT, INPUT);
+    pinMode(board::V0_DETECT, INPUT);
+    pinMode(board::I0_DETECT, INPUT);
+    pinMode(board::I1_DETECT, INPUT);
 
     adc.setReference(ADC_REF_1V2, ADC_0);
     adc.setAveraging(1, ADC_0);                     // set number of averages
@@ -44,15 +44,15 @@ float PowerMonitor::getElectronicsPower(void) {
 }
 
 uint16_t PowerMonitor::getV0Raw(void) {
-    return (uint16_t)adc.analogRead(V0_DETECT, ADC_1);
+    return (uint16_t)adc.analogRead(board::V0_DETECT, ADC_1);
 }
 
 uint16_t PowerMonitor::getI0Raw(void) {
-    return (uint16_t)adc.analogRead(I0_DETECT, ADC_0);
+    return (uint16_t)adc.analogRead(board::I0_DETECT, ADC_0);
 }
 
 uint16_t PowerMonitor::getI1Raw(void) {
-    return (uint16_t)adc.analogRead(I1_DETECT, ADC_0);
+    return (uint16_t)adc.analogRead(board::I1_DETECT, ADC_0);
 }
 
 float PowerMonitor::getV0(void) {

@@ -13,7 +13,7 @@
 
 #include <Arduino.h>
 
-inline namespace board {
+namespace board {
 inline namespace alpha {
 enum Pins : uint8_t {
     LED_B_BLU = 30,  // 56

@@ -19,7 +19,7 @@ R415X::R415X() {
 }
 
 void R415X::initialize_isr(void) {
-    pinMode(RX_DAT, INPUT);  // WE ARE ASSUMING RX_DAT IS PIN 3 IN FTM1 SETUP!
+    pinMode(board::RX_DAT, INPUT);  // WE ARE ASSUMING RX_DAT IS PIN 3 IN FTM1 SETUP!
 
     for (uint8_t i = 0; i <= RC_CHANNEL_COUNT; i++) {
         RX[i] = 1100;
@@ -74,10 +74,10 @@ extern "C" void ftm1_isr(void) {
 }
 
 void R415X::attemptToBind(uint16_t milliseconds) {
-    pinMode(RX_DAT, OUTPUT);
-    digitalWrite(RX_DAT, LOW);
+    pinMode(board::RX_DAT, OUTPUT);
+    digitalWrite(board::RX_DAT, LOW);
     delay(milliseconds);
-    pinMode(RX_DAT, INPUT);  // WE ARE ASSUMING RX_DAT IS PIN 3 IN FTM1 SETUP!
+    pinMode(board::RX_DAT, INPUT);  // WE ARE ASSUMING RX_DAT IS PIN 3 IN FTM1 SETUP!
 
     // after we bind, we must setup our timer again.
     initialize_isr();
