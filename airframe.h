@@ -11,7 +11,7 @@
 #ifndef airframe_h
 #define airframe_h
 
-#include "Arduino.h"
+#include <cstdint>
 
 class State;
 
