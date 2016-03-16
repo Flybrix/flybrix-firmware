@@ -47,9 +47,4 @@ class PowerMonitor {
 
 };  // class PowerMonitor
 
-// pin definitions
-#define V0_DETECT A13  // ADC0_DM3
-#define I0_DETECT A10  // ADC0_DP0
-#define I1_DETECT A11  // ADC0_DM0
-
 #endif

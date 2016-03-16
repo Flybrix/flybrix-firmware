@@ -32,8 +32,6 @@ extern volatile uint16_t startPulse;  // keeps track of the last received pulse 
 extern volatile uint16_t RX_buffer[RC_CHANNEL_COUNT];  // buffer data in anticipation of a valid frame
 extern volatile uint8_t RX_channel;  // we are collecting data for this channel
 
-// pin definitions
-#define RX_DAT 3  // 28  --- MUST BE PIN 3
 #define RX_PPM_SYNCPULSE_MIN 7500   // 2.5ms
 #define RX_PPM_SYNCPULSE_MAX 48000  // 16 ms (seems to be about 13.4ms on the scope)
 

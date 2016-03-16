@@ -35,6 +35,7 @@
 #include "localization.h"
 #include "debug.h"
 #include "version.h"
+#include "board.h"
 
 struct Systems {
     // subsystem objects initialize pins when created
@@ -91,7 +92,7 @@ void setup() {
     Serial.begin(9600);  // USB is always 12 Mbit/sec
 
     // MPU9250 is limited to 400kHz bus speed.
-    Wire.begin(I2C_MASTER, 0x00, I2C_PINS_18_19, I2C_PULLUP_EXT, I2C_RATE_400);  // For I2C pins 18 and 19
+    Wire.begin(I2C_MASTER, 0x00, board::I2C_PINS, board::I2C_PULLUP, I2C_RATE_400);  // For I2C pins 18 and 19
     sys.state.set(STATUS_BOOT);
     sys.led.update();
 

@@ -12,6 +12,7 @@
 #include <i2c_t3.h>
 #include <stdio.h>
 #include <math.h>
+#include "board.h"
 #include "state.h"
 
 // we have three coordinate systems here:
@@ -40,7 +41,7 @@ MPU9250::MPU9250(State *__state, I2CManager *__i2c) {
     state = __state;
     i2c = __i2c;
     ready = false;
-    pinMode(MPU_INTERRUPT, INPUT);
+    pinMode(board::MPU_INTERRUPT, INPUT);
 }
 
 uint8_t MPU9250::getID() {
@@ -54,7 +55,7 @@ void MPU9250::restart() {
 }
 
 bool MPU9250::dataReadyInterrupt() {
-    return digitalRead(MPU_INTERRUPT);  // use the interrupt pin -- be sure to set INT_PIN_CFG
+    return digitalRead(board::MPU_INTERRUPT);  // use the interrupt pin -- be sure to set INT_PIN_CFG
 }
 
 uint8_t MPU9250::getStatusByte() {

@@ -25,14 +25,4 @@ class Motors {
     State* state;
 };
 
-// pin definitions
-#define PWM7 5  // 64
-#define PWM6 9  // 46
-#define PWM5 21  // 63
-#define PWM4 23  // 45
-#define PWM3 20  // 62
-#define PWM2 22  // 44
-#define PWM1 32  // 41
-#define PWM0 25  // 42
-
 #endif
