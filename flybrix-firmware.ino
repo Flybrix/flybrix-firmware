@@ -158,9 +158,9 @@ uint32_t pwr_reads = 0;
     sys.i2c.update();
 
 DEF_PROCESS_VARIABLES(1000)
-DEF_PROCESS_VARIABLES(500)
 DEF_PROCESS_VARIABLES(100)
 DEF_PROCESS_VARIABLES(40)
+DEF_PROCESS_VARIABLES(30)
 DEF_PROCESS_VARIABLES(10)
 DEF_PROCESS_VARIABLES(1)
 
@@ -210,10 +210,9 @@ void loop() {
     }
 
     RUN_PROCESS(1000)
-    RUN_PROCESS(500)
-    RUN_PROCESS(500)
     RUN_PROCESS(100)
     RUN_PROCESS(40)
+    RUN_PROCESS(30)
     RUN_PROCESS(10)
     RUN_PROCESS(1)
 }
@@ -239,7 +238,7 @@ bool ProcessTask<1000>() {
 }
 
 template <>
-bool ProcessTask<500>() {
+bool ProcessTask<30>() {
     sys.led.update();  // update quickly to support color dithering
     return true;
 }
