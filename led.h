@@ -39,6 +39,7 @@ class LED {
     void set(Pattern pattern, CRGB color, bool red_indicator = false, bool green_indicator = false);
 
    private:
+    void use(Pattern pattern, CRGB color_right, CRGB color_left, bool red_indicator, bool green_indicator);
     void changeLights();
 
     void indicatorRedOn();

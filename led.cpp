@@ -148,8 +148,8 @@ void LEDDriver::writeToDisplay() {
             updateBreathe();
             break;
         case LED::ALTERNATE:
-            // Alternate is handled outside of the driver
-            // and here it's just a solid light
+        // Alternate is handled outside of the driver
+        // and here it's just a solid light
         case LED::SOLID:
             updateSolid();
             break;
@@ -168,17 +168,11 @@ void LED::set(Pattern pattern, uint8_t red_a, uint8_t green_a, uint8_t blue_a, u
 }
 
 void LED::set(Pattern pattern, CRGB color_right, CRGB color_left, bool red_indicator, bool green_indicator) {
-    colorRight = color_right;
-    colorLeft = color_left;
     override = pattern != LED::NO_OVERRIDE;
     oldStatus = 0;
     if (!override)
         return;
-    red_indicator ? indicatorRedOn() : indicatorRedOff();
-    green_indicator ? indicatorGreenOn() : indicatorGreenOff();
-    LED_driver.setPattern(pattern);
-    LED_driver.setColor(color_right, {0, -128}, {127, 127});
-    LED_driver.setColor(color_left, {-128, -128}, {0, 127});
+    use(pattern, color_right, color_left, red_indicator, green_indicator);
 }
 
 void LED::set(Pattern pattern, CRGB color, bool red_indicator, bool green_indicator) {
@@ -202,45 +196,61 @@ void LED::update() {
     LED_driver.update();
 }
 
+void LED::use(Pattern pattern, CRGB color_right, CRGB color_left, bool red_indicator, bool green_indicator) {
+    colorRight = color_right;
+    colorLeft = color_left;
+    red_indicator ? indicatorRedOn() : indicatorRedOff();
+    green_indicator ? indicatorGreenOn() : indicatorGreenOff();
+    LED_driver.setPattern(pattern);
+    LED_driver.setColor(color_right, {0, -128}, {127, 127});
+    LED_driver.setColor(color_left, {-128, -128}, {0, 127});
+}
+
+namespace {
+struct LightCase {
+    LightCase(uint16_t status, LED::Pattern pattern, CRGB colorRight, CRGB colorLeft, bool indicatorRed = false, bool indicatorGreen = false);
+    LightCase(uint16_t status, LED::Pattern pattern, CRGB color);
+    uint16_t status;
+    LED::Pattern pattern;
+    CRGB colorRight;
+    CRGB colorLeft;
+    bool indicatorRed;
+    bool indicatorGreen;
+};
+
+LightCase::LightCase(uint16_t status, LED::Pattern pattern, CRGB colorRight, CRGB colorLeft, bool indicatorRed, bool indicatorGreen)
+    : status{status}, pattern{pattern}, colorRight{colorRight}, colorLeft{colorLeft}, indicatorRed{indicatorRed}, indicatorGreen{indicatorGreen} {
+}
+
+LightCase::LightCase(uint16_t status, LED::Pattern pattern, CRGB color) : LightCase{status, pattern, color, color, false, false} {
+}
+
+const LightCase INDICATIONS[]{
+    {STATUS_MPU_FAIL, LED::SOLID, CRGB::Black, CRGB::Red, true},
+    {STATUS_BMP_FAIL, LED::SOLID, CRGB::Red, CRGB::Black, true},
+    {STATUS_BOOT, LED::SOLID, CRGB::Green},
+    {STATUS_UNPAIRED, LED::FLASH, CRGB::White, CRGB::White, false, true},  // for pcba testing purposes -- a "good" board will end up in this state
+    {STATUS_RX_FAIL, LED::FLASH, CRGB::Red},
+    {STATUS_FAIL_STABILITY, LED::FLASH, CRGB::Yellow},
+    {STATUS_FAIL_ANGLE, LED::FLASH, CRGB::Yellow},
+    {STATUS_OVERRIDE, LED::BEACON, CRGB::Red},
+    {STATUS_ENABLING, LED::FLASH, CRGB::Blue},
+    {STATUS_ENABLED, LED::BEACON, CRGB::Blue},
+    {STATUS_TEMP_WARNING, LED::FLASH, CRGB::Yellow},
+    {STATUS_LOG_FULL, LED::FLASH, CRGB::Blue},
+    {STATUS_BATTERY_LOW, LED::BEACON, CRGB::Orange},
+    {STATUS_IDLE, LED::BEACON, CRGB::Green},  // breathe instead?
+};
+
+}  // namespace
+
 void LED::changeLights() {
-    if (state->is(STATUS_MPU_FAIL)) {
-        LED_driver.setPattern(LED::SOLID);
-        LED_driver.setColor(CRGB::Black);
-        LED_driver.setColor(CRGB::Red, {-128, -128}, {0, 127});
-        indicatorRedOn();
-    } else if (state->is(STATUS_BMP_FAIL)) {
-        LED_driver.setPattern(LED::SOLID);
-        LED_driver.setColor(CRGB::Black);
-        LED_driver.setColor(CRGB::Red, {0, -128}, {127, 127});
-        indicatorRedOn();
-    } else if (state->is(STATUS_BOOT)) {
-        LED_driver.set(LED::SOLID, CRGB::Green);
-    } else if (state->is(STATUS_UNPAIRED)) {
-        // use(LED::FLASH, 255,180,20); //orange
-        LED_driver.set(LED::FLASH, CRGB::White);  // for pcba testing purposes -- a "good" board will end up in this state
-        indicatorGreenOn();                       // for pcba testing purposes -- a "good" board will end up in this state
-    } else if (state->is(STATUS_RX_FAIL)) {
-        LED_driver.set(LED::FLASH, CRGB::Red);  // red
-    } else if (state->is(STATUS_FAIL_STABILITY) || state->is(STATUS_FAIL_ANGLE)) {
-        LED_driver.set(LED::FLASH, CRGB::Yellow);  // yellow
-    } else if (state->is(STATUS_OVERRIDE)) {
-        LED_driver.set(LED::BEACON, CRGB::Red);  // red
-    } else if (state->is(STATUS_ENABLING)) {
-        LED_driver.set(LED::FLASH, CRGB::Blue);  // blue
-    } else if (state->is(STATUS_ENABLED)) {
-        LED_driver.set(LED::BEACON, CRGB::Blue);  // blue for enable
-    } else if (state->is(STATUS_TEMP_WARNING)) {
-        LED_driver.set(LED::FLASH, CRGB::Yellow);  // yellow
-    } else if (state->is(STATUS_LOG_FULL)) {
-        LED_driver.set(LED::FLASH, CRGB::Blue);
-    } else if (state->is(STATUS_BATTERY_LOW)) {
-        LED_driver.set(LED::BEACON, CRGB::Orange);
-    } else if (state->is(STATUS_IDLE)) {
-        indicatorRedOff();                         // clear boot test
-        LED_driver.set(LED::BEACON, CRGB::Green);  // breathe instead?
-    } else {
-        // ERROR: ("NO STATUS BITS SET???");
-    }
+    for (const LightCase& s : INDICATIONS)
+        if (state->is(s.status)) {
+            use(s.pattern, s.colorRight, s.colorLeft, s.indicatorRed, s.indicatorGreen);
+            return;
+        }
+    use(LED::ALTERNATE, CRGB::Red, CRGB::Red, true, false);  // No status bits set
 }
 
 void LED::indicatorRedOn() {
