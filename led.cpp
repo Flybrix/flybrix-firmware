@@ -22,13 +22,15 @@ class LEDDriver {
     void set(LED::Pattern pattern, CRGB color);
     void update();  // fire this off at 30Hz
 
+    uint8_t getCycleIndex() const;
+    uint8_t getPattern() const;
+
    private:
     void writeToDisplay();
-    void updateBeacon();     // 2sec periodic double pulse
-    void updateFlash();      //~3Hz flasher
-    void updateBreathe();    // 4sec periodic breathe
-    void updateAlternate();  // 4sec on - 4sec off alternating TODO: use the proper left-right alternating
-    void updateSolid();      // maintain constant light level
+    void updateBeacon();   // 2sec periodic double pulse
+    void updateFlash();    //~3Hz flasher
+    void updateBreathe();  // 4sec periodic breathe
+    void updateSolid();    // maintain constant light level
 
     uint8_t cycleIndex{0};
     uint8_t pattern;
@@ -41,6 +43,14 @@ LEDDriver::LEDDriver() {
     setColor(CRGB::Black);
     setPattern(LED::SOLID);
     FastLED.addLeds<WS2812B, board::led::DATA_PIN>(leds, board::led::COUNT);
+}
+
+uint8_t LEDDriver::getCycleIndex() const {
+    return cycleIndex;
+}
+
+uint8_t LEDDriver::getPattern() const {
+    return pattern;
 }
 
 inline bool isInside(const board::led::Position& p, const board::led::Position& p_min, const board::led::Position& p_max) {
@@ -119,13 +129,6 @@ void LEDDriver::updateBreathe() {
     hasChanges = true;
 }
 
-void LEDDriver::updateAlternate() {
-    if (cycleIndex & 127)
-        return;
-    scale = (cycleIndex & 128) ? 0 : 255;
-    hasChanges = true;
-}
-
 void LEDDriver::updateSolid() {
     if (scale == 255)
         return;
@@ -145,8 +148,8 @@ void LEDDriver::writeToDisplay() {
             updateBreathe();
             break;
         case LED::ALTERNATE:
-            updateAlternate();
-            break;
+            // Alternate is handled outside of the driver
+            // and here it's just a solid light
         case LED::SOLID:
             updateSolid();
             break;
@@ -161,6 +164,12 @@ LED::LED(State* __state) : state(__state) {
 }
 
 void LED::set(Pattern pattern, uint8_t red_a, uint8_t green_a, uint8_t blue_a, uint8_t red_b, uint8_t green_b, uint8_t blue_b, bool red_indicator, bool green_indicator) {
+    set(pattern, {red_a, green_a, blue_a}, {red_b, green_b, blue_b}, red_indicator, green_indicator);
+}
+
+void LED::set(Pattern pattern, CRGB color_right, CRGB color_left, bool red_indicator, bool green_indicator) {
+    colorRight = color_right;
+    colorLeft = color_left;
     override = pattern != LED::NO_OVERRIDE;
     oldStatus = 0;
     if (!override)
@@ -168,14 +177,27 @@ void LED::set(Pattern pattern, uint8_t red_a, uint8_t green_a, uint8_t blue_a, u
     red_indicator ? indicatorRedOn() : indicatorRedOff();
     green_indicator ? indicatorGreenOn() : indicatorGreenOff();
     LED_driver.setPattern(pattern);
-    LED_driver.setColor({red_a, green_a, blue_a}, {0, -128}, {127, 127});
-    LED_driver.setColor({red_b, green_b, blue_b}, {-128, -128}, {0, 127});
+    LED_driver.setColor(color_right, {0, -128}, {127, 127});
+    LED_driver.setColor(color_left, {-128, -128}, {0, 127});
+}
+
+void LED::set(Pattern pattern, CRGB color, bool red_indicator, bool green_indicator) {
+    set(pattern, color, color, red_indicator, green_indicator);
 }
 
 void LED::update() {
     if (!override && oldStatus != state->status) {
         oldStatus = state->status;
         changeLights();
+    }
+    if (LED_driver.getPattern() == LED::ALTERNATE && !(LED_driver.getCycleIndex() & 15)) {
+        if (LED_driver.getCycleIndex() & 16) {
+            LED_driver.setColor(colorRight, {0, -128}, {127, 127});
+            LED_driver.setColor(CRGB::Black, {-128, -128}, {0, 127});
+        } else {
+            LED_driver.setColor(CRGB::Black, {0, -128}, {127, 127});
+            LED_driver.setColor(colorLeft, {-128, -128}, {0, 127});
+        }
     }
     LED_driver.update();
 }

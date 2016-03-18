@@ -49,6 +49,8 @@ class LED {
     State *state;
     uint16_t oldStatus{0};
     bool override{false};
+
+    CRGB colorRight{CRGB::Black}, colorLeft{CRGB::Black};
 };
 
 #endif
