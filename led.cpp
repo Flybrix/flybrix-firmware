@@ -34,14 +34,13 @@ class LEDDriver {
     uint8_t pattern;
     uint8_t scale{0};
     CRGB leds[board::led::COUNT];
-    CRGB leds_display[board::led::COUNT];
     bool hasChanges{true};
 } LED_driver;
 
 LEDDriver::LEDDriver() {
     setColor(CRGB::Black);
     setPattern(LED::SOLID);
-    FastLED.addLeds<WS2812B, board::led::DATA_PIN>(leds_display, board::led::COUNT);
+    FastLED.addLeds<WS2812B, board::led::DATA_PIN>(leds, board::led::COUNT);
 }
 
 inline bool isInside(const board::led::Position& p, const board::led::Position& p_min, const board::led::Position& p_max) {
