@@ -60,10 +60,10 @@ void Control::calculateControlVectors() {
     yaw_pid.setMasterInput(state->kinematicsAngle[2] * 57.2957795);
     yaw_pid.setSlaveInput(state->kinematicsRate[2] * 57.2957795);
 
-    thrust_pid.setSetpoint(state->command_throttle * 4095.0f * thrust_pid.getScalingFactor(pidEnabled[THRUST_MASTER], pidEnabled[THRUST_SLAVE]));
-    pitch_pid.setSetpoint(state->command_pitch * 2047.0f * pitch_pid.getScalingFactor(pidEnabled[PITCH_MASTER], pidEnabled[PITCH_SLAVE]));
-    roll_pid.setSetpoint(state->command_roll * 2047.0f * roll_pid.getScalingFactor(pidEnabled[ROLL_MASTER], pidEnabled[ROLL_SLAVE]));
-    yaw_pid.setSetpoint(state->command_yaw * 2047.0f * yaw_pid.getScalingFactor(pidEnabled[YAW_MASTER], pidEnabled[YAW_SLAVE]));
+    thrust_pid.setSetpoint(state->command_throttle * (1.0f/4095.0f) * thrust_pid.getScalingFactor(pidEnabled[THRUST_MASTER], pidEnabled[THRUST_SLAVE]));
+    pitch_pid.setSetpoint(state->command_pitch * (1.0f/2047.0f) * pitch_pid.getScalingFactor(pidEnabled[PITCH_MASTER], pidEnabled[PITCH_SLAVE]));
+    roll_pid.setSetpoint(state->command_roll * (1.0f/2047.0f) * roll_pid.getScalingFactor(pidEnabled[ROLL_MASTER], pidEnabled[ROLL_SLAVE]));
+    yaw_pid.setSetpoint(state->command_yaw * (1.0f/2047.0f) * yaw_pid.getScalingFactor(pidEnabled[YAW_MASTER], pidEnabled[YAW_SLAVE]));
 
     // compute new output levels for state
     uint32_t now = micros();
