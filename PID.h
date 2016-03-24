@@ -34,8 +34,8 @@ class PID {
           Ki{terms[1]},
           Kd{terms[2]},
           integral_windup_guard{terms[3]},
-          d_filter{d_term, terms[4]},
-          setpoint_filter{setpoint_, terms[5]},
+          d_filter{0.0f, terms[4]},
+          setpoint_filter{0.0f, terms[5]},
           command_to_value{terms[6]} { };
 
     void isWrapped(bool wrapped = true) {
