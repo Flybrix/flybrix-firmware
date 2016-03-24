@@ -105,7 +105,7 @@ class PID {
         p_term = Kp * error;
 
         i_term = Ki * error_integral;
-        error_integral = constrain(error_integral + error * delta_time, -integral_windup_guard, integral_windup_guard);
+        error_integral = constrain(error_integral + error * delta_time, -integral_windup_guard/Ki, integral_windup_guard/Ki);
 
         d_term = d_filter.update(Kd * ((error - previous_error) / delta_time), delta_time);
 
