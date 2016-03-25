@@ -57,6 +57,20 @@ void initializeEEPROM(void) {  // Default Settings
     CONFIG.data.assignedChannel[5] = 5;  // map AUX2 to LHS click
 
     CONFIG.data.commandInversion = 3; //invert pitch and roll
+    
+    CONFIG.data.channelMidpoint[0] = 1513;
+    CONFIG.data.channelMidpoint[1] = 1513;
+    CONFIG.data.channelMidpoint[2] = 1500;
+    CONFIG.data.channelMidpoint[3] = 1521;
+    CONFIG.data.channelMidpoint[4] = 1500;
+    CONFIG.data.channelMidpoint[5] = 1500;
+
+    CONFIG.data.channelDeadzone[0] = 20;
+    CONFIG.data.channelDeadzone[1] = 20;
+    CONFIG.data.channelDeadzone[2] = 20;
+    CONFIG.data.channelDeadzone[3] = 30;
+    CONFIG.data.channelDeadzone[4] = 20;
+    CONFIG.data.channelDeadzone[5] = 20;
 
     // PID Parameters
 
