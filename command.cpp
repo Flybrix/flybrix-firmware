@@ -128,9 +128,9 @@ void PilotCommand::processCommands(void) {
         // in some cases it is impossible to get a ppm channel to be exactly 1500 usec because the controller trim is too coarse to correct a small error
         // we can get around by creating a small dead zone on the commands that are potentially effected
         
-        *pitch_command = *pitch_command > 0 ? max(0, *pitch_command - CONFIG.data.channelDeadzone[CONFIG.data.assignedChannel[1]]) : min(*pitch_command + CONFIG.data.channelDeadzone[CONFIG.data.assignedChannel[1]], 0);
-        *roll_command  = *roll_command > 0  ? max(0, *roll_command  - CONFIG.data.channelDeadzone[CONFIG.data.assignedChannel[2]]) : min(*roll_command  + CONFIG.data.channelDeadzone[CONFIG.data.assignedChannel[2]], 0);
-        *yaw_command   = *yaw_command > 0   ? max(0, *yaw_command   - CONFIG.data.channelDeadzone[CONFIG.data.assignedChannel[3]]) : min(*yaw_command   + CONFIG.data.channelDeadzone[CONFIG.data.assignedChannel[3]], 0);
+        *pitch_command = *pitch_command > 0 ? max(0, *pitch_command - (2047.0f/400.0f)*CONFIG.data.channelDeadzone[CONFIG.data.assignedChannel[1]]) : min(*pitch_command + (2047.0f/400.0f)*CONFIG.data.channelDeadzone[CONFIG.data.assignedChannel[1]], 0);
+        *roll_command  = *roll_command > 0  ? max(0, *roll_command  - (2047.0f/400.0f)*CONFIG.data.channelDeadzone[CONFIG.data.assignedChannel[2]]) : min(*roll_command  + (2047.0f/400.0f)*CONFIG.data.channelDeadzone[CONFIG.data.assignedChannel[2]], 0);
+        *yaw_command   = *yaw_command > 0   ? max(0, *yaw_command   - (2047.0f/400.0f)*CONFIG.data.channelDeadzone[CONFIG.data.assignedChannel[3]]) : min(*yaw_command   + (2047.0f/400.0f)*CONFIG.data.channelDeadzone[CONFIG.data.assignedChannel[3]], 0);
 
     }
 
