@@ -268,6 +268,18 @@ bool ProcessTask<40>() {
     sys.pwr.measureRawLevels();  // read all ADCs
     pwr_reads++;
 
+    // check for low voltage condition
+    if ( ((1/50)/0.003*1.2/65536 * sys.state.I1_raw ) > 1.0f ){ //if total battery current > 1A
+        if ( ((20.5+226)/20.5*1.2/65536 * sys.state.V0_raw) < 3.0f ) {
+            sys.state.set(STATUS_BATTERY_LOW);
+        }
+    }
+    else {
+        if ( ((20.5+226)/20.5*1.2/65536 * sys.state.V0_raw) < 3.63f ) {
+            sys.state.set(STATUS_BATTERY_LOW);
+        }
+    }
+
     return true;
 }
 
