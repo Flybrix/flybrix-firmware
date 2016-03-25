@@ -92,7 +92,7 @@ void initializeEEPROM(void) {  // Default Settings
     CONFIG.data.thrustMasterPIDParameters[6] = 1.0f;  // (meters / full stick action)
 
     CONFIG.data.pitchMasterPIDParameters[0] = 5.0f;  // P
-    CONFIG.data.pitchMasterPIDParameters[1] = 0.0f;  // I
+    CONFIG.data.pitchMasterPIDParameters[1] = 1.0f;  // I
     CONFIG.data.pitchMasterPIDParameters[2] = 0.0f;  // D
     CONFIG.data.pitchMasterPIDParameters[3] = 10.0f;  // Windup guard
     CONFIG.data.pitchMasterPIDParameters[4] = 0.005f;  // D filter usec (15Hz)
@@ -100,15 +100,15 @@ void initializeEEPROM(void) {  // Default Settings
     CONFIG.data.pitchMasterPIDParameters[6] = 10.0f;  // (degrees / full stick action)
 
     CONFIG.data.rollMasterPIDParameters[0] = 5.0f;  // P
-    CONFIG.data.rollMasterPIDParameters[1] = 0.0f;  // I
+    CONFIG.data.rollMasterPIDParameters[1] = 1.0f;  // I
     CONFIG.data.rollMasterPIDParameters[2] = 0.0f;  // D
     CONFIG.data.rollMasterPIDParameters[3] = 10.0f;  // Windup guard
     CONFIG.data.rollMasterPIDParameters[4] = 0.005f;  // D filter usec (15Hz)
     CONFIG.data.rollMasterPIDParameters[5] = 0.005f;  // setpoint filter usec (30Hz)
     CONFIG.data.rollMasterPIDParameters[6] = 10.0f;  // (degrees / full stick action)
 
-    CONFIG.data.yawMasterPIDParameters[0] = 1.0f;  // P
-    CONFIG.data.yawMasterPIDParameters[1] = 0.0f;  // I
+    CONFIG.data.yawMasterPIDParameters[0] = 5.0f;  // P
+    CONFIG.data.yawMasterPIDParameters[1] = 1.0f;  // I
     CONFIG.data.yawMasterPIDParameters[2] = 0.0f;  // D
     CONFIG.data.yawMasterPIDParameters[3] = 10.0f;  // Windup guard
     CONFIG.data.yawMasterPIDParameters[4] = 0.005f;  // D filter usec (15Hz)
