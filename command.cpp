@@ -46,6 +46,14 @@ void PilotCommand::loadRxData() {
         yaw.update(RX[CONFIG.data.assignedChannel[3]]);
         AUX1.update(RX[CONFIG.data.assignedChannel[4]]);
         AUX2.update(RX[CONFIG.data.assignedChannel[5]]);
+
+        // update midpoints form config
+        throttle.mid = (CONFIG.data.channelMidpoint[CONFIG.data.assignedChannel[0]];
+        pitch.mid = CONFIG.data.channelMidpoint[CONFIG.data.assignedChannel[1]];
+        roll.mid = CONFIG.data.channelMidpoint[CONFIG.data.assignedChannel[2]];
+        yaw.mid = CONFIG.data.channelMidpoint[CONFIG.data.assignedChannel[3]];
+        AUX1.mid = CONFIG.data.channelMidpoint[CONFIG.data.assignedChannel[4]];
+        AUX2.mid = CONFIG.data.channelMidpoint[CONFIG.data.assignedChannel[5]];        
     }
 
     sei();  // enable interrupts
