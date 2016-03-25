@@ -100,18 +100,14 @@ void LED::changeLights() {
         use(LED::FLASH, 100, 110, 250);  // yellow
     } else if (state->is(STATUS_OVERRIDE)) {
         use(LED::BEACON, 255, 0, 0);  // red
+    } else if (state->is(STATUS_TEMP_WARNING)) {
+        use(LED::FLASH, 100, 150, 250);  // yellow
+    } else if (state->is(STATUS_BATTERY_LOW)) {
+        use(LED::BEACON, 255, 180, 20);        
     } else if (state->is(STATUS_ENABLING)) {
         use(LED::FLASH, 0, 0, 255);  // blue
     } else if (state->is(STATUS_ENABLED)) {
         use(LED::BEACON, 0, 0, 255);  // blue for enable
-    }
-
-    else if (state->is(STATUS_TEMP_WARNING)) {
-        use(LED::FLASH, 100, 150, 250);  // yellow
-    } else if (state->is(STATUS_LOG_FULL)) {
-        use(LED::FLASH, 0, 0, 250);
-    } else if (state->is(STATUS_BATTERY_LOW)) {
-        use(LED::BEACON, 255, 180, 20);
     } else if (state->is(STATUS_IDLE)) {
         indicatorRedOff();            // clear boot test
         use(LED::BEACON, 0, 255, 0);  // breathe instead?

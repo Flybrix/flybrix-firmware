@@ -11,6 +11,15 @@ void(*config_handler)(CONFIG_struct&) {nullptr};
 
 CONFIG_union CONFIG;  // global CONFIG variable
 
+#define BYPASS_THRUST_MASTER 1<<0
+#define BYPASS_PITCH_MASTER  1<<1
+#define BYPASS_ROLL_MASTER   1<<2
+#define BYPASS_YAW_MASTER    1<<3
+#define BYPASS_THRUST_SLAVE  1<<4
+#define BYPASS_PITCH_SLAVE   1<<5
+#define BYPASS_ROLL_SLAVE    1<<6
+#define BYPASS_YAW_SLAVE     1<<7
+
 void initializeEEPROM(void) {  // Default Settings
 
     CONFIG.data.version[0] = FIRMWARE_VERSION_A;
@@ -57,6 +66,20 @@ void initializeEEPROM(void) {  // Default Settings
     CONFIG.data.assignedChannel[5] = 5;  // map AUX2 to LHS click
 
     CONFIG.data.commandInversion = 3; //invert pitch and roll
+    
+    CONFIG.data.channelMidpoint[0] = 1515;
+    CONFIG.data.channelMidpoint[1] = 1515;
+    CONFIG.data.channelMidpoint[2] = 1500;
+    CONFIG.data.channelMidpoint[3] = 1520;
+    CONFIG.data.channelMidpoint[4] = 1500;
+    CONFIG.data.channelMidpoint[5] = 1500;
+
+    CONFIG.data.channelDeadzone[0] = 20;
+    CONFIG.data.channelDeadzone[1] = 20;
+    CONFIG.data.channelDeadzone[2] = 20;
+    CONFIG.data.channelDeadzone[3] = 40;
+    CONFIG.data.channelDeadzone[4] = 20;
+    CONFIG.data.channelDeadzone[5] = 20;
 
     // PID Parameters
 
@@ -68,24 +91,24 @@ void initializeEEPROM(void) {  // Default Settings
     CONFIG.data.thrustMasterPIDParameters[5] = 0.005f;  // setpoint filter usec (30Hz)
     CONFIG.data.thrustMasterPIDParameters[6] = 1.0f;  // (meters / full stick action)
 
-    CONFIG.data.pitchMasterPIDParameters[0] = 12.0f;  // P
+    CONFIG.data.pitchMasterPIDParameters[0] = 5.0f;  // P
     CONFIG.data.pitchMasterPIDParameters[1] = 1.0f;  // I
-    CONFIG.data.pitchMasterPIDParameters[2] = 0.2f;  // D
+    CONFIG.data.pitchMasterPIDParameters[2] = 0.0f;  // D
     CONFIG.data.pitchMasterPIDParameters[3] = 10.0f;  // Windup guard
     CONFIG.data.pitchMasterPIDParameters[4] = 0.005f;  // D filter usec (15Hz)
     CONFIG.data.pitchMasterPIDParameters[5] = 0.005f;  // setpoint filter usec (30Hz)
     CONFIG.data.pitchMasterPIDParameters[6] = 10.0f;  // (degrees / full stick action)
 
-    CONFIG.data.rollMasterPIDParameters[0] = 12.0f;  // P
+    CONFIG.data.rollMasterPIDParameters[0] = 5.0f;  // P
     CONFIG.data.rollMasterPIDParameters[1] = 1.0f;  // I
-    CONFIG.data.rollMasterPIDParameters[2] = 0.2f;  // D
+    CONFIG.data.rollMasterPIDParameters[2] = 0.0f;  // D
     CONFIG.data.rollMasterPIDParameters[3] = 10.0f;  // Windup guard
     CONFIG.data.rollMasterPIDParameters[4] = 0.005f;  // D filter usec (15Hz)
     CONFIG.data.rollMasterPIDParameters[5] = 0.005f;  // setpoint filter usec (30Hz)
     CONFIG.data.rollMasterPIDParameters[6] = 10.0f;  // (degrees / full stick action)
 
-    CONFIG.data.yawMasterPIDParameters[0] = 1.0f;  // P
-    CONFIG.data.yawMasterPIDParameters[1] = 0.0f;  // I
+    CONFIG.data.yawMasterPIDParameters[0] = 5.0f;  // P
+    CONFIG.data.yawMasterPIDParameters[1] = 1.0f;  // I
     CONFIG.data.yawMasterPIDParameters[2] = 0.0f;  // D
     CONFIG.data.yawMasterPIDParameters[3] = 10.0f;  // Windup guard
     CONFIG.data.yawMasterPIDParameters[4] = 0.005f;  // D filter usec (15Hz)
@@ -100,31 +123,31 @@ void initializeEEPROM(void) {  // Default Settings
     CONFIG.data.thrustSlavePIDParameters[5] = 0.001f;  // setpoint filter usec (300Hz)
     CONFIG.data.thrustSlavePIDParameters[6] = 0.3f;  // (meters/sec / full stick action)
 
-    CONFIG.data.pitchSlavePIDParameters[0] = 40.0f;  // P
-    CONFIG.data.pitchSlavePIDParameters[1] = 5.0f;  // I
-    CONFIG.data.pitchSlavePIDParameters[2] = 4.0f;  // D
+    CONFIG.data.pitchSlavePIDParameters[0] = 20.0f;  // P
+    CONFIG.data.pitchSlavePIDParameters[1] = 8.0f;  // I
+    CONFIG.data.pitchSlavePIDParameters[2] = 0.0f;  // D
     CONFIG.data.pitchSlavePIDParameters[3] = 30.0f;  // Windup guard
     CONFIG.data.pitchSlavePIDParameters[4] = 0.001f;  // D filter usec (150Hz)
     CONFIG.data.pitchSlavePIDParameters[5] = 0.001f;  // setpoint filter usec (300Hz)
     CONFIG.data.pitchSlavePIDParameters[6] = 30.0f;  // (deg/sec / full stick action)
 
-    CONFIG.data.rollSlavePIDParameters[0] = 40.0f;  // P
-    CONFIG.data.rollSlavePIDParameters[1] = 5.0f;  // I
-    CONFIG.data.rollSlavePIDParameters[2] = 4.0f;  // D
+    CONFIG.data.rollSlavePIDParameters[0] = 20.0f;  // P
+    CONFIG.data.rollSlavePIDParameters[1] = 8.0f;  // I
+    CONFIG.data.rollSlavePIDParameters[2] = 0.0f;  // D
     CONFIG.data.rollSlavePIDParameters[3] = 30.0f;  // Windup guard
     CONFIG.data.rollSlavePIDParameters[4] = 0.001f;  // D filter usec (150Hz)
     CONFIG.data.rollSlavePIDParameters[5] = 0.001f;  // setpoint filter usec (300Hz)
     CONFIG.data.rollSlavePIDParameters[6] = 30.0f;  // (deg/sec / full stick action)
 
-    CONFIG.data.yawSlavePIDParameters[0] = 20.0f;  // P
-    CONFIG.data.yawSlavePIDParameters[1] = 1.0f;  // I
+    CONFIG.data.yawSlavePIDParameters[0] = 30.0f;  // P
+    CONFIG.data.yawSlavePIDParameters[1] = 5.0f;  // I
     CONFIG.data.yawSlavePIDParameters[2] = 0.0f;  // D
     CONFIG.data.yawSlavePIDParameters[3] = 20.0f;  // Windup guard
     CONFIG.data.yawSlavePIDParameters[4] = 0.001f;  // D filter usec (150Hz)
     CONFIG.data.yawSlavePIDParameters[5] = 0.001f;  // setpoint filter usec (300Hz)
-    CONFIG.data.yawSlavePIDParameters[6] = 120.0f;  // (deg/sec / full stick action)
-
-    CONFIG.data.pidBypass = 25; //AHRS/Horizon mode
+    CONFIG.data.yawSlavePIDParameters[6] = 240.0f;  // (deg/sec / full stick action)
+    
+    CONFIG.data.pidBypass = BYPASS_THRUST_MASTER | BYPASS_THRUST_SLAVE | BYPASS_YAW_MASTER; //AHRS/Horizon mode
 
     CONFIG.data.stateEstimationParameters[0] = 1.00f;  // 2*kp or BETA
     CONFIG.data.stateEstimationParameters[1] = 0.01f;  // 2*ki
