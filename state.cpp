@@ -78,6 +78,7 @@ void State::processMotorEnablingIteration(void) {
 }
 
 void State::disableMotors(void) {
+    clear(STATUS_BATTERY_LOW);
     clear(STATUS_ENABLED);
     clear(STATUS_FAIL_STABILITY);
     clear(STATUS_FAIL_ANGLE);

@@ -38,6 +38,8 @@ struct __attribute__((packed)) CONFIG_struct {
     // RX channel mapping
     uint8_t assignedChannel[6];
     uint8_t commandInversion; //bitfield order is {pitch_command, roll_command, yaw_command, x, x, x, x, x} (LSB-->MSB)
+    uint16_t channelMidpoint[6]; // ideally 1500usec
+    uint16_t channelDeadzone[6]; // usec units
 
     // tunable control parameters
     float thrustMasterPIDParameters[7]; //parameters are {P,I,D,integral windup guard, D filter delay sec, setpoint filter delay sec, command scaling factor}
