@@ -37,12 +37,12 @@ class CascadedPID final {
         setpoint_ = v;
     }
 
-    float getScalingFactor(bool use_master, bool use_slave) {
+    float getScalingFactor(bool use_master, bool use_slave, float default_val) {
         if (use_master)
             return master_.commandToValue();
         if (use_slave)
             return slave_.commandToValue();
-        return 1.0f;
+        return default_val;
     }
 
     void setMasterInput(float v) {

@@ -149,6 +149,7 @@ uint32_t mag_reads = 0;
 uint32_t bmp_reads = 0;
 uint32_t pwr_reads = 0;
 
+uint32_t low_battery_counter = 0;
 
 #define DEF_PROCESS_VARIABLES(F) uint32_t iterations_at_##F##Hz = 0;
 
@@ -274,6 +275,30 @@ bool ProcessTask<40>() {
 
     sys.pwr.measureRawLevels();  // read all ADCs
     pwr_reads++;
+
+    // check for low voltage condition
+    if ( ((1/50)/0.003*1.2/65536 * sys.state.I1_raw ) > 1.0f ){ //if total battery current > 1A
+        if ( ((20.5+226)/20.5*1.2/65536 * sys.state.V0_raw) < 2.8f ) {
+            low_battery_counter++;
+            if ( low_battery_counter > 40 ){
+                sys.state.set(STATUS_BATTERY_LOW);
+            }
+        }
+        else {
+            low_battery_counter = 0;
+        }
+    }
+    else {
+        if ( ((20.5+226)/20.5*1.2/65536 * sys.state.V0_raw) < 3.63f ) {
+            low_battery_counter++;
+            if ( low_battery_counter > 40 ){
+                sys.state.set(STATUS_BATTERY_LOW);
+            }
+        }
+        else {
+            low_battery_counter = 0;
+        }
+    }
 
     return true;
 }

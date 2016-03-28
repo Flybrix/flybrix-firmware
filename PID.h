@@ -34,8 +34,8 @@ class PID {
           Ki{terms[1]},
           Kd{terms[2]},
           integral_windup_guard{terms[3]},
-          d_filter{d_term, terms[4]},
-          setpoint_filter{setpoint_, terms[5]},
+          d_filter{0.0f, terms[4]},
+          setpoint_filter{0.0f, terms[5]},
           command_to_value{terms[6]} { };
 
     void isWrapped(bool wrapped = true) {
@@ -105,7 +105,7 @@ class PID {
         p_term = Kp * error;
 
         i_term = Ki * error_integral;
-        error_integral = constrain(error_integral + error * delta_time, -integral_windup_guard, integral_windup_guard);
+        error_integral = constrain(error_integral + error * delta_time, -integral_windup_guard/Ki, integral_windup_guard/Ki);
 
         d_term = d_filter.update(Kd * ((error - previous_error) / delta_time), delta_time);
 
