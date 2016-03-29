@@ -92,7 +92,7 @@ class SerialComm {
 
     void SendConfiguration() const;
     void SendDebugString(const String& string, MessageType type = MessageType::DebugString) const;
-    void SendState(uint32_t timestamp_us, void (*extra_handler)(uint8_t*, size_t) = nullptr, uint32_t mask = 0) const;
+    void SendState(uint32_t timestamp_us, uint32_t mask = 0) const;
     void SendResponse(uint32_t mask, uint32_t response) const;
 
     uint16_t GetSendStateDelay() const;

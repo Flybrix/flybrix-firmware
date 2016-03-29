@@ -98,6 +98,13 @@ constexpr uint8_t FTM[]{
     22,  // 44 | PWM[2]
 };
 
+namespace spi {
+enum ChipSelect : uint8_t {
+    SD_CARD = 15,  // 43
+    EXT = 2,       // 57
+};
+}
+
 namespace led {
 enum PositionSimpleName : int8_t {
     FRONT = 1,

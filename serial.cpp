@@ -7,6 +7,7 @@
 #include "serial.h"
 #include "state.h"
 
+#include "cardManagement.h"
 #include "config.h"  //CONFIG variable
 #include "control.h"
 #include "led.h"
@@ -20,12 +21,14 @@ inline void WriteProtocolHead(SerialComm::MessageType type, uint32_t mask, CobsP
     payload.Append(mask);
 }
 
+Logger state_logger{"states"};
+
 template <std::size_t N>
-inline void WriteToOutput(CobsPayload<N>& payload, void (*f)(uint8_t*, size_t) = nullptr) {
+inline void WriteToOutput(CobsPayload<N>& payload, bool use_logger = false) {
     auto package = payload.Encode();
     Serial.write(package.data, package.length);
-    if (f)
-        f(package.data, package.length);
+    if (use_logger)
+        state_logger.write(package.data, package.length);
 }
 
 template <std::size_t N>
@@ -131,11 +134,9 @@ void SerialComm::ProcessData() {
         }
     }
     if (mask & COM_REQ_HISTORY) {
-        String eeprom_data;
-        for (size_t i = EEPROM_LOG_START; i < EEPROM_LOG_END; ++i)
-            eeprom_data += char(EEPROM[i]);
-        SendDebugString(eeprom_data, MessageType::HistoryData);
-        ack_data |= COM_REQ_HISTORY;
+        // TODO: should we respond to this with SD data, or just deprecate it?
+        SendDebugString("", MessageType::HistoryData);
+        // ack_data |= COM_REQ_HISTORY;
     }
     if (mask & COM_SET_LED) {
         uint8_t mode, r1, g1, b1, r2, g2, b2, ind_r, ind_g;
@@ -226,7 +227,7 @@ uint16_t SerialComm::PacketSize(uint32_t mask) const {
     return sum;
 }
 
-void SerialComm::SendState(uint32_t timestamp_us, void (*extra_handler)(uint8_t*, size_t), uint32_t mask) const {
+void SerialComm::SendState(uint32_t timestamp_us, uint32_t mask) const {
     if (!mask)
         mask = state_mask;
     // No need to publish empty state messages
@@ -293,7 +294,7 @@ void SerialComm::SendState(uint32_t timestamp_us, void (*extra_handler)(uint8_t*
         payload.Append(state->kinematicsAltitude);
     if (mask & SerialComm::STATE_LOOP_COUNT)
         payload.Append(state->loopCount);
-    WriteToOutput(payload, extra_handler);
+    WriteToOutput(payload, true);
 }
 
 void SerialComm::SendResponse(uint32_t mask, uint32_t response) const {
