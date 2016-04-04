@@ -34,6 +34,7 @@ Logger::Logger(const char* base_name) {
     if (!openSD())
         return;
     char file_dir[64];
+    // Create the directory /<A>_<B>_<C> if it doesn't exist
     sprintf(file_dir, "/%d_%d_%d", FIRMWARE_VERSION_A, FIRMWARE_VERSION_B, FIRMWARE_VERSION_C);
     if (!SD.mkdir(file_dir)) {
         DebugPrintf("Failed to create directory %s on SD card!", file_dir);
@@ -41,6 +42,7 @@ Logger::Logger(const char* base_name) {
     }
     for (int idx = 0; true; ++idx) {
         sprintf(filename, "%s/%s_%d.bin", file_dir, base_name, idx);
+        // Look for the first non-existing filename of the format /<A>_<B>_<C>/<base_name>_<idx>.bin
         if (!SD.exists(filename))
             return;
     }
