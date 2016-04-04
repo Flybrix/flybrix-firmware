@@ -60,3 +60,33 @@ void Logger::write(const uint8_t* data, size_t length) {
         file.print(char(data[idx]));
     file.close();
 }
+
+Messenger::Messenger(const char* base_name) {
+    if (!openSD())
+        return;
+    // Construct the filename /<A>_<B>_<C>/commands/<base_name>.bin
+    sprintf(filename, "/%d_%d_%d/commands/%s.bin", FIRMWARE_VERSION_A, FIRMWARE_VERSION_B, FIRMWARE_VERSION_C, base_name);
+}
+
+bool Messenger::read() {
+    File file{SD.open(filename, FILE_READ)};
+    if (!file) {
+        DebugPrintf("Failed to access file %s on SD card!", filename);
+        return false;
+    }
+    if (!file.seek(cursor)) {
+        DebugPrintf("Failed to reach the byte number %lu in file %s", cursor, filename);
+        return false;
+    }
+    while (file.available()) {
+        data_input.AppendToBuffer(file.read());
+        ++cursor;
+        if (data_input.IsDone())
+            return true;
+    }
+    return false;
+}
+
+CobsReaderBuffer& Messenger::buffer() {
+    return data_input;
+}
