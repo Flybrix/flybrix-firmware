@@ -72,6 +72,7 @@ void SerialComm::ProcessData() {
     if (mask & COM_REINIT_EEPROM_DATA) {
         initializeEEPROM();  // TODO: deal with side effect code
         writeEEPROM();       // TODO: deal with side effect code
+        ack_data |= COM_REINIT_EEPROM_DATA;
     }
     if (mask & COM_REQ_EEPROM_DATA) {
         SendConfiguration();
