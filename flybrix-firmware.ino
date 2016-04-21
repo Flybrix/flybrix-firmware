@@ -71,7 +71,7 @@ Systems::Systems()
       airframe{&state},
       pilot{&state},
       control{&state, CONFIG.data},
-      conf{&state, RX, &control, &CONFIG, &led}  // listen for configuration inputs
+      conf{&state, RX, &control, &CONFIG, &led, &pilot}  // listen for configuration inputs
 {
 }
 

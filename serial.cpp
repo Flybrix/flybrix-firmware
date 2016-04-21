@@ -8,6 +8,7 @@
 #include "state.h"
 
 #include "cardManagement.h"
+#include "command.h"
 #include "config.h"  //CONFIG variable
 #include "control.h"
 #include "led.h"
@@ -37,7 +38,8 @@ inline void WritePIDData(CobsPayload<N>& payload, const PID& pid) {
 }
 }
 
-SerialComm::SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, CONFIG_union* config, LED* led) : state{state}, ppm{ppm}, control{control}, config{config}, led{led} {
+SerialComm::SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, CONFIG_union* config, LED* led, PilotCommand* command)
+    : state{state}, ppm{ppm}, control{control}, config{config}, led{led}, command{command} {
 }
 
 void SerialComm::ReadData() {
@@ -75,6 +77,7 @@ void SerialComm::ProcessData() {
     if (mask & COM_REINIT_EEPROM_DATA) {
         initializeEEPROM();  // TODO: deal with side effect code
         writeEEPROM();       // TODO: deal with side effect code
+        ack_data |= COM_REINIT_EEPROM_DATA;
     }
     if (mask & COM_REQ_EEPROM_DATA) {
         SendConfiguration();
@@ -143,6 +146,15 @@ void SerialComm::ProcessData() {
         if (data_input.ParseInto(mode, r1, g1, b1, r2, g2, b2, ind_r, ind_g)) {
             led->set(LED::Pattern(mode), r1, g1, b1, r2, g2, b2, ind_r, ind_g);
             ack_data |= COM_SET_LED;
+        }
+    }
+    if (mask & COM_SET_SERIAL_RC) {
+        uint8_t enabled;
+        int16_t throttle, pitch, roll, yaw;
+        if (data_input.ParseInto(enabled, throttle, pitch, roll, yaw)) {
+            command->useSerialInput(enabled);
+            command->setRCValues(throttle, pitch, roll, yaw);
+            ack_data |= COM_SET_SERIAL_RC;
         }
     }
 

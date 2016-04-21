@@ -15,6 +15,7 @@
 #include "cobs.h"
 
 union CONFIG_union;
+class PilotCommand;
 class Control;
 class LED;
 class State;
@@ -44,14 +45,14 @@ class SerialComm {
         COM_MOTOR_OVERRIDE_SPEED_5 = 1 << 10,
         COM_MOTOR_OVERRIDE_SPEED_6 = 1 << 11,
         COM_MOTOR_OVERRIDE_SPEED_7 = 1 << 12,
-        COM_MOTOR_OVERRIDE_SPEED_ALL =
-            COM_MOTOR_OVERRIDE_SPEED_0 | COM_MOTOR_OVERRIDE_SPEED_1 | COM_MOTOR_OVERRIDE_SPEED_2 | COM_MOTOR_OVERRIDE_SPEED_3 |
-            COM_MOTOR_OVERRIDE_SPEED_4 | COM_MOTOR_OVERRIDE_SPEED_5 | COM_MOTOR_OVERRIDE_SPEED_6 | COM_MOTOR_OVERRIDE_SPEED_7 ,
+        COM_MOTOR_OVERRIDE_SPEED_ALL = COM_MOTOR_OVERRIDE_SPEED_0 | COM_MOTOR_OVERRIDE_SPEED_1 | COM_MOTOR_OVERRIDE_SPEED_2 | COM_MOTOR_OVERRIDE_SPEED_3 | COM_MOTOR_OVERRIDE_SPEED_4 |
+                                       COM_MOTOR_OVERRIDE_SPEED_5 | COM_MOTOR_OVERRIDE_SPEED_6 | COM_MOTOR_OVERRIDE_SPEED_7,
         COM_SET_COMMAND_OVERRIDE = 1 << 13,
         COM_SET_STATE_MASK = 1 << 14,
         COM_SET_STATE_DELAY = 1 << 15,
         COM_REQ_HISTORY = 1 << 16,
         COM_SET_LED = 1 << 17,
+        COM_SET_SERIAL_RC = 1 << 18,
     };
 
     enum StateFields : uint32_t {
@@ -86,7 +87,7 @@ class SerialComm {
         STATE_LOOP_COUNT = 1 << 27,
     };
 
-    explicit SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, CONFIG_union* config, LED* led);
+    explicit SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, CONFIG_union* config, LED* led, PilotCommand* command);
 
     void ReadData();
 
@@ -110,7 +111,8 @@ class SerialComm {
     const Control* control;
     CONFIG_union* config;
     LED* led;
-    uint16_t send_state_delay{1001}; //anything over 1000 turns off state messages
+    PilotCommand* command;
+    uint16_t send_state_delay{1001};  // anything over 1000 turns off state messages
     uint32_t state_mask{0x7fffff};
     CobsReader<500> data_input;
 };

@@ -61,6 +61,8 @@ class PilotCommand {
    public:
     PilotCommand(State* state);
     void processCommands(void);
+    void useSerialInput(bool);
+    void setRCValues(int16_t throttle, int16_t pitch, int16_t roll, int16_t yaw);
 
    private:
     State* state;
@@ -81,6 +83,9 @@ class PilotCommand {
     int16_t* pitch_command;
     int16_t* roll_command;
     int16_t* yaw_command;
+
+    bool serialInput{false};
+    int16_t throttle_man{0}, pitch_man{0}, roll_man{0}, yaw_man{0};
 };
 
 #endif
