@@ -53,14 +53,14 @@ void PilotCommand::loadRxData() {
         roll.mid = CONFIG.data.channelMidpoint[CONFIG.data.assignedChannel[2]];
         yaw.mid = CONFIG.data.channelMidpoint[CONFIG.data.assignedChannel[3]];
         AUX1.mid = CONFIG.data.channelMidpoint[CONFIG.data.assignedChannel[4]];
-        AUX2.mid = CONFIG.data.channelMidpoint[CONFIG.data.assignedChannel[5]];        
+        AUX2.mid = CONFIG.data.channelMidpoint[CONFIG.data.assignedChannel[5]];
     }
 
     sei();  // enable interrupts
 
     // Set the AUX bit mask
     // bitfield order is {AUX1_low, AUX1_mid, AUX1_high, AUX2_low, AUX2_mid, AUX2_high, x, x} (LSB-->MSB)
-    
+
     state->AUX_chan_mask = 0x00;  // reset the AUX mode bitmask
 
     if (AUX1.isLow()) {
@@ -111,6 +111,11 @@ void PilotCommand::processCommands(void) {
         if (recentlyEnabled && (throttleHoldOff == 0)) {
             recentlyEnabled = false;
         }
+    } else if (serialInput) {
+        *throttle_command = throttle_man;
+        *pitch_command = pitch_man;
+        *roll_command = roll_man;
+        *yaw_command = yaw_man;
     } else {
         //
         // ppm channels range from about 900-1200 usec, but we want to keep the bottom ~10% of throttle reserved for "off"
@@ -123,11 +128,11 @@ void PilotCommand::processCommands(void) {
         *pitch_command =    constrain((1-2*((CONFIG.data.commandInversion >> 0) & 1))*(pitch.val - CONFIG.data.channelMidpoint[CONFIG.data.assignedChannel[1]]) * 4095 / (pitch.max - pitch.min), -2047, 2047);
         *roll_command =     constrain((1-2*((CONFIG.data.commandInversion >> 1) & 1))*( roll.val - CONFIG.data.channelMidpoint[CONFIG.data.assignedChannel[2]]) * 4095 / (roll.max - roll.min), -2047, 2047);
         *yaw_command =      constrain((1-2*((CONFIG.data.commandInversion >> 2) & 1))*(  yaw.val - CONFIG.data.channelMidpoint[CONFIG.data.assignedChannel[3]]) * 4095 / (yaw.max - yaw.min), -2047, 2047);
-        
+
         //
         // in some cases it is impossible to get a ppm channel to be exactly 1500 usec because the controller trim is too coarse to correct a small error
         // we can get around by creating a small dead zone on the commands that are potentially effected
-        
+
         *pitch_command = *pitch_command > 0 ? max(0, *pitch_command - (2047.0f/400.0f)*CONFIG.data.channelDeadzone[CONFIG.data.assignedChannel[1]]) : min(*pitch_command + (2047.0f/400.0f)*CONFIG.data.channelDeadzone[CONFIG.data.assignedChannel[1]], 0);
         *roll_command  = *roll_command > 0  ? max(0, *roll_command  - (2047.0f/400.0f)*CONFIG.data.channelDeadzone[CONFIG.data.assignedChannel[2]]) : min(*roll_command  + (2047.0f/400.0f)*CONFIG.data.channelDeadzone[CONFIG.data.assignedChannel[2]], 0);
         *yaw_command   = *yaw_command > 0   ? max(0, *yaw_command   - (2047.0f/400.0f)*CONFIG.data.channelDeadzone[CONFIG.data.assignedChannel[3]]) : min(*yaw_command   + (2047.0f/400.0f)*CONFIG.data.channelDeadzone[CONFIG.data.assignedChannel[3]], 0);
@@ -138,4 +143,15 @@ void PilotCommand::processCommands(void) {
         blockEnabling = true;  // block enabling when we come out of pilot override
 
     // in the future, this would be the place to look for other combination inputs or for AUX levels that mean something
+}
+
+void PilotCommand::useSerialInput(bool useSerial) {
+    serialInput = useSerial;
+}
+
+void PilotCommand::setRCValues(int16_t throttle, int16_t pitch, int16_t roll, int16_t yaw) {
+    throttle_man = throttle;
+    pitch_man = pitch;
+    roll_man = roll;
+    yaw_man = yaw;
 }
