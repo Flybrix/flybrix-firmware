@@ -9,7 +9,29 @@
 #include "i2cManager.h"
 #include <i2c_t3.h>
 
-void I2CManager::addTransfer(uint8_t address, uint8_t send_count, uint8_t *send_data, uint8_t receive_count, uint8_t *receive_data, CallbackProcessor *cb_object) {
+I2CTransfer& I2CManager::TransferQueue::front() const {
+    return firstItem->item;
+}
+
+void I2CManager::TransferQueue::push(I2CTransfer&& newItem) {
+    std::unique_ptr<I2CManager::QueueItem>* lastItem = &firstItem;
+    while (*lastItem) {
+        lastItem = &((*lastItem)->nextItem);
+    }
+    lastItem->reset(new I2CManager::QueueItem{newItem, nullptr});
+}
+
+void I2CManager::TransferQueue::pop() {
+    if (empty())
+        return;
+    firstItem.reset(firstItem->nextItem.release());
+}
+
+bool I2CManager::TransferQueue::empty() const {
+    return !firstItem;
+}
+
+void I2CManager::addTransfer(uint8_t address, uint8_t send_count, uint8_t* send_data, uint8_t receive_count, uint8_t* receive_data, CallbackProcessor* cb_object) {
     transfers.push(I2CTransfer{address, send_count, send_data, receive_count, receive_data, cb_object});
 }
 
@@ -44,7 +66,7 @@ uint8_t I2CManager::readByte(uint8_t address, uint8_t subAddress) {
         return 0;
 }
 
-uint8_t I2CManager::readBytes(uint8_t address, uint8_t subAddress, uint8_t count, uint8_t *dest) {
+uint8_t I2CManager::readBytes(uint8_t address, uint8_t subAddress, uint8_t count, uint8_t* dest) {
     int error;
 
     Wire.beginTransmission(address);
