@@ -31,7 +31,7 @@ class AK8963 : public CallbackProcessor {
     bool ready;
 
     bool startMeasurement();  // writes values to state (when data is ready)
-    void processCallback(uint8_t count, uint8_t *rawData);  // handles return for getAccelGryo()
+    void triggerCallback();  // handles return for getAccelGryo()
 
     uint8_t getID();
 

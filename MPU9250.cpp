@@ -166,33 +166,31 @@ bool MPU9250::startMeasurement() {
     if (dataReadyInterrupt()) {
         ready = false;
         data_to_send[0] = ACCEL_XOUT_H;
-        i2c->addTransfer((uint8_t)MPU9250_ADDRESS, (uint8_t)1, &data_to_send[0], (uint8_t)14, &data_to_read[0], this);
+        i2c->addTransfer(MPU9250_ADDRESS, 1, data_to_send, 14, data_to_read, this);
         return true;
     }
     return false;
 }
 
-void MPU9250::processCallback(uint8_t count, uint8_t *rawData) {
-    // count should always be 14 if we wanted to check...
-
+void MPU9250::triggerCallback() {
     // convert from REGISTER system to IC/PCB system
     int16_t registerValuesAccel[3];
     // be careful not to misinterpret 2's complement registers
-    registerValuesAccel[0] = (int16_t)(((uint16_t)rawData[0]) << 8) | (uint16_t)rawData[1];  // high byte, low byte
-    registerValuesAccel[1] = (int16_t)(((uint16_t)rawData[2]) << 8) | (uint16_t)rawData[3];
-    registerValuesAccel[2] = (int16_t)(((uint16_t)rawData[4]) << 8) | (uint16_t)rawData[5];
+    registerValuesAccel[0] = (int16_t)(((uint16_t)data_to_read[0]) << 8) | (uint16_t)data_to_read[1];  // high byte, low byte
+    registerValuesAccel[1] = (int16_t)(((uint16_t)data_to_read[2]) << 8) | (uint16_t)data_to_read[3];
+    registerValuesAccel[2] = (int16_t)(((uint16_t)data_to_read[4]) << 8) | (uint16_t)data_to_read[5];
     accelCount[0] = ACCEL_XSIGN * registerValuesAccel[ACCEL_XDIR];
     accelCount[1] = ACCEL_YSIGN * registerValuesAccel[ACCEL_YDIR];
     accelCount[2] = ACCEL_ZSIGN * registerValuesAccel[ACCEL_ZDIR];
 
     // be careful not to misinterpret 2's complement registers
-    temperatureCount[0] = (int16_t)(((uint16_t)rawData[6]) << 8) | (uint16_t)rawData[7];
+    temperatureCount[0] = (int16_t)(((uint16_t)data_to_read[6]) << 8) | (uint16_t)data_to_read[7];
 
     int16_t registerValuesGyro[3];
     // be careful not to misinterpret 2's complement registers
-    registerValuesGyro[0] = (int16_t)(((uint16_t)rawData[8]) << 8) | (uint16_t)rawData[9];  // high byte, low byte
-    registerValuesGyro[1] = (int16_t)(((uint16_t)rawData[10]) << 8) | (uint16_t)rawData[11];
-    registerValuesGyro[2] = (int16_t)(((uint16_t)rawData[12]) << 8) | (uint16_t)rawData[13];
+    registerValuesGyro[0] = (int16_t)(((uint16_t)data_to_read[8]) << 8) | (uint16_t)data_to_read[9];  // high byte, low byte
+    registerValuesGyro[1] = (int16_t)(((uint16_t)data_to_read[10]) << 8) | (uint16_t)data_to_read[11];
+    registerValuesGyro[2] = (int16_t)(((uint16_t)data_to_read[12]) << 8) | (uint16_t)data_to_read[13];
     gyroCount[0] = GYRO_XSIGN * registerValuesGyro[GYRO_XDIR];
     gyroCount[1] = GYRO_YSIGN * registerValuesGyro[GYRO_YDIR];
     gyroCount[2] = GYRO_ZSIGN * registerValuesGyro[GYRO_ZDIR];

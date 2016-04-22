@@ -49,7 +49,7 @@ class BMP280 : public CallbackProcessor {
     uint8_t getID();
 
     bool startMeasurement();
-    void processCallback(uint8_t count, uint8_t *rawData);  // handles return for getPT()
+    void triggerCallback();  // handles return for getPT()
 
    private:
     State *state;

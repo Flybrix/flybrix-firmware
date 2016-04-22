@@ -13,11 +13,13 @@
 #define i2cManager_h
 
 #include "Arduino.h"
-#include <functional>
+#include "stlFix.h"
+
+#include <queue>
 
 class CallbackProcessor {
    public:
-    virtual void processCallback(uint8_t count, uint8_t *data);
+    virtual void triggerCallback();
 };
 
 struct I2CTransfer {
@@ -27,16 +29,10 @@ struct I2CTransfer {
     uint8_t receive_count;
     uint8_t *receive_data;
     CallbackProcessor *cb_object;
-    I2CTransfer *next;
 };
 
 class I2CManager {
    public:
-    I2CManager() {
-        waiting_for_data = false;
-        transfer = NULL;
-    };
-
     void update();
     void addTransfer(uint8_t address, uint8_t send_count, uint8_t *send_data, uint8_t receive_count, uint8_t *receive_data, CallbackProcessor *cb_object);
 
@@ -45,8 +41,8 @@ class I2CManager {
     uint8_t writeByte(uint8_t address, uint8_t subAddress, uint8_t data);
 
    private:
-    I2CTransfer *transfer;
-    bool waiting_for_data;
+    std::queue<I2CTransfer> transfers;
+    bool waiting_for_data{false};
 
 };  // class I2CManager
 
