@@ -226,6 +226,8 @@ bool ProcessTask<1000>() {
         sys.conf.SendState(micros());
     }
     counter %= 1000;
+    if (LEDFastUpdate)
+        LEDFastUpdate();
     return true;
 }
 

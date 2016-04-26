@@ -8,9 +8,7 @@
 #include "board.h"
 #include "state.h"
 
-#ifdef ALPHA
-#include "debug.h"
-#endif
+void (*LEDFastUpdate)(){nullptr};
 
 namespace {
 class LEDDriver {
@@ -38,11 +36,38 @@ class LEDDriver {
     bool hasChanges{true};
 } LED_driver;
 
+uint8_t scrambleCycle(uint8_t x) {
+    x = (((x & 0xAA) >> 1) | ((x & 0x55) << 1));
+    x = (((x & 0xCC) >> 2) | ((x & 0x33) << 2));
+    return (x >> 4) | (x << 4);
+}
+
+inline uint8_t scaleLight(uint8_t light, uint8_t scale) {
+    return (static_cast<uint16_t>(light) * static_cast<uint16_t>(scale)) >> 8;
+}
+
 LEDDriver::LEDDriver() {
     setColor(CRGB::Black);
     setPattern(LED::SOLID);
 #ifndef ALPHA
     FastLED.addLeds<WS2812B, board::led::DATA_PIN>(leds, board::led::COUNT);
+#else
+    pinMode(board::LED_A_RED, OUTPUT);
+    pinMode(board::LED_A_GRN, OUTPUT);
+    pinMode(board::LED_A_BLU, OUTPUT);
+    pinMode(board::LED_B_RED, OUTPUT);
+    pinMode(board::LED_B_GRN, OUTPUT);
+    pinMode(board::LED_B_BLU, OUTPUT);
+    LEDFastUpdate = []() {
+        static uint8_t cycle;
+        uint8_t threshold = scrambleCycle(++cycle);
+        digitalWriteFast(board::LED_A_RED, (scaleLight(LED_driver.leds[0].red, LED_driver.scale) > threshold) ? LOW : HIGH);
+        digitalWriteFast(board::LED_B_RED, (scaleLight(LED_driver.leds[1].red, LED_driver.scale) > threshold) ? LOW : HIGH);
+        digitalWriteFast(board::LED_A_GRN, (scaleLight(LED_driver.leds[0].green, LED_driver.scale) > threshold) ? LOW : HIGH);
+        digitalWriteFast(board::LED_B_GRN, (scaleLight(LED_driver.leds[1].green, LED_driver.scale) > threshold) ? LOW : HIGH);
+        digitalWriteFast(board::LED_A_BLU, (scaleLight(LED_driver.leds[0].blue, LED_driver.scale) > threshold) ? LOW : HIGH);
+        digitalWriteFast(board::LED_B_BLU, (scaleLight(LED_driver.leds[1].blue, LED_driver.scale) > threshold) ? LOW : HIGH);
+    };
 #endif
 }
 
@@ -89,9 +114,6 @@ void LEDDriver::update() {
         return;
 #ifndef ALPHA
     FastLED.show(scale);
-#else
-    DebugPrintf("%d %d %d | %d %d %d | %d %d %d | %d %d %d | %d", leds[0].red, leds[0].green, leds[0].blue, leds[1].red, leds[1].green, leds[1].blue, leds[2].red, leds[2].green, leds[2].blue,
-                leds[3].red, leds[3].green, leds[3].blue, scale);
 #endif
     hasChanges = false;
 }
