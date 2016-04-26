@@ -22,7 +22,11 @@ bool sd_open{false};
 bool openSD() {
     if (sd_open)
         return true;
+#ifdef ALPHA
+    return false;
+#else
     sd_open = SD.begin(board::spi::SD_CARD);
+#endif
     if (sd_open)
         return true;
     DebugPrint("Failed to open connection to SD card!");

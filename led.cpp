@@ -8,8 +8,7 @@
 #include "board.h"
 #include "state.h"
 
-#define NO_LEDS  // Instead of looking at actual LEDs, we look at the serial debug for feedback
-#ifdef NO_LEDS
+#ifdef ALPHA
 #include "debug.h"
 #endif
 
@@ -42,7 +41,9 @@ class LEDDriver {
 LEDDriver::LEDDriver() {
     setColor(CRGB::Black);
     setPattern(LED::SOLID);
+#ifndef ALPHA
     FastLED.addLeds<WS2812B, board::led::DATA_PIN>(leds, board::led::COUNT);
+#endif
 }
 
 uint8_t LEDDriver::getCycleIndex() const {
@@ -86,8 +87,9 @@ void LEDDriver::update() {
     writeToDisplay();
     if (!hasChanges)
         return;
+#ifndef ALPHA
     FastLED.show(scale);
-#ifdef NO_LEDS
+#else
     DebugPrintf("%d %d %d | %d %d %d | %d %d %d | %d %d %d | %d", leds[0].red, leds[0].green, leds[0].blue, leds[1].red, leds[1].green, leds[1].blue, leds[2].red, leds[2].green, leds[2].blue,
                 leds[3].red, leds[3].green, leds[3].blue, scale);
 #endif

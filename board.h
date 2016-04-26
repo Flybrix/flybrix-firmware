@@ -14,6 +14,8 @@
 #include <Arduino.h>
 #include <i2c_t3.h>
 
+#define ALPHA
+
 namespace board {
 #ifdef ALPHA
 inline
@@ -59,6 +61,22 @@ constexpr uint8_t FTM[]{
     25,  // 42 | PWM[0]
     22,  // 44 | PWM[2]
 };
+
+namespace led {
+enum PositionSimpleName : int8_t {
+    LEFT = -1,
+    RIGHT = 1,
+};
+struct Position {
+    int8_t x;  // left < 0 < right
+    int8_t y;  // back < 0 < front
+};
+
+constexpr uint8_t COUNT{2};
+constexpr Position POSITION[]{
+    {LEFT, 0}, {RIGHT, 0},
+};
+}
 }
 
 #ifndef ALPHA
