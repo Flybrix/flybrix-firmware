@@ -74,7 +74,7 @@ struct Position {
 
 constexpr uint8_t COUNT{2};
 constexpr Position POSITION[]{
-    {LEFT, 0}, {RIGHT, 0},
+    {RIGHT, 0}, {LEFT, 0},
 };
 }
 }
