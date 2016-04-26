@@ -75,15 +75,14 @@ boolean BMP280::validateCalibation() {
 bool BMP280::startMeasurement(void) {
     ready = false;
     data_to_send[0] = BMP280_REG_RESULT;
-    i2c->addTransfer((uint8_t)BMP280_ADDR, (uint8_t)1, data_to_send, (uint8_t)6, data_to_read, this);
+    i2c->addTransfer(BMP280_ADDR, 1, data_to_send, 6, data_to_read, this);
     return true;
 }
 
-void BMP280::processCallback(uint8_t count, uint8_t *data) {
-    // count should always be 6 if we wanted to check...
+void BMP280::triggerCallback() {
     int32_t rawP, rawT;
-    rawP = (((int32_t)data[0]) << 12) + (((int32_t)data[1]) << 4) + (((int32_t)data[2]) >> 4);
-    rawT = (((int32_t)data[3]) << 12) + (((int32_t)data[4]) << 4) + (((int32_t)data[5]) >> 4);
+    rawP = (((int32_t)data_to_read[0]) << 12) + (((int32_t)data_to_read[1]) << 4) + (((int32_t)data_to_read[2]) >> 4);
+    rawT = (((int32_t)data_to_read[3]) << 12) + (((int32_t)data_to_read[4]) << 4) + (((int32_t)data_to_read[5]) >> 4);
     state->temperature = compensate_T_int32(rawT);  // calculate temp first to update t_fine
     state->pressure = compensate_P_int64(rawP);
     ready = true;

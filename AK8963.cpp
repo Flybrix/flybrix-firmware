@@ -56,22 +56,20 @@ uint8_t AK8963::getStatusByte() {
 bool AK8963::startMeasurement() {
     ready = false;
     data_to_send[0] = AK8963_XOUT_L;
-    i2c->addTransfer((uint8_t)AK8963_ADDRESS, (uint8_t)1, &data_to_send[0], (uint8_t)7, &data_to_read[0], this);
+    i2c->addTransfer(AK8963_ADDRESS, 1, data_to_send, 7, data_to_read, this);
     return true;
 }
 
-void AK8963::processCallback(uint8_t count, uint8_t *rawData) {
-    // count should always be 7 if we wanted to check...
-
-    uint8_t c = rawData[6];  // ST2 register
+void AK8963::triggerCallback() {
+    uint8_t c = data_to_read[6];  // ST2 register
     if (!(c & 0x08)) {       // Check if magnetic sensor overflow set, if not then report data
         // convert from REGISTER system to IC/PCB system
         // "Measurement data is stored in two’s complement and Little Endian format."
         // be careful not to misinterpret 2's complement registers
         int16_t registerValues[3];
-        registerValues[0] = (int16_t)(((uint16_t)rawData[1]) << 8) | (uint16_t)rawData[0];  // low byte, high byte
-        registerValues[1] = (int16_t)(((uint16_t)rawData[3]) << 8) | (uint16_t)rawData[2];
-        registerValues[2] = (int16_t)(((uint16_t)rawData[5]) << 8) | (uint16_t)rawData[4];
+        registerValues[0] = (int16_t)(((uint16_t)data_to_read[1]) << 8) | (uint16_t)data_to_read[0];  // low byte, high byte
+        registerValues[1] = (int16_t)(((uint16_t)data_to_read[3]) << 8) | (uint16_t)data_to_read[2];
+        registerValues[2] = (int16_t)(((uint16_t)data_to_read[5]) << 8) | (uint16_t)data_to_read[4];
         magCount[0] = MAG_XSIGN * registerValues[MAG_XDIR];
         magCount[1] = MAG_YSIGN * registerValues[MAG_YDIR];
         magCount[2] = MAG_ZSIGN * registerValues[MAG_ZDIR];
