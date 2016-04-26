@@ -114,6 +114,9 @@ void LEDDriver::update() {
         return;
 #ifndef ALPHA
     FastLED.show(scale);
+#else
+    if (LEDFastUpdate)
+        LEDFastUpdate();
 #endif
     hasChanges = false;
 }
