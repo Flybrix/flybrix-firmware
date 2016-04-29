@@ -84,6 +84,9 @@ inline bool isInside(const board::led::Position& p, const board::led::Position& 
 }
 
 void LEDDriver::setColor(CRGB color, board::led::Position lower_left, board::led::Position upper_right) {
+#ifndef ALPHA
+    color = CRGB(color.green, color.red, color.blue);
+#endif
     for (size_t idx = 0; idx < board::led::COUNT; ++idx) {
         if (!isInside(board::led::POSITION[idx], lower_left, upper_right))
             continue;
