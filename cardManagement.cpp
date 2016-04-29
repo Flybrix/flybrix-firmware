@@ -16,13 +16,19 @@
 #include "debug.h"
 #include "version.h"
 
+#define SKIP_SD
+
+#ifdef ALPHA
+#define SKIP_SD
+#endif
+
 namespace {
 bool sd_open{false};
 
 bool openSD() {
     if (sd_open)
         return true;
-#ifdef ALPHA
+#ifdef SKIP_SD
     return false;
 #else
     sd_open = SD.begin(board::spi::SD_CARD);

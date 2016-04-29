@@ -14,7 +14,7 @@
 #include <Arduino.h>
 #include <i2c_t3.h>
 
-#define ALPHA
+#define BETA
 
 namespace board {
 #ifdef ALPHA
