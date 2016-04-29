@@ -138,7 +138,7 @@ struct Position {
 constexpr uint8_t DATA_PIN{11};  // 51
 constexpr uint8_t COUNT{4};
 constexpr Position POSITION[]{
-    {LEFT, FRONT}, {LEFT, BACK}, {RIGHT, BACK}, {RIGHT, FRONT},
+    {LEFT, BACK}, {LEFT, FRONT}, {RIGHT, FRONT}, {RIGHT, BACK},
 };
 }
 }
