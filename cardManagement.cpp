@@ -10,8 +10,10 @@
 
 #include "cardManagement.h"
 
-#include <SD.h>
 #include <SPI.h>
+
+#include <SD.h>
+
 #include <cstdio>
 #include "board.h"
 #include "debug.h"
@@ -41,77 +43,35 @@ bool openSD() {
     return sd_open;
 }
 
-static void* last_file_user{nullptr};
-static File file;
-}  // namespace
-
-Logger::Logger(const char* base_name) {
+File openFile(const char* base_name) {
     if (!openSD())
-        return;
+        return File();
     char file_dir[64];
+    char filename[64];
     // Create the directory /<A>_<B>_<C> if it doesn't exist
     sprintf(file_dir, "/%d_%d_%d", FIRMWARE_VERSION_A, FIRMWARE_VERSION_B, FIRMWARE_VERSION_C);
     if (!SD.mkdir(file_dir)) {
         DebugPrintf("Failed to create directory %s on SD card!", file_dir);
-        return;
+        return File();
     }
     for (int idx = 0; true; ++idx) {
         sprintf(filename, "%s/%s_%d.bin", file_dir, base_name, idx);
         // Look for the first non-existing filename of the format /<A>_<B>_<C>/<base_name>_<idx>.bin
         if (!SD.exists(filename))
-            return;
+            return SD.open(filename, FILE_WRITE);
     }
+    return File();
 }
+}  // namespace
 
-void Logger::write(const uint8_t* data, size_t length) {
-    if (!openSD())
-        return;
-    if (last_file_user != this) {
-        if (last_file_user != nullptr)
-            file.close();
-        last_file_user = this;
-        file = SD.open(filename, FILE_WRITE);
-        file.seek(file.size());
-    }
+void writeToCard(const uint8_t* data, size_t length) {
+    static File file{openFile("st")};
     if (!file) {
-        DebugPrintf("Failed to access file %s on SD card!", filename);
+        if (openSD())
+            DebugPrintf("Failed to access file on SD card!");
         return;
     }
     for (size_t idx = 0; idx < length; ++idx)
         file.print(char(data[idx]));
-}
-
-Messenger::Messenger(const char* base_name) {
-    if (!openSD())
-        return;
-    // Construct the filename /<A>_<B>_<C>/commands/<base_name>.bin
-    sprintf(filename, "/%d_%d_%d/commands/%s.bin", FIRMWARE_VERSION_A, FIRMWARE_VERSION_B, FIRMWARE_VERSION_C, base_name);
-}
-
-bool Messenger::read() {
-    if (last_file_user != this) {
-        if (last_file_user != nullptr)
-            file.close();
-        last_file_user = this;
-        file = SD.open(filename, FILE_READ);
-    }
-    if (!file) {
-        DebugPrintf("Failed to access file %s on SD card!", filename);
-        return false;
-    }
-    if (!file.seek(cursor)) {
-        DebugPrintf("Failed to reach the byte number %lu in file %s", cursor, filename);
-        return false;
-    }
-    while (file.available()) {
-        data_input.AppendToBuffer(file.read());
-        ++cursor;
-        if (data_input.IsDone())
-            return true;
-    }
-    return false;
-}
-
-CobsReaderBuffer& Messenger::buffer() {
-    return data_input;
+    file.flush();
 }

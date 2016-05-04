@@ -12,32 +12,7 @@
 #define CARD_MANAGEMENT_H
 
 #include <Arduino.h>
-#include "cobs.h"
 
-class String;
-using CobsReaderBuffer = CobsReader<500>;
-
-class Logger {
-   public:
-    explicit Logger(const char* base_name);
-
-    void write(const uint8_t* data, size_t length);
-
-   private:
-    char filename[64]{'\0'};
-};
-
-class Messenger {
-   public:
-    explicit Messenger(const char* base_name);
-
-    bool read();
-    CobsReaderBuffer& buffer();
-
-   private:
-    char filename[64]{'\0'};
-    size_t cursor{0};
-    CobsReaderBuffer data_input;
-};
+void writeToCard(const uint8_t* data, size_t length);
 
 #endif
