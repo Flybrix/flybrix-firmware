@@ -10,8 +10,8 @@
 
 #include "cardManagement.h"
 
-#include <SPI.h>
 #include <SD.h>
+#include <SPI.h>
 #include <cstdio>
 #include "board.h"
 #include "debug.h"
@@ -40,6 +40,9 @@ bool openSD() {
     static bool sd_open{openSDHardwarePort()};
     return sd_open;
 }
+
+static void* last_file_user{nullptr};
+static File file;
 }  // namespace
 
 Logger::Logger(const char* base_name) {
@@ -63,14 +66,19 @@ Logger::Logger(const char* base_name) {
 void Logger::write(const uint8_t* data, size_t length) {
     if (!openSD())
         return;
-    File file{SD.open(filename, FILE_WRITE)};
+    if (last_file_user != this) {
+        if (last_file_user != nullptr)
+            file.close();
+        last_file_user = this;
+        file = SD.open(filename, FILE_WRITE);
+        file.seek(file.size());
+    }
     if (!file) {
         DebugPrintf("Failed to access file %s on SD card!", filename);
         return;
     }
     for (size_t idx = 0; idx < length; ++idx)
         file.print(char(data[idx]));
-    file.close();
 }
 
 Messenger::Messenger(const char* base_name) {
@@ -81,7 +89,12 @@ Messenger::Messenger(const char* base_name) {
 }
 
 bool Messenger::read() {
-    File file{SD.open(filename, FILE_READ)};
+    if (last_file_user != this) {
+        if (last_file_user != nullptr)
+            file.close();
+        last_file_user = this;
+        file = SD.open(filename, FILE_READ);
+    }
     if (!file) {
         DebugPrintf("Failed to access file %s on SD card!", filename);
         return false;
