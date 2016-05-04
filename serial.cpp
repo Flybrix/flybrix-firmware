@@ -22,10 +22,9 @@ inline void WriteProtocolHead(SerialComm::MessageType type, uint32_t mask, CobsP
     payload.Append(mask);
 }
 
-Logger state_logger{"states"};
-
 template <std::size_t N>
 inline void WriteToOutput(CobsPayload<N>& payload, bool use_logger = false) {
+    static Logger state_logger("states");
     auto package = payload.Encode();
     Serial.write(package.data, package.length);
     if (use_logger)

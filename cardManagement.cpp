@@ -10,33 +10,35 @@
 
 #include "cardManagement.h"
 
+#include <SPI.h>
 #include <SD.h>
 #include <cstdio>
 #include "board.h"
 #include "debug.h"
 #include "version.h"
 
-#define SKIP_SD
-
 #ifdef ALPHA
 #define SKIP_SD
 #endif
 
 namespace {
-bool sd_open{false};
-
-bool openSD() {
-    if (sd_open)
-        return true;
+bool openSDHardwarePort() {
 #ifdef SKIP_SD
     return false;
 #else
-    sd_open = SD.begin(board::spi::SD_CARD);
+    SPI.setMOSI(board::spi::MOSI);
+    SPI.setMISO(board::spi::MISO);
+    SPI.setSCK(board::spi::SCK);
+    bool opened = SD.begin(board::spi::SD_CARD);
+    if (!opened)
+        DebugPrint("Failed to open connection to SD card!");
+    return opened;
 #endif
-    if (sd_open)
-        return true;
-    DebugPrint("Failed to open connection to SD card!");
-    return false;
+}
+
+bool openSD() {
+    static bool sd_open{openSDHardwarePort()};
+    return sd_open;
 }
 }  // namespace
 

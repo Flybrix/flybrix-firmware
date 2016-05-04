@@ -117,6 +117,11 @@ constexpr uint8_t FTM[]{
 };
 
 namespace spi {
+enum SdCardPins : uint8_t {
+    MOSI = 7,
+    MISO = 8,
+    SCK = 14,
+};
 enum ChipSelect : uint8_t {
     SD_CARD = 15,  // 43
     EXT = 2,       // 57
