@@ -10,10 +10,7 @@
 
 #include "cardManagement.h"
 
-#include <SPI.h>
-
-#include <SD.h>
-
+#include <SdFat.h>
 #include <cstdio>
 #include "board.h"
 #include "debug.h"
@@ -24,14 +21,13 @@
 #endif
 
 namespace {
+SdFat sd;
+
 bool openSDHardwarePort() {
 #ifdef SKIP_SD
     return false;
 #else
-    SPI.setMOSI(board::spi::MOSI);
-    SPI.setMISO(board::spi::MISO);
-    SPI.setSCK(board::spi::SCK);
-    bool opened = SD.begin(board::spi::SD_CARD);
+    bool opened = sd.begin(board::spi::SD_CARD, SPI_FULL_SPEED);
     if (!opened)
         DebugPrint("Failed to open connection to SD card!");
     return opened;
@@ -43,35 +39,43 @@ bool openSD() {
     return sd_open;
 }
 
-File openFile(const char* base_name) {
+SdFile file;
+
+bool openFile(const char* base_name) {
     if (!openSD())
-        return File();
+        return false;
     char file_dir[64];
     char filename[64];
     // Create the directory /<A>_<B>_<C> if it doesn't exist
-    sprintf(file_dir, "/%d_%d_%d", FIRMWARE_VERSION_A, FIRMWARE_VERSION_B, FIRMWARE_VERSION_C);
-    if (!SD.mkdir(file_dir)) {
+    sprintf(file_dir, "%d_%d_%d", FIRMWARE_VERSION_A, FIRMWARE_VERSION_B, FIRMWARE_VERSION_C);
+    if (!sd.exists(file_dir) && !sd.mkdir(file_dir)) {
         DebugPrintf("Failed to create directory %s on SD card!", file_dir);
-        return File();
+        return false;
     }
     for (int idx = 0; true; ++idx) {
         sprintf(filename, "%s/%s_%d.bin", file_dir, base_name, idx);
         // Look for the first non-existing filename of the format /<A>_<B>_<C>/<base_name>_<idx>.bin
-        if (!SD.exists(filename))
-            return SD.open(filename, FILE_WRITE);
+        if (!sd.exists(filename)) {
+            bool success = file.open(filename, O_CREAT | O_WRITE);
+            if (!success)
+                DebugPrintf("Failed to open file %s on SD card!", filename);
+            return success;
+        }
     }
-    return File();
+    return false;
 }
 }  // namespace
 
 void writeToCard(const uint8_t* data, size_t length) {
-    static File file{openFile("st")};
-    if (!file) {
+    static bool openedFile{openFile("st")};
+    if (!(openedFile)) {
         if (openSD())
-            DebugPrintf("Failed to access file on SD card!");
+            DebugPrint("Failed to access file on SD card!");
         return;
     }
-    for (size_t idx = 0; idx < length; ++idx)
-        file.print(char(data[idx]));
-    file.flush();
+    file.write(data, length);
+}
+
+void commitWriteToCard() {
+    file.sync();
 }

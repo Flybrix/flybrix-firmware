@@ -36,6 +36,7 @@
 #include "debug.h"
 #include "version.h"
 #include "board.h"
+#include "cardManagement.h"
 
 struct Systems {
     // subsystem objects initialize pins when created
@@ -309,6 +310,7 @@ bool ProcessTask<10>() {
 
 template <>
 bool ProcessTask<1>() {
+    commitWriteToCard();
 #ifdef DEBUG
     float elapsed_seconds = (micros() - start_time) / 1000000.0;
     Serial.print("DEBUG: elapsed time (seconds)   = ");

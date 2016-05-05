@@ -15,4 +15,6 @@
 
 void writeToCard(const uint8_t* data, size_t length);
 
+void commitWriteToCard();
+
 #endif
