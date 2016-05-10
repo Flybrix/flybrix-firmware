@@ -5,6 +5,8 @@
 */
 
 #include "serial.h"
+
+#include "serialFork.h"
 #include "state.h"
 
 #include "cardManagement.h"
@@ -25,7 +27,7 @@ inline void WriteProtocolHead(SerialComm::MessageType type, uint32_t mask, CobsP
 template <std::size_t N>
 inline void WriteToOutput(CobsPayload<N>& payload, bool use_logger = false) {
     auto package = payload.Encode();
-    Serial.write(package.data, package.length);
+    writeSerial(package.data, package.length);
     if (use_logger)
         writeToCard(package.data, package.length);
 }
@@ -40,18 +42,16 @@ SerialComm::SerialComm(State* state, const volatile uint16_t* ppm, const Control
     : state{state}, ppm{ppm}, control{control}, config{config}, led{led}, command{command} {
 }
 
-void SerialComm::ReadData() {
-    while (Serial.available()) {
-        data_input.AppendToBuffer(Serial.read());
-
-        if (!data_input.IsDone())
-            continue;
-
-        ProcessData();
+void SerialComm::Read() {
+    for (;;) {
+        CobsReaderBuffer* buffer{readSerial()};
+        if (buffer == nullptr)
+            return;
+        ProcessData(*buffer);
     }
 }
 
-void SerialComm::ProcessData() {
+void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
     MessageType code;
     uint32_t mask;
 

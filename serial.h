@@ -89,7 +89,7 @@ class SerialComm {
 
     explicit SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, CONFIG_union* config, LED* led, PilotCommand* command);
 
-    void ReadData();
+    void Read();
 
     void SendConfiguration() const;
     void SendDebugString(const String& string, MessageType type = MessageType::DebugString) const;
@@ -102,7 +102,7 @@ class SerialComm {
     void RemoveFromStateMsg(uint32_t values);
 
    private:
-    void ProcessData();
+    void ProcessData(CobsReaderBuffer& data_input);
 
     uint16_t PacketSize(uint32_t mask) const;
 
@@ -114,7 +114,6 @@ class SerialComm {
     PilotCommand* command;
     uint16_t send_state_delay{1001};  // anything over 1000 turns off state messages
     uint32_t state_mask{0x7fffff};
-    CobsReader<500> data_input;
 };
 
 #endif

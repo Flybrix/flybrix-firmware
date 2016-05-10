@@ -89,9 +89,6 @@ void setup() {
 
     debug_serial_comm = &sys.conf;
 
-    // setup USB debug serial
-    Serial.begin(9600);  // USB is always 12 Mbit/sec
-
     // MPU9250 is limited to 400kHz bus speed.
     Wire.begin(I2C_MASTER, 0x00, board::I2C_PINS, board::I2C_PULLUP, I2C_RATE_400);  // For I2C pins 18 and 19
     sys.state.set(STATUS_BOOT);
@@ -156,22 +153,26 @@ uint32_t pwr_reads = 0;
 
 uint32_t low_battery_counter = 0;
 
-#define DEF_PROCESS_VARIABLES(F) uint32_t iterations_at_##F##Hz = 0;
-
-/* F is target frequency, D is a tuning factor */
-#define RUN_PROCESS(F)                               \
-    iterations_at_##F##Hz = RunProcess<F>(micros()); \
-    sys.i2c.update();
-
-DEF_PROCESS_VARIABLES(1000)
-DEF_PROCESS_VARIABLES(100)
-DEF_PROCESS_VARIABLES(40)
-DEF_PROCESS_VARIABLES(30)
-DEF_PROCESS_VARIABLES(10)
-DEF_PROCESS_VARIABLES(1)
-
 template <uint32_t f>
 uint32_t RunProcess(uint32_t start);
+
+template <uint32_t... Freqs>
+struct freqlist{};
+
+void RunProcessesHelper(freqlist<>) {
+}
+
+template <uint32_t F, uint32_t... Fargs>
+void RunProcessesHelper(freqlist<F, Fargs...>) {
+    RunProcess<F>(micros());
+    sys.i2c.update();
+    RunProcessesHelper(freqlist<Fargs...>());
+}
+
+template <uint32_t... Freqs>
+void RunProcesses() {
+    RunProcessesHelper(freqlist<Freqs...>());
+}
 
 template <uint32_t f>
 bool ProcessTask();
@@ -215,12 +216,7 @@ void loop() {
         sys.motors.updateAllChannels();
     }
 
-    RUN_PROCESS(1000)
-    RUN_PROCESS(100)
-    RUN_PROCESS(40)
-    RUN_PROCESS(30)
-    RUN_PROCESS(10)
-    RUN_PROCESS(1)
+    RunProcesses<1000, 100, 40, 30, 10, 1>();
 }
 
 template <>
@@ -261,7 +257,7 @@ bool ProcessTask<100>() {
         sys.state.clear(STATUS_SET_MPU_BIAS);
     }
 
-    sys.conf.ReadData();  // Respond to commands from the Configurator chrome extension
+    sys.conf.Read();  // Respond to commands from the Configurator chrome extension
 
     return true;
 }
@@ -315,39 +311,6 @@ bool ProcessTask<10>() {
 template <>
 bool ProcessTask<1>() {
     commitWriteToCard();
-#ifdef DEBUG
-    float elapsed_seconds = (micros() - start_time) / 1000000.0;
-    Serial.print("DEBUG: elapsed time (seconds)   = ");
-    Serial.println(elapsed_seconds);
-    Serial.print("DEBUG: main loop rate (Hz)      = ");
-    Serial.println(sys.state.loopCount / elapsed_seconds);
-    Serial.print("DEBUG: state update rate (Hz)   = ");
-    Serial.println(state_updates / elapsed_seconds);
-    Serial.print("DEBUG: control update rate (Hz) = ");
-    Serial.println(control_updates / elapsed_seconds);
-    Serial.print("DEBUG: mpu read rate (Hz) = ");
-    Serial.println(mpu_reads / elapsed_seconds);
-    Serial.print("DEBUG: mag read rate (Hz) = ");
-    Serial.println(mag_reads / elapsed_seconds);
-    Serial.print("DEBUG: bmp read rate (Hz) = ");
-    Serial.println(bmp_reads / elapsed_seconds);
-    Serial.print("DEBUG: pwr read rate (Hz) = ");
-    Serial.println(pwr_reads / elapsed_seconds);
-    Serial.print("DEBUG: 500Hz rate (Hz) = ");
-    Serial.println(iterations_at_500Hz / elapsed_seconds);
-    Serial.print("DEBUG: 100Hz rate (Hz) = ");
-    Serial.println(iterations_at_100Hz / elapsed_seconds);
-    Serial.print("DEBUG:  40Hz rate (Hz) = ");
-    Serial.println(iterations_at_40Hz / elapsed_seconds);
-    Serial.print("DEBUG:  10Hz rate (Hz) = ");
-    Serial.println(iterations_at_10Hz / elapsed_seconds);
-    Serial.print("DEBUG:   1Hz rate (Hz) = ");
-    Serial.println(iterations_at_1Hz / elapsed_seconds);
-    Serial.print("DEBUG: interrupt wait rate (Hz) = ");
-    Serial.println(interrupt_waits / elapsed_seconds);
-    Serial.println("");
-#endif
-
     return true;
 }
 
