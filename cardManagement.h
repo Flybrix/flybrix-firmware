@@ -13,6 +13,10 @@
 
 #include <Arduino.h>
 
+// Having a missing card causes great latency at the first attempt of access
+// We can use this command to call it prior to the flight starting
+void startupCard();
+
 void writeToCard(const uint8_t* data, size_t length);
 
 void commitWriteToCard();

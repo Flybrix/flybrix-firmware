@@ -66,6 +66,10 @@ bool openFile(const char* base_name) {
 }
 }  // namespace
 
+void startupCard() {
+    writeToCard(nullptr, 0);
+}
+
 void writeToCard(const uint8_t* data, size_t length) {
     static bool openedFile{openFile("st")};
     if (!(openedFile)) {
@@ -73,7 +77,8 @@ void writeToCard(const uint8_t* data, size_t length) {
             DebugPrint("Failed to access file on SD card!");
         return;
     }
-    file.write(data, length);
+    if (length > 0)
+        file.write(data, length);
 }
 
 void commitWriteToCard() {
