@@ -53,6 +53,7 @@ class SerialComm {
         COM_REQ_HISTORY = 1 << 16,
         COM_SET_LED = 1 << 17,
         COM_SET_SERIAL_RC = 1 << 18,
+        COM_SET_CARD_RECORDING = 1 << 19,
     };
 
     enum StateFields : uint32_t {

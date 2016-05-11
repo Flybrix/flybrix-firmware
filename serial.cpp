@@ -155,6 +155,16 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
             ack_data |= COM_SET_SERIAL_RC;
         }
     }
+    if (mask & COM_SET_CARD_RECORDING) {
+        bool shouldRecordToCard;
+        if (data_input.ParseInto(shouldRecordToCard)) {
+            if (shouldRecordToCard)
+                openFileOnCard();
+            else
+                closeFileOnCard();
+            ack_data |= COM_SET_CARD_RECORDING;
+        }
+    }
 
     if (mask & COM_REQ_RESPONSE) {
         SendResponse(mask, ack_data);

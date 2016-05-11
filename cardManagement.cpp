@@ -141,6 +141,8 @@ bool openFileHelper(const char* filename) {
 bool openFile(const char* base_name) {
     if (!openSD())
         return false;
+    if (binFile.isOpen())
+        return false;
     char file_dir[64];
     char filename[64];
     // Create the directory /<A>_<B>_<C> if it doesn't exist
