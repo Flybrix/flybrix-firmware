@@ -46,9 +46,21 @@ uint32_t bgnBlock, endBlock;
 uint8_t* cache;
 
 uint32_t block_number = 0;
+
+// Number of 512B blocks that the file can contain
+// The limit can be changed as needed, and currently it's ~128MB
 constexpr uint32_t FILE_BLOCK_COUNT = 256000;
 constexpr uint32_t ERASE_SIZE = 262144L;
+// Number of blocks in the buffer
+// Increase this number if there is trouble with buffer overflows caused by
+// random delays in the SD card
+// This can not fix overflows caused by too high data rates
+// This causes the program to take up 0.5kB of RAM per buffer block
+#ifdef SKIP_SD
+constexpr uint32_t BUFFER_BLOCK_COUNT = 0;
+#else
 constexpr uint32_t BUFFER_BLOCK_COUNT = 4;
+#endif
 
 class WritingBuffer {
    public:
@@ -72,7 +84,8 @@ void WritingBuffer::write(const uint8_t* data, size_t length) {
         if (currentPointer < 512)
             continue;
         currentPointer = 0;
-        currentBlock = (currentBlock + 1) % BUFFER_BLOCK_COUNT;
+        if (++currentBlock >= BUFFER_BLOCK_COUNT)
+            currentBlock = 0;
         if (currentBlock == startBlock) {
             overbuffered = true;
             DebugPrint("SD card buffer is full");
@@ -89,7 +102,8 @@ uint8_t* WritingBuffer::popBlock() {
     if (!hasBlock())
         return nullptr;
     uint8_t* retval{block[startBlock]};
-    startBlock = (startBlock + 1) % BUFFER_BLOCK_COUNT;
+    if (++startBlock >= BUFFER_BLOCK_COUNT)
+        startBlock = 0;
     overbuffered = false;
     return retval;
 }
