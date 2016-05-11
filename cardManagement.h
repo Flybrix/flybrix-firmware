@@ -13,12 +13,15 @@
 
 #include <Arduino.h>
 
-// Having a missing card causes great latency at the first attempt of access
-// We can use this command to call it prior to the flight starting
+// Card startup takes a long time to perform
 void startupCard();
+
+// Opening and clearing the file takes a long time to perform
+void openFileOnCard();
 
 void writeToCard(const uint8_t* data, size_t length);
 
-void commitWriteToCard();
+// File closing (saving and truncating the file) takes a long time to perform
+void closeFileOnCard();
 
 #endif

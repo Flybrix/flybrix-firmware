@@ -310,7 +310,6 @@ bool ProcessTask<10>() {
 
 template <>
 bool ProcessTask<1>() {
-    commitWriteToCard();
     return true;
 }
 

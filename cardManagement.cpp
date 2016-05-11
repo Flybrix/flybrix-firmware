@@ -10,7 +10,9 @@
 
 #include "cardManagement.h"
 
+#include <SPI.h>
 #include <SdFat.h>
+#include <SdFatUtil.h>
 #include <cstdio>
 #include "board.h"
 #include "debug.h"
@@ -39,7 +41,88 @@ bool openSD() {
     return sd_open;
 }
 
-SdFile file;
+SdBaseFile binFile;
+uint32_t bgnBlock, endBlock;
+uint8_t* cache;
+
+uint32_t block_number = 0;
+constexpr uint32_t FILE_BLOCK_COUNT = 256000;
+constexpr uint32_t ERASE_SIZE = 262144L;
+constexpr uint32_t BUFFER_BLOCK_COUNT = 4;
+
+class WritingBuffer {
+   public:
+    void write(const uint8_t* data, size_t length);
+    bool hasBlock() const;
+    uint8_t* popBlock();
+
+   private:
+    uint8_t block[BUFFER_BLOCK_COUNT][512];
+    uint16_t startBlock{0};
+    uint16_t currentBlock{0};
+    uint16_t currentPointer{0};
+    bool overbuffered{false};
+} writingBuffer;
+
+void WritingBuffer::write(const uint8_t* data, size_t length) {
+    if (overbuffered)
+        return;
+    for (size_t i = 0; i < length; ++i) {
+        block[currentBlock][currentPointer++] = data[i];
+        if (currentPointer < 512)
+            continue;
+        currentPointer = 0;
+        currentBlock = (currentBlock + 1) % BUFFER_BLOCK_COUNT;
+        if (currentBlock == startBlock) {
+            overbuffered = true;
+            DebugPrint("SD card buffer is full");
+            return;
+        }
+    }
+}
+
+bool WritingBuffer::hasBlock() const {
+    return overbuffered || (startBlock != currentBlock);
+}
+
+uint8_t* WritingBuffer::popBlock() {
+    if (!hasBlock())
+        return nullptr;
+    uint8_t* retval{block[startBlock]};
+    startBlock = (startBlock + 1) % BUFFER_BLOCK_COUNT;
+    overbuffered = false;
+    return retval;
+}
+
+bool openFileHelper(const char* filename) {
+    binFile.close();
+    if (!binFile.createContiguous(sd.vwd(), filename, 512 * FILE_BLOCK_COUNT))
+        return false;
+
+    if (!binFile.contiguousRange(&bgnBlock, &endBlock))
+        return false;
+
+    cache = (uint8_t*)sd.vol()->cacheClear();
+    if (cache == 0)
+        return false;
+
+    uint32_t bgnErase = bgnBlock;
+    uint32_t endErase;
+    while (bgnErase < endBlock) {
+        endErase = bgnErase + ERASE_SIZE;
+        if (endErase > endBlock)
+            endErase = endBlock;
+        if (!sd.card()->erase(bgnErase, endErase))
+            return false;
+        bgnErase = endErase + 1;
+    }
+
+    DebugPrint("Starting file write");
+    if (!sd.card()->writeStart(bgnBlock, FILE_BLOCK_COUNT))
+        return false;
+
+    return true;
+}
 
 bool openFile(const char* base_name) {
     if (!openSD())
@@ -56,7 +139,7 @@ bool openFile(const char* base_name) {
         sprintf(filename, "%s/%s_%d.bin", file_dir, base_name, idx);
         // Look for the first non-existing filename of the format /<A>_<B>_<C>/<base_name>_<idx>.bin
         if (!sd.exists(filename)) {
-            bool success = file.open(filename, O_CREAT | O_WRITE);
+            bool success = openFileHelper(filename);
             if (!success)
                 DebugPrintf("Failed to open file %s on SD card!", filename);
             return success;
@@ -67,20 +150,48 @@ bool openFile(const char* base_name) {
 }  // namespace
 
 void startupCard() {
-    writeToCard(nullptr, 0);
+    openSD();
+}
+
+void openFileOnCard() {
+    if (!openSD())
+        return;
+    openFile("st");
 }
 
 void writeToCard(const uint8_t* data, size_t length) {
-    static bool openedFile{openFile("st")};
-    if (!(openedFile)) {
-        if (openSD())
-            DebugPrint("Failed to access file on SD card!");
+    if (!openSD())
         return;
-    }
+    if (!binFile.isOpen())
+        return;
+    if (block_number == FILE_BLOCK_COUNT)
+        return;
     if (length > 0)
-        file.write(data, length);
+        writingBuffer.write(data, length);
+    if (sd.card()->isBusy())
+        return;
+    if (!writingBuffer.hasBlock())
+        return;
+    if (!sd.card()->writeData(writingBuffer.popBlock()))
+        DebugPrint("Failed to write data!");
+    block_number++;
 }
 
-void commitWriteToCard() {
-    file.sync();
+void closeFileOnCard() {
+    if (!openSD())
+        return;
+    if (!binFile.isOpen())
+        return;
+    if (!sd.card()->writeStop()) {
+        DebugPrint("Write stop failed");
+        return;
+    }
+    if (block_number != FILE_BLOCK_COUNT) {
+        if (!binFile.truncate(512L * block_number)) {
+            DebugPrint("Truncating failed");
+            return;
+        }
+    }
+    binFile.close();
+    DebugPrint("File closing successful");
 }
