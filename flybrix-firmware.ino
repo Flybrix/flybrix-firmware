@@ -133,7 +133,7 @@ void setup() {
 
     sys.led.update();
     // Perform intial check for an SD card
-    startupCard();
+    sdcard::startup();
 
     sys.state.clear(STATUS_BOOT);
     sys.state.set(STATUS_IDLE);
