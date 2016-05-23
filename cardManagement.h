@@ -13,15 +13,17 @@
 
 #include <Arduino.h>
 
+namespace sdcard {
 // Card startup takes a long time to perform
-void startupCard();
+void startup();
 
 // Opening and clearing the file takes a long time to perform
-void openFileOnCard();
+void openFile();
 
-void writeToCard(const uint8_t* data, size_t length);
+void write(const uint8_t* data, size_t length);
 
 // File closing (saving and truncating the file) takes a long time to perform
-void closeFileOnCard();
+void closeFile();
+}
 
 #endif

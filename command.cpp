@@ -97,12 +97,12 @@ void PilotCommand::processCommands(void) {
             recentlyEnabled = true;
             throttleHoldOff = 80;  // @40Hz -- hold for 2 sec
             if (state->is(STATUS_ENABLED))
-                openFileOnCard();
+                sdcard::openFile();
         }
     } else if (AUX1.isHigh() && !state->is(STATUS_OVERRIDE)) {
         if (state->is(STATUS_ENABLED) || state->is(STATUS_FAIL_STABILITY) || state->is(STATUS_FAIL_ANGLE)) {
             state->disableMotors();
-            closeFileOnCard();
+            sdcard::closeFile();
         }
     }
 

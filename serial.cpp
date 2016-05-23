@@ -29,7 +29,7 @@ inline void WriteToOutput(CobsPayload<N>& payload, bool use_logger = false) {
     auto package = payload.Encode();
     writeSerial(package.data, package.length);
     if (use_logger)
-        writeToCard(package.data, package.length);
+        sdcard::write(package.data, package.length);
 }
 
 template <std::size_t N>
@@ -159,9 +159,9 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
         bool shouldRecordToCard;
         if (data_input.ParseInto(shouldRecordToCard)) {
             if (shouldRecordToCard)
-                openFileOnCard();
+                sdcard::openFile();
             else
-                closeFileOnCard();
+                sdcard::closeFile();
             ack_data |= COM_SET_CARD_RECORDING;
         }
     }

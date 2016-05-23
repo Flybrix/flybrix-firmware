@@ -22,6 +22,7 @@
 #define SKIP_SD
 #endif
 
+namespace sdcard {
 namespace {
 SdFat sd;
 
@@ -165,17 +166,17 @@ bool openFile(const char* base_name) {
 }
 }  // namespace
 
-void startupCard() {
+void startup() {
     openSD();
 }
 
-void openFileOnCard() {
+void openFile() {
     if (!openSD())
         return;
     openFile("st");
 }
 
-void writeToCard(const uint8_t* data, size_t length) {
+void write(const uint8_t* data, size_t length) {
     if (!openSD())
         return;
     if (!binFile.isOpen())
@@ -193,7 +194,7 @@ void writeToCard(const uint8_t* data, size_t length) {
     block_number++;
 }
 
-void closeFileOnCard() {
+void closeFile() {
     if (!openSD())
         return;
     if (!binFile.isOpen())
@@ -211,3 +212,4 @@ void closeFileOnCard() {
     binFile.close();
     DebugPrint("File closing successful");
 }
+}  // namespace sdcard
