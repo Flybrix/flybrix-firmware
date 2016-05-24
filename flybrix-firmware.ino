@@ -140,17 +140,6 @@ void setup() {
     sys.led.update();
 }
 
-// Main loop variables
-
-uint32_t start_time = 0;
-uint32_t state_updates = 0;
-uint32_t interrupt_waits = 0;
-uint32_t control_updates = 0;
-uint32_t mpu_reads = 0;
-uint32_t mag_reads = 0;
-uint32_t bmp_reads = 0;
-uint32_t pwr_reads = 0;
-
 uint32_t low_battery_counter = 0;
 
 template <uint32_t f>
@@ -183,21 +172,14 @@ void loop() {
 
     sys.state.loopCount++;
 
-    if (start_time == 0) {
-        start_time = micros();
-    }
-
     sys.i2c.update();  // manages a queue of requests for mpu, mag, bmp
 
     if (sys.mpu.ready) {
         if (!skip_state_update) {
             sys.state.updateStateIMU(micros());  // update state as often as we can
-            state_updates++;
         } else {
-            interrupt_waits++;
         }
         if (sys.mpu.startMeasurement()) {
-            mpu_reads++;
             skip_state_update = false;
         } else {
             skip_state_update = true;  // stop updating state until we queue another mpu measurement
@@ -210,7 +192,6 @@ void loop() {
         sys.motors.updateAllChannels();
     } else {
         sys.control.calculateControlVectors();
-        control_updates++;
 
         sys.airframe.updateMotorsMix();
         sys.motors.updateAllChannels();
@@ -243,7 +224,6 @@ bool ProcessTask<100>() {
     if (sys.bmp.ready) {
         sys.state.updateStatePT(micros());
         sys.bmp.startMeasurement();
-        bmp_reads++;
     } else {
         return false;
     }
@@ -267,7 +247,6 @@ bool ProcessTask<40>() {
     sys.pilot.processCommands();
 
     sys.pwr.measureRawLevels();  // read all ADCs
-    pwr_reads++;
 
     // check for low voltage condition
     if ( ((1/50)/0.003*1.2/65536 * sys.state.I1_raw ) > 1.0f ){ //if total battery current > 1A
@@ -300,7 +279,6 @@ template <>
 bool ProcessTask<10>() {
     if (sys.mag.ready) {
         sys.mag.startMeasurement();
-        mag_reads++;
     } else {
         return false;
     }
