@@ -140,4 +140,6 @@ class CobsPayload final {
     std::size_t l{1};
 };
 
+using CobsReaderBuffer = CobsReader<500>;
+
 #endif

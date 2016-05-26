@@ -66,9 +66,6 @@ union CONFIG_union {
     uint8_t raw[sizeof(struct CONFIG_struct)];
 };
 
-#define EEPROM_LOG_START 500
-#define EEPROM_LOG_END 2048
-
 extern void(*config_handler)(CONFIG_struct&);
 extern bool(*config_verifier)(const CONFIG_struct&);
 

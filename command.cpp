@@ -10,6 +10,8 @@
 
 #include "state.h"
 
+#include "cardManagement.h"
+
 PilotCommand::PilotCommand(State* __state)
     : state{__state}, throttle_command{&state->command_throttle}, pitch_command{&state->command_pitch}, roll_command{&state->command_roll}, yaw_command{&state->command_yaw} {
 }
@@ -94,10 +96,13 @@ void PilotCommand::processCommands(void) {
             state->processMotorEnablingIteration();
             recentlyEnabled = true;
             throttleHoldOff = 80;  // @40Hz -- hold for 2 sec
+            if (state->is(STATUS_ENABLED))
+                sdcard::openFile();
         }
     } else if (AUX1.isHigh() && !state->is(STATUS_OVERRIDE)) {
         if (state->is(STATUS_ENABLED) || state->is(STATUS_FAIL_STABILITY) || state->is(STATUS_FAIL_ANGLE)) {
             state->disableMotors();
+            sdcard::closeFile();
         }
     }
 

@@ -8,40 +8,166 @@
 #include "board.h"
 #include "state.h"
 
-LED::LED(State* __state) : state(__state) {
-    // RGB leds A and B are inverted
+void (*LEDFastUpdate)(){nullptr};
+
+namespace {
+class LEDDriver {
+   public:
+    LEDDriver();
+    void setPattern(LED::Pattern pattern);
+    void setColor(CRGB color, board::led::Position lower_left = {-128, -128}, board::led::Position upper_right = {127, 127});
+    void set(LED::Pattern pattern, CRGB color);
+    void update();  // fire this off at 30Hz
+
+    uint8_t getCycleIndex() const;
+    uint8_t getPattern() const;
+
+   private:
+    void writeToDisplay();
+    void updateBeacon();   // 2sec periodic double pulse
+    void updateFlash();    //~3Hz flasher
+    void updateBreathe();  // 4sec periodic breathe
+    void updateSolid();    // maintain constant light level
+
+    uint8_t cycleIndex{0};
+    uint8_t pattern;
+    uint8_t scale{0};
+    CRGB leds[board::led::COUNT];
+    bool hasChanges{true};
+} LED_driver;
+
+uint8_t scrambleCycle(uint8_t x) {
+    x = (((x & 0xAA) >> 1) | ((x & 0x55) << 1));
+    x = (((x & 0xCC) >> 2) | ((x & 0x33) << 2));
+    return (x >> 4) | (x << 4);
+}
+
+inline uint8_t scaleLight(uint8_t light, uint8_t scale) {
+    return (static_cast<uint16_t>(light) * static_cast<uint16_t>(scale)) >> 8;
+}
+
+LEDDriver::LEDDriver() {
+    setColor(CRGB::Black);
+    setPattern(LED::SOLID);
+#ifndef ALPHA
+    FastLED.addLeds<WS2812B, board::led::DATA_PIN>(leds, board::led::COUNT);
+#else
     pinMode(board::LED_A_RED, OUTPUT);
     pinMode(board::LED_A_GRN, OUTPUT);
     pinMode(board::LED_A_BLU, OUTPUT);
     pinMode(board::LED_B_RED, OUTPUT);
     pinMode(board::LED_B_GRN, OUTPUT);
     pinMode(board::LED_B_BLU, OUTPUT);
-
-    // indicator leds are not inverted
-    pinMode(board::GREEN_LED, OUTPUT);
-    pinMode(board::RED_LED, OUTPUT);
+    LEDFastUpdate = []() {
+        static uint8_t cycle;
+        uint8_t threshold = scrambleCycle(++cycle);
+        digitalWriteFast(board::LED_A_RED, (scaleLight(LED_driver.leds[0].red, LED_driver.scale) > threshold) ? LOW : HIGH);
+        digitalWriteFast(board::LED_B_RED, (scaleLight(LED_driver.leds[1].red, LED_driver.scale) > threshold) ? LOW : HIGH);
+        digitalWriteFast(board::LED_A_GRN, (scaleLight(LED_driver.leds[0].green, LED_driver.scale) > threshold) ? LOW : HIGH);
+        digitalWriteFast(board::LED_B_GRN, (scaleLight(LED_driver.leds[1].green, LED_driver.scale) > threshold) ? LOW : HIGH);
+        digitalWriteFast(board::LED_A_BLU, (scaleLight(LED_driver.leds[0].blue, LED_driver.scale) > threshold) ? LOW : HIGH);
+        digitalWriteFast(board::LED_B_BLU, (scaleLight(LED_driver.leds[1].blue, LED_driver.scale) > threshold) ? LOW : HIGH);
+    };
+#endif
 }
 
-void LED::set(Pattern pattern, uint8_t red_a, uint8_t green_a, uint8_t blue_a, uint8_t red_b, uint8_t green_b, uint8_t blue_b, bool red_indicator, bool green_indicator) {
-    override = pattern != LED::NO_OVERRIDE;
-    if (!override)
-        return;
-    oldStatus = 0;
-    red_indicator ? indicatorRedOn() : indicatorRedOff();
-    green_indicator ? indicatorGreenOn() : indicatorGreenOff();
-    use(pattern, red_a, green_a, blue_a, red_b, green_b, blue_b);
+uint8_t LEDDriver::getCycleIndex() const {
+    return cycleIndex;
 }
 
-void LED::update() {
-    cycleIndex++;        // 500Hz update
-    cycleIndex &= 4095;  // ~8 second period
+uint8_t LEDDriver::getPattern() const {
+    return pattern;
+}
 
-    if (!override && oldStatus != state->status) {
-        oldStatus = state->status;
-        changeLights();
+inline bool isInside(const board::led::Position& p, const board::led::Position& p_min, const board::led::Position& p_max) {
+    return p.x >= p_min.x && p.y >= p_min.y && p.x <= p_max.x && p.y <= p_max.y;
+}
+
+void LEDDriver::setColor(CRGB color, board::led::Position lower_left, board::led::Position upper_right) {
+#ifndef ALPHA
+    color = CRGB(color.green, color.red, color.blue);
+#endif
+    for (size_t idx = 0; idx < board::led::COUNT; ++idx) {
+        if (!isInside(board::led::POSITION[idx], lower_left, upper_right))
+            continue;
+        if (leds[idx].red == color.red && leds[idx].green == color.green && leds[idx].blue == color.blue)
+            continue;
+        hasChanges = true;
+        leds[idx] = color;
     }
+}
 
-    switch (lightType) {
+void LEDDriver::setPattern(LED::Pattern pattern) {
+    if (pattern == this->pattern)
+        return;
+    this->pattern = pattern;
+    hasChanges = true;
+    cycleIndex = 255;
+}
+
+void LEDDriver::set(LED::Pattern pattern, CRGB color) {
+    setColor(color);
+    setPattern(pattern);
+}
+
+void LEDDriver::update() {
+    ++cycleIndex;
+    writeToDisplay();
+    if (!hasChanges)
+        return;
+#ifndef ALPHA
+    FastLED.show(scale);
+#else
+    if (LEDFastUpdate)
+        LEDFastUpdate();
+#endif
+    hasChanges = false;
+}
+
+void LEDDriver::updateFlash() {
+    if (cycleIndex & 3)
+        return;
+    scale = (cycleIndex & 4) ? 0 : 255;
+    hasChanges = true;
+}
+
+void LEDDriver::updateBeacon() {
+    switch ((cycleIndex & 63) >> 2) {  // two second period
+        case 1:
+        case 4:
+            scale = 255;
+            hasChanges = true;
+            break;
+        case 2:
+        case 5:
+            scale = 0;
+            hasChanges = true;
+            break;
+        default:
+            break;
+    }
+}
+
+void LEDDriver::updateBreathe() {
+    uint16_t multiplier = cycleIndex & 127;
+    if (multiplier > 31)
+        return;
+    scale = multiplier;
+    if (scale > 15)
+        scale = 31 - scale;
+    scale <<= 4;
+    hasChanges = true;
+}
+
+void LEDDriver::updateSolid() {
+    if (scale == 255)
+        return;
+    scale = 255;
+    hasChanges = true;
+}
+
+void LEDDriver::writeToDisplay() {
+    switch (pattern) {
         case LED::FLASH:
             updateFlash();
             break;
@@ -52,146 +178,108 @@ void LED::update() {
             updateBreathe();
             break;
         case LED::ALTERNATE:
-            updateAlternate();
-            break;
+        // Alternate is handled outside of the driver
+        // and here it's just a solid light
         case LED::SOLID:
             updateSolid();
             break;
     }
 }
+}  // namespace
 
-void LED::use(Pattern pattern, uint8_t red, uint8_t green, uint8_t blue) {
-    use(pattern, red, green, blue, red, green, blue);
+LED::LED(State* __state) : state(__state) {
+    // indicator leds are not inverted
+    pinMode(board::GREEN_LED, OUTPUT);
+    pinMode(board::RED_LED, OUTPUT);
 }
 
-void LED::use(Pattern pattern, uint8_t red_a, uint8_t green_a, uint8_t blue_a, uint8_t red_b, uint8_t green_b, uint8_t blue_b) {
-    lightType = pattern;
-    this->red_a_ = red_a;
-    this->green_a_ = green_a;
-    this->blue_a_ = blue_a;
-    this->red_b_ = red_b;
-    this->green_b_ = green_b;
-    this->blue_b_ = blue_b;
+void LED::set(Pattern pattern, uint8_t red_a, uint8_t green_a, uint8_t blue_a, uint8_t red_b, uint8_t green_b, uint8_t blue_b, bool red_indicator, bool green_indicator) {
+    set(pattern, {red_a, green_a, blue_a}, {red_b, green_b, blue_b}, red_indicator, green_indicator);
 }
+
+void LED::set(Pattern pattern, CRGB color_right, CRGB color_left, bool red_indicator, bool green_indicator) {
+    override = pattern != LED::NO_OVERRIDE;
+    oldStatus = 0;
+    if (!override)
+        return;
+    use(pattern, color_right, color_left, red_indicator, green_indicator);
+}
+
+void LED::set(Pattern pattern, CRGB color, bool red_indicator, bool green_indicator) {
+    set(pattern, color, color, red_indicator, green_indicator);
+}
+
+void LED::update() {
+    if (!override && oldStatus != state->status) {
+        oldStatus = state->status;
+        changeLights();
+    }
+    if (LED_driver.getPattern() == LED::ALTERNATE && !(LED_driver.getCycleIndex() & 15)) {
+        if (LED_driver.getCycleIndex() & 16) {
+            LED_driver.setColor(colorRight, {0, -128}, {127, 127});
+            LED_driver.setColor(CRGB::Black, {-128, -128}, {0, 127});
+        } else {
+            LED_driver.setColor(CRGB::Black, {0, -128}, {127, 127});
+            LED_driver.setColor(colorLeft, {-128, -128}, {0, 127});
+        }
+    }
+    LED_driver.update();
+}
+
+void LED::use(Pattern pattern, CRGB color_right, CRGB color_left, bool red_indicator, bool green_indicator) {
+    colorRight = color_right;
+    colorLeft = color_left;
+    red_indicator ? indicatorRedOn() : indicatorRedOff();
+    green_indicator ? indicatorGreenOn() : indicatorGreenOff();
+    LED_driver.setPattern(pattern);
+    LED_driver.setColor(color_right, {0, -128}, {127, 127});
+    LED_driver.setColor(color_left, {-128, -128}, {0, 127});
+}
+
+namespace {
+struct LightCase {
+    LightCase(uint16_t status, LED::Pattern pattern, CRGB colorRight, CRGB colorLeft, bool indicatorRed = false, bool indicatorGreen = false);
+    LightCase(uint16_t status, LED::Pattern pattern, CRGB color);
+    uint16_t status;
+    LED::Pattern pattern;
+    CRGB colorRight;
+    CRGB colorLeft;
+    bool indicatorRed;
+    bool indicatorGreen;
+};
+
+LightCase::LightCase(uint16_t status, LED::Pattern pattern, CRGB colorRight, CRGB colorLeft, bool indicatorRed, bool indicatorGreen)
+    : status{status}, pattern{pattern}, colorRight{colorRight}, colorLeft{colorLeft}, indicatorRed{indicatorRed}, indicatorGreen{indicatorGreen} {
+}
+
+LightCase::LightCase(uint16_t status, LED::Pattern pattern, CRGB color) : LightCase{status, pattern, color, color, false, false} {
+}
+
+const LightCase INDICATIONS[]{
+    {STATUS_MPU_FAIL, LED::SOLID, CRGB::Black, CRGB::Red, true},
+    {STATUS_BMP_FAIL, LED::SOLID, CRGB::Red, CRGB::Black, true},
+    {STATUS_BOOT, LED::SOLID, CRGB::Green},
+    {STATUS_UNPAIRED, LED::FLASH, CRGB::White, CRGB::White, false, true},  // for pcba testing purposes -- a "good" board will end up in this state
+    {STATUS_RX_FAIL, LED::FLASH, CRGB::Red},
+    {STATUS_FAIL_STABILITY, LED::FLASH, CRGB::Yellow},
+    {STATUS_FAIL_ANGLE, LED::FLASH, CRGB::Yellow},
+    {STATUS_OVERRIDE, LED::BEACON, CRGB::Red},
+    {STATUS_TEMP_WARNING, LED::FLASH, CRGB::Yellow},
+    {STATUS_BATTERY_LOW, LED::BEACON, CRGB::Orange},
+    {STATUS_ENABLING, LED::FLASH, CRGB::Blue},
+    {STATUS_ENABLED, LED::BEACON, CRGB::Blue},
+    {STATUS_IDLE, LED::BEACON, CRGB::Green},  // breathe instead?
+};
+
+}  // namespace
 
 void LED::changeLights() {
-    lightType = 0;
-
-    if (state->is(STATUS_MPU_FAIL)) {
-        allOff();  // no dithering during setup!
-        digitalWriteFast(board::LED_A_RED, LOW);
-        indicatorRedOn();
-    } else if (state->is(STATUS_BMP_FAIL)) {
-        allOff();  // no dithering during setup!
-        digitalWriteFast(board::LED_B_RED, LOW);
-        indicatorRedOn();
-    } else if (state->is(STATUS_BOOT)) {
-        allOff();  // no dithering during setup!
-        digitalWriteFast(board::LED_A_GRN, LOW);
-        digitalWriteFast(board::LED_B_GRN, LOW);
-    } else if (state->is(STATUS_UNPAIRED)) {
-        // use(LED::FLASH, 255,180,20); //orange
-        use(LED::FLASH, 255, 255, 255);  // for pcba testing purposes -- a "good" board will end up in this state
-        indicatorGreenOn();              // for pcba testing purposes -- a "good" board will end up in this state
-    } else if (state->is(STATUS_RX_FAIL)) {
-        use(LED::FLASH, 255, 0, 0);  // red
-    } else if (state->is(STATUS_FAIL_STABILITY) || state->is(STATUS_FAIL_ANGLE)) {
-        use(LED::FLASH, 100, 110, 250);  // yellow
-    } else if (state->is(STATUS_OVERRIDE)) {
-        use(LED::BEACON, 255, 0, 0);  // red
-    } else if (state->is(STATUS_TEMP_WARNING)) {
-        use(LED::FLASH, 100, 150, 250);  // yellow
-    } else if (state->is(STATUS_BATTERY_LOW)) {
-        use(LED::BEACON, 255, 180, 20);        
-    } else if (state->is(STATUS_ENABLING)) {
-        use(LED::FLASH, 0, 0, 255);  // blue
-    } else if (state->is(STATUS_ENABLED)) {
-        use(LED::BEACON, 0, 0, 255);  // blue for enable
-    } else if (state->is(STATUS_IDLE)) {
-        indicatorRedOff();            // clear boot test
-        use(LED::BEACON, 0, 255, 0);  // breathe instead?
-    } else {
-        // ERROR: ("NO STATUS BITS SET???");
-    }
-}
-
-uint8_t LED::getLightThreshold() {
-    uint8_t x = cycleIndex & 0xFF;
-    x = (((x & 0xAA) >> 1) | ((x & 0x55) << 1));
-    x = (((x & 0xCC) >> 2) | ((x & 0x33) << 2));
-    return (x >> 4) | (x << 4);
-}
-
-void LED::rgb() {
-    rgb(red_a_, green_a_, blue_a_, red_b_, green_b_, blue_b_);
-}
-
-void LED::rgb(uint8_t red_a, uint8_t green_a, uint8_t blue_a, uint8_t red_b, uint8_t green_b, uint8_t blue_b) {
-    uint8_t threshold = getLightThreshold();
-    digitalWriteFast(board::LED_A_RED, (red_a > threshold) ? LOW : HIGH);
-    digitalWriteFast(board::LED_B_RED, (red_b > threshold) ? LOW : HIGH);
-    digitalWriteFast(board::LED_A_GRN, (green_a > threshold) ? LOW : HIGH);
-    digitalWriteFast(board::LED_B_GRN, (green_b > threshold) ? LOW : HIGH);
-    digitalWriteFast(board::LED_A_BLU, (blue_a > threshold) ? LOW : HIGH);
-    digitalWriteFast(board::LED_B_BLU, (blue_b > threshold) ? LOW : HIGH);
-}
-
-void LED::updateFlash() {
-    uint16_t cycleState = (cycleIndex & 511) >> 4;  // flash at ~3 HZ
-    if (cycleState < 5 || (cycleState < 15 && cycleState > 9) || (cycleState < 26 && cycleState > 20))
-        rgb();
-    else
-        allOff();
-}
-
-void LED::updateBeacon() {
-    switch ((cycleIndex & 1023) >> 6)  // two second period
-    {
-        case 1:
-        case 4:
-            rgb();
-            break;
-
-        case 2:
-        case 5:
-            allOff();
-            break;
-
-        default:
-            break;
-    }
-}
-
-void LED::updateBreathe() {
-    uint16_t multiplier = cycleIndex & 2047;
-    if (cycleIndex > 511) {
-        allOff();
-        return;
-    }
-    if (multiplier > 255)
-        multiplier = 512 - multiplier;
-
-    rgb((multiplier * red_a_) >> 8, (multiplier * green_a_) >> 8, (multiplier * blue_a_) >> 8, (multiplier * red_b_) >> 8, (multiplier * green_b_) >> 8, (multiplier * blue_b_) >> 8);
-}
-
-void LED::updateAlternate() {
-    if (cycleIndex & 128)
-        rgb(red_a_, green_a_, blue_a_, 0, 0, 0);
-    else
-        rgb(0, 0, 0, red_b_, green_b_, blue_b_);
-}
-
-void LED::updateSolid() {
-    rgb();
-}
-
-void LED::allOff() {
-    digitalWriteFast(board::LED_A_RED, HIGH);
-    digitalWriteFast(board::LED_A_GRN, HIGH);
-    digitalWriteFast(board::LED_A_BLU, HIGH);
-    digitalWriteFast(board::LED_B_RED, HIGH);
-    digitalWriteFast(board::LED_B_GRN, HIGH);
-    digitalWriteFast(board::LED_B_BLU, HIGH);
+    for (const LightCase& s : INDICATIONS)
+        if (state->is(s.status)) {
+            use(s.pattern, s.colorRight, s.colorLeft, s.indicatorRed, s.indicatorGreen);
+            return;
+        }
+    use(LED::ALTERNATE, CRGB::Red, CRGB::Red, true, false);  // No status bits set
 }
 
 void LED::indicatorRedOn() {

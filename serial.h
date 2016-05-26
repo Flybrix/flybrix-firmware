@@ -53,6 +53,7 @@ class SerialComm {
         COM_REQ_HISTORY = 1 << 16,
         COM_SET_LED = 1 << 17,
         COM_SET_SERIAL_RC = 1 << 18,
+        COM_SET_CARD_RECORDING = 1 << 19,
     };
 
     enum StateFields : uint32_t {
@@ -89,11 +90,11 @@ class SerialComm {
 
     explicit SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, CONFIG_union* config, LED* led, PilotCommand* command);
 
-    void ReadData();
+    void Read();
 
     void SendConfiguration() const;
     void SendDebugString(const String& string, MessageType type = MessageType::DebugString) const;
-    void SendState(uint32_t timestamp_us, void (*extra_handler)(uint8_t*, size_t) = nullptr, uint32_t mask = 0) const;
+    void SendState(uint32_t timestamp_us, uint32_t mask = 0) const;
     void SendResponse(uint32_t mask, uint32_t response) const;
 
     uint16_t GetSendStateDelay() const;
@@ -102,7 +103,7 @@ class SerialComm {
     void RemoveFromStateMsg(uint32_t values);
 
    private:
-    void ProcessData();
+    void ProcessData(CobsReaderBuffer& data_input);
 
     uint16_t PacketSize(uint32_t mask) const;
 
@@ -114,7 +115,6 @@ class SerialComm {
     PilotCommand* command;
     uint16_t send_state_delay{1001};  // anything over 1000 turns off state messages
     uint32_t state_mask{0x7fffff};
-    CobsReader<500> data_input;
 };
 
 #endif
