@@ -146,6 +146,10 @@ constexpr Position POSITION[]{
     {LEFT, BACK}, {LEFT, FRONT}, {RIGHT, FRONT}, {RIGHT, BACK},
 };
 }
+
+namespace bluetooth {
+constexpr uint8_t RESET{28};
+}
 }
 }
 

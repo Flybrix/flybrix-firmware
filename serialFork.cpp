@@ -40,9 +40,37 @@ struct USBComm {
 };
 
 USBComm usb_comm;
+
 #ifndef ALPHA
-// TODO: Create a Bluetooth interface
-// Bluetooth bluetooth{115200};
+struct Bluetooth {
+    Bluetooth() {
+        pinMode(board::bluetooth::RESET, OUTPUT);
+        digitalWrite(board::bluetooth::RESET, HIGH);
+        Serial1.begin(57600);
+    }
+
+    bool read() {
+        while (Serial1.available()) {
+            data_input.AppendToBuffer(Serial1.read());
+            if (data_input.IsDone())
+                return true;
+        }
+        return false;
+    }
+
+    void write(uint8_t* data, size_t length) {
+        Serial1.write(data, length);
+    }
+
+    CobsReaderBuffer& buffer() {
+        return data_input;
+    }
+
+   private:
+    CobsReaderBuffer data_input;
+};
+
+Bluetooth bluetooth;
 #endif
 }
 
@@ -50,9 +78,8 @@ CobsReaderBuffer* readSerial() {
     if (usb_comm.read())
         return &usb_comm.buffer();
 #ifndef ALPHA
-// TODO: Handle bluetooth the same way
-//  if (bluetooth.read())
-//      return &bluetooth.buffer();
+    if (bluetooth.read())
+        return &bluetooth.buffer();
 #endif
     return nullptr;
 }
@@ -60,7 +87,6 @@ CobsReaderBuffer* readSerial() {
 void writeSerial(uint8_t* data, size_t length) {
     usb_comm.write(data, length);
 #ifndef ALPHA
-// TODO: Handle bluetooth the same way
-//  bluetooth.write(data, length);
+    bluetooth.write(data, length);
 #endif
 }
