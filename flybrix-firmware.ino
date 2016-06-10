@@ -37,6 +37,7 @@
 #include "version.h"
 #include "board.h"
 #include "cardManagement.h"
+#include "serialFork.h"
 
 struct Systems {
     // subsystem objects initialize pins when created
@@ -197,7 +198,7 @@ void loop() {
         sys.motors.updateAllChannels();
     }
 
-    RunProcesses<1000, 100, 40, 30, 10, 1>();
+    RunProcesses<1000, 100, 70, 40, 30, 10, 1>();
 }
 
 template <>
@@ -239,6 +240,12 @@ bool ProcessTask<100>() {
 
     sys.conf.Read();  // Respond to commands from the Configurator chrome extension
 
+    return true;
+}
+
+template <>
+bool ProcessTask<70>() {
+    flushSerial();
     return true;
 }
 
