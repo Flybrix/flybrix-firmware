@@ -77,8 +77,8 @@ struct Bluetooth {
     struct BluetoothBuffer {
         size_t hasData() {
             size_t increment{(readerPointer <= writerPointer) ? (writerPointer - readerPointer) : (bufferSize - readerPointer)};
-            if (increment > 70)
-                return 70;
+            if (increment > bufferChunk)
+                return bufferChunk;
             return increment;
         }
 
@@ -113,8 +113,9 @@ struct Bluetooth {
         }
 
        private:
-        static constexpr size_t bufferCount{5};
-        static constexpr size_t bufferSize{bufferCount * 70};
+        static constexpr size_t bufferCount{15};
+        static constexpr size_t bufferChunk{20};
+        static constexpr size_t bufferSize{bufferCount * bufferChunk};
         uint8_t data[bufferSize];
         size_t writerPointer{0};
         size_t readerPointer{0};

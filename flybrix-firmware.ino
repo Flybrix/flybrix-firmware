@@ -198,7 +198,7 @@ void loop() {
         sys.motors.updateAllChannels();
     }
 
-    RunProcesses<1000, 100, 70, 40, 30, 10, 1>();
+    RunProcesses<1000, 100, 40, 35, 30, 10, 1>();
 }
 
 template <>
@@ -244,7 +244,7 @@ bool ProcessTask<100>() {
 }
 
 template <>
-bool ProcessTask<70>() {
+bool ProcessTask<35>() {
     flushSerial();
     return true;
 }
