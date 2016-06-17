@@ -113,7 +113,7 @@ struct Bluetooth {
         }
 
        private:
-        static constexpr size_t bufferCount{15};
+        static constexpr size_t bufferCount{40};
         static constexpr size_t bufferChunk{20};
         static constexpr size_t bufferSize{bufferCount * bufferChunk};
         uint8_t data[bufferSize];
