@@ -176,6 +176,10 @@ void openFile() {
     openFile("st");
 }
 
+bool isOpen() {
+    return binFile.isOpen();
+}
+
 void write(const uint8_t* data, size_t length) {
     if (!openSD())
         return;

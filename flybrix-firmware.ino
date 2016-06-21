@@ -203,12 +203,18 @@ void loop() {
 
 template <>
 bool ProcessTask<1000>() {
-    static uint16_t counter{0};
-    if (++counter > sys.conf.GetSendStateDelay() - 1) {
-        counter = 0;
+    static uint16_t counterSerial{0};
+    static uint16_t counterSdCard{0};
+    if (++counterSerial > sys.conf.GetSendStateDelay() - 1) {
+        counterSerial = 0;
         sys.conf.SendState(micros());
     }
-    counter %= 1000;
+    if (++counterSdCard > sys.conf.GetSdCardStateDelay() - 1) {
+        counterSdCard = 0;
+        sys.conf.SendState(micros(), 0xFFFFFFFF, true);
+    }
+    counterSerial %= 1000;
+    counterSdCard %= 1000;
     if (LEDFastUpdate)
         LEDFastUpdate();
     return true;
