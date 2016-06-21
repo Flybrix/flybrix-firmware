@@ -213,6 +213,7 @@ void closeFile() {
             return;
         }
     }
+    block_number = 0;
     binFile.close();
     DebugPrint("File closing successful");
 }
