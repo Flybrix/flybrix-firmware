@@ -38,6 +38,7 @@
 #include "board.h"
 #include "cardManagement.h"
 #include "serialFork.h"
+#include "testMode.h"
 
 struct Systems {
     // subsystem objects initialize pins when created
@@ -95,6 +96,8 @@ void setup() {
     sys.state.set(STATUS_BOOT);
     sys.led.update();
 
+    bool go_to_test_mode{isEmptyEEPROM()};
+
     // load stored settings (this will reinitialize if there is no data in the EEPROM!
     readEEPROM();
     sys.state.resetState();
@@ -133,6 +136,9 @@ void setup() {
     }
 
     sys.led.update();
+
+    if (go_to_test_mode)
+
     // Perform intial check for an SD card
     sdcard::startup();
 

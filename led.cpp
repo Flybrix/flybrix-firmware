@@ -5,7 +5,6 @@
 */
 
 #include "led.h"
-#include "board.h"
 #include "state.h"
 
 void (*LEDFastUpdate)(){nullptr};
@@ -234,6 +233,18 @@ void LED::use(Pattern pattern, CRGB color_right, CRGB color_left, bool red_indic
     LED_driver.setPattern(pattern);
     LED_driver.setColor(color_right, {0, -128}, {127, 127});
     LED_driver.setColor(color_left, {-128, -128}, {0, 127});
+}
+
+void LED::setWhite(board::led::Position lower_left, board::led::Position upper_right, bool red_indicator, bool green_indicator) {
+    colorRight = CRGB::Black;
+    colorLeft = CRGB::Black;
+    override = true;
+    oldStatus = 0;
+    red_indicator ? indicatorRedOn() : indicatorRedOff();
+    green_indicator ? indicatorGreenOn() : indicatorGreenOff();
+    LED_driver.setPattern(LED::SOLID);
+    LED_driver.setColor(CRGB::Black);
+    LED_driver.setColor(CRGB::White, lower_left, upper_right);
 }
 
 namespace {
