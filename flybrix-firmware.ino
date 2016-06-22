@@ -138,6 +138,7 @@ void setup() {
     sys.led.update();
 
     if (go_to_test_mode)
+        runTestMode(sys.state, sys.led, sys.motors);
 
     // Perform intial check for an SD card
     sdcard::startup();
