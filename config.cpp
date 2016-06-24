@@ -67,7 +67,7 @@ void initializeEEPROM(void) {  // Default Settings
     CONFIG.data.assignedChannel[5] = 5;  // map AUX2 to LHS click
 
     CONFIG.data.commandInversion = 3; //invert pitch and roll
-    
+
     CONFIG.data.channelMidpoint[0] = 1515;
     CONFIG.data.channelMidpoint[1] = 1515;
     CONFIG.data.channelMidpoint[2] = 1500;
@@ -147,7 +147,7 @@ void initializeEEPROM(void) {  // Default Settings
     CONFIG.data.yawSlavePIDParameters[4] = 0.001f;  // D filter usec (150Hz)
     CONFIG.data.yawSlavePIDParameters[5] = 0.001f;  // setpoint filter usec (300Hz)
     CONFIG.data.yawSlavePIDParameters[6] = 240.0f;  // (deg/sec / full stick action)
-    
+
     CONFIG.data.pidBypass = BYPASS_THRUST_MASTER | BYPASS_THRUST_SLAVE | BYPASS_YAW_MASTER; //AHRS/Horizon mode
 
     CONFIG.data.stateEstimationParameters[0] = 1.00f;  // 2*kp or BETA
@@ -170,8 +170,12 @@ void writeEEPROM(void) {
         config_handler(CONFIG.data);
 }
 
+bool isEmptyEEPROM() {
+    return EEPROM.read(0) == 255;
+}
+
 void readEEPROM(void) {
-    if (EEPROM.read(0) == 255) {
+    if (isEmptyEEPROM()) {
         // No EEPROM values detected, re-initialize to default values
         initializeEEPROM();
         writeEEPROM();  // store the default values

@@ -20,6 +20,8 @@ void startup();
 // Opening and clearing the file takes a long time to perform
 void openFile();
 
+bool isOpen();
+
 void write(const uint8_t* data, size_t length);
 
 // File closing (saving and truncating the file) takes a long time to perform

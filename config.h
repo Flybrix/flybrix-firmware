@@ -73,5 +73,6 @@ extern CONFIG_union CONFIG;
 extern void initializeEEPROM(void);
 extern void writeEEPROM(void);
 extern void readEEPROM(void);
+bool isEmptyEEPROM();
 
 #endif

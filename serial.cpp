@@ -27,9 +27,10 @@ inline void WriteProtocolHead(SerialComm::MessageType type, uint32_t mask, CobsP
 template <std::size_t N>
 inline void WriteToOutput(CobsPayload<N>& payload, bool use_logger = false) {
     auto package = payload.Encode();
-    writeSerial(package.data, package.length);
     if (use_logger)
         sdcard::write(package.data, package.length);
+    else
+        writeSerial(package.data, package.length);
 }
 
 template <std::size_t N>
@@ -134,10 +135,12 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
             ack_data |= COM_SET_STATE_DELAY;
         }
     }
-    if (mask & COM_REQ_HISTORY) {
-        // TODO: should we respond to this with SD data, or just deprecate it?
-        SendDebugString("", MessageType::HistoryData);
-        // ack_data |= COM_REQ_HISTORY;
+    if (mask & COM_SET_SD_WRITE_DELAY) {
+        uint16_t new_state_delay;
+        if (data_input.ParseInto(new_state_delay)) {
+            sd_card_state_delay = new_state_delay;
+            ack_data |= COM_SET_SD_WRITE_DELAY;
+        }
     }
     if (mask & COM_SET_LED) {
         uint8_t mode, r1, g1, b1, r2, g2, b2, ind_r, ind_g;
@@ -247,7 +250,10 @@ uint16_t SerialComm::PacketSize(uint32_t mask) const {
     return sum;
 }
 
-void SerialComm::SendState(uint32_t timestamp_us, uint32_t mask) const {
+void SerialComm::SendState(uint32_t timestamp_us, uint32_t mask, bool redirect_to_sd_card) const {
+    // No need to build the message if we are not writing to the card
+    if (redirect_to_sd_card && !sdcard::isOpen())
+        return;
     if (!mask)
         mask = state_mask;
     // No need to publish empty state messages
@@ -314,7 +320,7 @@ void SerialComm::SendState(uint32_t timestamp_us, uint32_t mask) const {
         payload.Append(state->kinematicsAltitude);
     if (mask & SerialComm::STATE_LOOP_COUNT)
         payload.Append(state->loopCount);
-    WriteToOutput(payload, true);
+    WriteToOutput(payload, redirect_to_sd_card);
 }
 
 void SerialComm::SendResponse(uint32_t mask, uint32_t response) const {
@@ -326,6 +332,10 @@ void SerialComm::SendResponse(uint32_t mask, uint32_t response) const {
 
 uint16_t SerialComm::GetSendStateDelay() const {
     return send_state_delay;
+}
+
+uint16_t SerialComm::GetSdCardStateDelay() const {
+    return sd_card_state_delay;
 }
 
 void SerialComm::SetStateMsg(uint32_t values) {

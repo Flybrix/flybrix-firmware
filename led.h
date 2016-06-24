@@ -16,6 +16,8 @@
 #define FASTLED_INTERNAL
 #include "FastLED.h"
 
+#include "board.h"
+
 class State;
 
 extern void (*LEDFastUpdate)();
@@ -39,6 +41,8 @@ class LED {
 
     void set(Pattern pattern, CRGB color_right, CRGB color_left, bool red_indicator, bool green_indicator);
     void set(Pattern pattern, CRGB color, bool red_indicator = false, bool green_indicator = false);
+
+    void setWhite(board::led::Position lower_left = {-128, -128}, board::led::Position upper_right = {127, 127}, bool red_indicator = false, bool green_indicator = false);
 
    private:
     void use(Pattern pattern, CRGB color_right, CRGB color_left, bool red_indicator, bool green_indicator);

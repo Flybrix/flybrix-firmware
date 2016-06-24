@@ -41,6 +41,7 @@
 #include "board.h"
 #include "cardManagement.h"
 #include "serialFork.h"
+#include "testMode.h"
 
 struct Systems {
     // subsystem objects initialize pins when created
@@ -98,6 +99,8 @@ void setup() {
     sys.state.set(STATUS_BOOT);
     sys.led.update();
 
+    bool go_to_test_mode{isEmptyEEPROM()};
+
     // load stored settings (this will reinitialize if there is no data in the EEPROM!
     readEEPROM();
     sys.state.resetState();
@@ -136,6 +139,10 @@ void setup() {
     }
 
     sys.led.update();
+
+    if (go_to_test_mode)
+        runTestMode(sys.state, sys.led, sys.motors);
+
     // Perform intial check for an SD card
     sdcard::startup();
 
@@ -206,12 +213,18 @@ void loop() {
 
 template <>
 bool ProcessTask<1000>() {
-    static uint16_t counter{0};
-    if (++counter > sys.conf.GetSendStateDelay() - 1) {
-        counter = 0;
+    static uint16_t counterSerial{0};
+    static uint16_t counterSdCard{0};
+    if (++counterSerial > sys.conf.GetSendStateDelay() - 1) {
+        counterSerial = 0;
         sys.conf.SendState(micros());
     }
-    counter %= 1000;
+    if (++counterSdCard > sys.conf.GetSdCardStateDelay() - 1) {
+        counterSdCard = 0;
+        sys.conf.SendState(micros(), 0xFFFFFFFF, true);
+    }
+    counterSerial %= 1000;
+    counterSdCard %= 1000;
     if (LEDFastUpdate)
         LEDFastUpdate();
     return true;
