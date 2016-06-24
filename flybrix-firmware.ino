@@ -1,3 +1,6 @@
+#include <SPI.h>
+#include <SdFat.h>
+#include <FastLED.h>
 /*
     *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
     *
