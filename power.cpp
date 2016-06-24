@@ -22,7 +22,7 @@ PowerMonitor::PowerMonitor(State* __state) {
     adc.setConversionSpeed(ADC_HIGH_SPEED, ADC_0);  // change the conversion speed
     adc.setSamplingSpeed(ADC_HIGH_SPEED, ADC_0);    // change the sampling speed
 
-    adc.setReference(ADC_REF_1V2, ADC_1);
+    adc.setReference(BOARD_ADC_REF, ADC_1);
     adc.setAveraging(1, ADC_1);                     // set number of averages
     adc.setResolution(16, ADC_1);                   // set bits of resolution
     adc.setConversionSpeed(ADC_HIGH_SPEED, ADC_1);  // change the conversion speed
