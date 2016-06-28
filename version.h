@@ -14,6 +14,6 @@
 
 #define FIRMWARE_VERSION_A 1
 #define FIRMWARE_VERSION_B 2
-#define FIRMWARE_VERSION_C 0
+#define FIRMWARE_VERSION_C 1
 
 #endif

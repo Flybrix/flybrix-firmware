@@ -2,12 +2,13 @@
 #include <SdFat.h>
 #include <FastLED.h>
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2015, 2016 Flying Selfie Inc.
     *
     *  License and other details available at: http://www.flybrix.com/firmware
 
-    Credit is due to several other projects, including:
+    Credit for inspiration and guidance is due to several other projects, including:
     - multiwii ("https://github.com/multiwii")
+    - cleanflight ("https://github.com/cleanflight")
     - phoenix flight controller ("https://github.com/cTn-dev/Phoenix-FlightController")
 
 */
@@ -82,6 +83,7 @@ Systems::Systems()
 }
 
 void setup() {
+
     config_handler = [&](CONFIG_struct& config){
       sys.control.parseConfig(config);
     };
@@ -140,6 +142,7 @@ void setup() {
 
     sys.led.update();
 
+    // factory test pattern runs only once
     if (go_to_test_mode)
         runTestMode(sys.state, sys.led, sys.motors);
 

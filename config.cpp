@@ -35,24 +35,29 @@ void initializeEEPROM(void) {  // Default Settings
     CONFIG.data.pcbTranslation[1] = 0.0f;  // y (mm)
     CONFIG.data.pcbTranslation[2] = 0.0f;  // z (mm)
 
-    // default "x quad" configuration:
-    //  * CH0 ( CW: red +, blue -, type B prop) at front right
-    //  * CH1 (CCW: wht +, blk  -, type A prop) at front left
-    //  * CH2 (CCW: wht +, blk  -, type A prop) at rear right
-    //  * CH3 ( CW: red +, blue -, type B prop) at rear left
+    // default configuration is the flat8 octocopter:
+    //  * CH0 ( CW: red +, blue -, type A prop) at full front right
+    //  * CH2 (CCW: wht +, blk  -, type B prop) at mid front right
+    //  * CH4 ( CW: red +, blue -, type A prop) at mid rear right
+    //  * CH6 (CCW: wht +, blk  -, type B prop) at full rear right
+    //  * CH1 (CCW: wht +, blk  -, type B prop) at full front left
+    //  * CH3 ( CW: red +, blue -, type A prop) at mid front left
+    //  * CH5 (CCW: wht +, blk  -, type B prop) at mid rear left
+    //  * CH7 ( CW: red +, blue -, type A prop) at rull rear left 
+    // Note that the same mixtable can be used to build a quad on CH0, CH6, CH1, CH7    
     //
-    // pitch positive (nose up) needs a Tx negative restoring torque --> (Tx<0) should drop the nose by increasing 2 & 3
-    // roll positive (RHS down) needs a Ty negative restoring torque --> (Ty<0) should raise the RHS by increasing 0 & 2
-    // yaw positive (CCW rotation from top down) needs a Tz negative restoring torque --> (Tz<0) should decrease [1,2] CCW b/w motors & increase [0,3] CW r/b motors
+    // pitch positive (nose up) needs a Tx negative restoring torque --> (Tx<0) should drop the nose by increasing rear channels and decreasing front channels
+    // roll positive (right side down) needs a Ty negative restoring torque --> (Ty<0) should raise the right side by increasing right channels and decreasing left channels
+    // yaw positive (CCW rotation from top down) needs a Tz negative restoring torque --> (Tz<0) should decrease CCW motors & increase CW motors
     //
-    CONFIG.data.mixTableFz[0] =  1; CONFIG.data.mixTableTx[0] =  1; CONFIG.data.mixTableTy[0] = -1; CONFIG.data.mixTableTz[0] = -1;
-    CONFIG.data.mixTableFz[1] =  1; CONFIG.data.mixTableTx[1] =  1; CONFIG.data.mixTableTy[1] =  1; CONFIG.data.mixTableTz[1] =  1;
-    CONFIG.data.mixTableFz[2] =  1; CONFIG.data.mixTableTx[2] = -1; CONFIG.data.mixTableTy[2] = -1; CONFIG.data.mixTableTz[2] =  1;
-    CONFIG.data.mixTableFz[3] =  1; CONFIG.data.mixTableTx[3] = -1; CONFIG.data.mixTableTy[3] =  1; CONFIG.data.mixTableTz[3] = -1;
-    CONFIG.data.mixTableFz[4] =  0; CONFIG.data.mixTableTx[4] =  0; CONFIG.data.mixTableTy[4] =  0; CONFIG.data.mixTableTz[4] =  0;
-    CONFIG.data.mixTableFz[5] =  0; CONFIG.data.mixTableTx[5] =  0; CONFIG.data.mixTableTy[5] =  0; CONFIG.data.mixTableTz[5] =  0;
-    CONFIG.data.mixTableFz[6] =  0; CONFIG.data.mixTableTx[6] =  0; CONFIG.data.mixTableTy[6] =  0; CONFIG.data.mixTableTz[6] =  0;
-    CONFIG.data.mixTableFz[7] =  0; CONFIG.data.mixTableTx[7] =  0; CONFIG.data.mixTableTy[7] =  0; CONFIG.data.mixTableTz[7] =  0;
+    CONFIG.data.mixTableFz[0] =  1; CONFIG.data.mixTableTx[0] =  1; CONFIG.data.mixTableTy[0] = -1; CONFIG.data.mixTableTz[0] =  1;
+    CONFIG.data.mixTableFz[1] =  1; CONFIG.data.mixTableTx[1] =  1; CONFIG.data.mixTableTy[1] =  1; CONFIG.data.mixTableTz[1] = -1;
+    CONFIG.data.mixTableFz[2] =  1; CONFIG.data.mixTableTx[2] =  1; CONFIG.data.mixTableTy[2] = -1; CONFIG.data.mixTableTz[2] = -1;
+    CONFIG.data.mixTableFz[3] =  1; CONFIG.data.mixTableTx[3] =  1; CONFIG.data.mixTableTy[3] =  1; CONFIG.data.mixTableTz[3] =  1;
+    CONFIG.data.mixTableFz[4] =  1; CONFIG.data.mixTableTx[4] = -1; CONFIG.data.mixTableTy[4] = -1; CONFIG.data.mixTableTz[4] =  1;
+    CONFIG.data.mixTableFz[5] =  1; CONFIG.data.mixTableTx[5] = -1; CONFIG.data.mixTableTy[5] =  1; CONFIG.data.mixTableTz[5] = -1;
+    CONFIG.data.mixTableFz[6] =  1; CONFIG.data.mixTableTx[6] = -1; CONFIG.data.mixTableTy[6] = -1; CONFIG.data.mixTableTz[6] = -1;
+    CONFIG.data.mixTableFz[7] =  1; CONFIG.data.mixTableTx[7] = -1; CONFIG.data.mixTableTy[7] =  1; CONFIG.data.mixTableTz[7] =  1;
 
     CONFIG.data.magBias[0] = 0.0f;  // Bx (milligauss)
     CONFIG.data.magBias[1] = 0.0f;  // By (milligauss)
