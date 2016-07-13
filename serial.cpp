@@ -5,8 +5,12 @@
 */
 
 #include "serial.h"
+
+#include "serialFork.h"
 #include "state.h"
 
+#include "cardManagement.h"
+#include "command.h"
 #include "config.h"  //CONFIG variable
 #include "control.h"
 #include "led.h"
@@ -21,11 +25,12 @@ inline void WriteProtocolHead(SerialComm::MessageType type, uint32_t mask, CobsP
 }
 
 template <std::size_t N>
-inline void WriteToOutput(CobsPayload<N>& payload, void (*f)(uint8_t*, size_t) = nullptr) {
+inline void WriteToOutput(CobsPayload<N>& payload, bool use_logger = false) {
     auto package = payload.Encode();
-    Serial.write(package.data, package.length);
-    if (f)
-        f(package.data, package.length);
+    if (use_logger)
+        sdcard::write(package.data, package.length);
+    else
+        writeSerial(package.data, package.length);
 }
 
 template <std::size_t N>
@@ -34,21 +39,20 @@ inline void WritePIDData(CobsPayload<N>& payload, const PID& pid) {
 }
 }
 
-SerialComm::SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, const CONFIG_union* config, LED* led) : state{state}, ppm{ppm}, control{control}, config{config}, led{led} {
+SerialComm::SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, CONFIG_union* config, LED* led, PilotCommand* command)
+    : state{state}, ppm{ppm}, control{control}, config{config}, led{led}, command{command} {
 }
 
-void SerialComm::ReadData() {
-    while (Serial.available()) {
-        data_input.AppendToBuffer(Serial.read());
-
-        if (!data_input.IsDone())
-            continue;
-
-        ProcessData();
+void SerialComm::Read() {
+    for (;;) {
+        CobsReaderBuffer* buffer{readSerial()};
+        if (buffer == nullptr)
+            return;
+        ProcessData(*buffer);
     }
 }
 
-void SerialComm::ProcessData() {
+void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
     MessageType code;
     uint32_t mask;
 
@@ -59,13 +63,20 @@ void SerialComm::ProcessData() {
 
     uint32_t ack_data{0};
 
-    if (mask & COM_SET_EEPROM_DATA && data_input.ParseInto(config->raw)) {
-        writeEEPROM();  // TODO: deal with side effect code
-        ack_data |= COM_SET_EEPROM_DATA;
+    if (mask & COM_SET_EEPROM_DATA) {
+        CONFIG_union tmp_config;
+        if (data_input.ParseInto(tmp_config.raw)) {
+            if (!config_verifier || config_verifier(tmp_config.data)) {
+                config->data = tmp_config.data;
+                writeEEPROM();  // TODO: deal with side effect code
+                ack_data |= COM_SET_EEPROM_DATA;
+            }
+        }
     }
     if (mask & COM_REINIT_EEPROM_DATA) {
         initializeEEPROM();  // TODO: deal with side effect code
         writeEEPROM();       // TODO: deal with side effect code
+        ack_data |= COM_REINIT_EEPROM_DATA;
     }
     if (mask & COM_REQ_EEPROM_DATA) {
         SendConfiguration();
@@ -124,18 +135,37 @@ void SerialComm::ProcessData() {
             ack_data |= COM_SET_STATE_DELAY;
         }
     }
-    if (mask & COM_REQ_HISTORY) {
-        String eeprom_data;
-        for (size_t i = EEPROM_LOG_START; i < EEPROM_LOG_END; ++i)
-            eeprom_data += char(EEPROM[i]);
-        SendDebugString(eeprom_data, MessageType::HistoryData);
-        ack_data |= COM_REQ_HISTORY;
+    if (mask & COM_SET_SD_WRITE_DELAY) {
+        uint16_t new_state_delay;
+        if (data_input.ParseInto(new_state_delay)) {
+            sd_card_state_delay = new_state_delay;
+            ack_data |= COM_SET_SD_WRITE_DELAY;
+        }
     }
     if (mask & COM_SET_LED) {
         uint8_t mode, r1, g1, b1, r2, g2, b2, ind_r, ind_g;
         if (data_input.ParseInto(mode, r1, g1, b1, r2, g2, b2, ind_r, ind_g)) {
             led->set(LED::Pattern(mode), r1, g1, b1, r2, g2, b2, ind_r, ind_g);
             ack_data |= COM_SET_LED;
+        }
+    }
+    if (mask & COM_SET_SERIAL_RC) {
+        uint8_t enabled;
+        int16_t throttle, pitch, roll, yaw;
+        if (data_input.ParseInto(enabled, throttle, pitch, roll, yaw)) {
+            command->useSerialInput(enabled);
+            command->setRCValues(throttle, pitch, roll, yaw);
+            ack_data |= COM_SET_SERIAL_RC;
+        }
+    }
+    if (mask & COM_SET_CARD_RECORDING) {
+        bool shouldRecordToCard;
+        if (data_input.ParseInto(shouldRecordToCard)) {
+            if (shouldRecordToCard)
+                sdcard::openFile();
+            else
+                sdcard::closeFile();
+            ack_data |= COM_SET_CARD_RECORDING;
         }
     }
 
@@ -157,6 +187,7 @@ void SerialComm::SendDebugString(const String& string, MessageType type) const {
     size_t str_len = string.length();
     for (size_t i = 0; i < str_len; ++i)
         payload.Append(string.charAt(i));
+    payload.Append(uint8_t(0));
     WriteToOutput(payload);
 }
 
@@ -219,7 +250,10 @@ uint16_t SerialComm::PacketSize(uint32_t mask) const {
     return sum;
 }
 
-void SerialComm::SendState(uint32_t timestamp_us, void (*extra_handler)(uint8_t*, size_t), uint32_t mask) const {
+void SerialComm::SendState(uint32_t timestamp_us, uint32_t mask, bool redirect_to_sd_card) const {
+    // No need to build the message if we are not writing to the card
+    if (redirect_to_sd_card && !sdcard::isOpen())
+        return;
     if (!mask)
         mask = state_mask;
     // No need to publish empty state messages
@@ -286,7 +320,7 @@ void SerialComm::SendState(uint32_t timestamp_us, void (*extra_handler)(uint8_t*
         payload.Append(state->kinematicsAltitude);
     if (mask & SerialComm::STATE_LOOP_COUNT)
         payload.Append(state->loopCount);
-    WriteToOutput(payload, extra_handler);
+    WriteToOutput(payload, redirect_to_sd_card);
 }
 
 void SerialComm::SendResponse(uint32_t mask, uint32_t response) const {
@@ -298,6 +332,10 @@ void SerialComm::SendResponse(uint32_t mask, uint32_t response) const {
 
 uint16_t SerialComm::GetSendStateDelay() const {
     return send_state_delay;
+}
+
+uint16_t SerialComm::GetSdCardStateDelay() const {
+    return sd_card_state_delay;
 }
 
 void SerialComm::SetStateMsg(uint32_t values) {

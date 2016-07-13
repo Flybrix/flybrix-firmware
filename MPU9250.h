@@ -34,7 +34,7 @@ class MPU9250 : public CallbackProcessor {
     void forgetBiasValues();  // discard bias values
 
     bool startMeasurement();
-    void processCallback(uint8_t count, uint8_t *rawData);  // handles return for getAccelGryo()
+    void triggerCallback();  // handles return for getAccelGryo()
 
     float getTemp() {
         return (float)temperatureCount[0] / 333.87 + 21.0;
@@ -72,8 +72,6 @@ class MPU9250 : public CallbackProcessor {
 };  // class MPU9250
 
 #define DEG2RAD 0.01745329251f
-
-#define MPU_INTERRUPT 17  // 36
 
 //*************************************************************
 //

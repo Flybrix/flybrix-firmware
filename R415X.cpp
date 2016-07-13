@@ -5,6 +5,7 @@
 */
 
 #include "R415X.h"
+#include "board.h"
 
 volatile uint16_t RX[RC_CHANNEL_COUNT];  // filled by the interrupt with valid data
 volatile uint16_t RX_errors = 0;  // count dropped frames
@@ -13,12 +14,12 @@ volatile uint16_t RX_buffer[RC_CHANNEL_COUNT];  // buffer data in anticipation o
 volatile uint8_t RX_channel = 0;  // we are collecting data for this channel
 
 R415X::R415X() {
-    attemptToBind(50);
-    initialize_isr();
+    attemptToBind(50); //this calls initialize_isr
+    //initialize_isr();
 }
 
 void R415X::initialize_isr(void) {
-    pinMode(RX_DAT, INPUT);  // WE ARE ASSUMING RX_DAT IS PIN 3 IN FTM1 SETUP!
+    pinMode(board::RX_DAT, INPUT);  // WE ARE ASSUMING RX_DAT IS PIN 3 IN FTM1 SETUP!
 
     for (uint8_t i = 0; i <= RC_CHANNEL_COUNT; i++) {
         RX[i] = 1100;
@@ -73,10 +74,10 @@ extern "C" void ftm1_isr(void) {
 }
 
 void R415X::attemptToBind(uint16_t milliseconds) {
-    pinMode(RX_DAT, OUTPUT);
-    digitalWrite(RX_DAT, LOW);
+    pinMode(board::RX_DAT, OUTPUT);
+    digitalWrite(board::RX_DAT, LOW);
     delay(milliseconds);
-    pinMode(RX_DAT, INPUT);  // WE ARE ASSUMING RX_DAT IS PIN 3 IN FTM1 SETUP!
+    pinMode(board::RX_DAT, INPUT);  // WE ARE ASSUMING RX_DAT IS PIN 3 IN FTM1 SETUP!
 
     // after we bind, we must setup our timer again.
     initialize_isr();

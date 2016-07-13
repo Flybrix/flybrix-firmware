@@ -5,56 +5,26 @@
 */
 
 #include "motors.h"
+#include "board.h"
 #include "state.h"
 
-Motors::Motors(State* __state) {
-    state = __state;
-
+Motors::Motors(State* state) : state(state) {
     // REFERENCE: https://www.pjrc.com/teensy/td_pulse.html
     analogWriteResolution(12);  // actual resolution depends on frequency
 
-    // FTM2
-    pinMode(PWM0, OUTPUT);
-    pinMode(PWM1, OUTPUT);
-    analogWriteFrequency(PWM0, 11718);  // changes all pins on FTM2
+    for (auto pin : board::PWM)
+        pinMode(pin, OUTPUT);
 
-    // FTM0
-    pinMode(PWM2, OUTPUT);
-    pinMode(PWM3, OUTPUT);
-    pinMode(PWM4, OUTPUT);
-    pinMode(PWM5, OUTPUT);
-    pinMode(PWM6, OUTPUT);
-    pinMode(PWM7, OUTPUT);
-    analogWriteFrequency(PWM2, 11718);  // changes all pins on FTM0
+    for (auto ftm : board::FTM)  // changes all pins on FTM2 and FTM0
+        analogWriteFrequency(ftm, 11718);
 }
 
 void Motors::updateAllChannels() {
-    // 12 bit output
+    bool motors_enabled{state->is(STATUS_ENABLED) || state->is(STATUS_OVERRIDE)};
 
     for (uint8_t motor = 0; motor < 8; motor++) {
+        // 12 bit output
         state->MotorOut[motor] = constrain(state->MotorOut[motor], 0, 4095);
+        analogWrite(board::PWM[motor], motors_enabled ? state->MotorOut[motor] : 0);
     }
-
-    if (state->is(STATUS_ENABLED) || state->is(STATUS_OVERRIDE)) {
-        analogWrite(PWM0, state->MotorOut[0]);
-        analogWrite(PWM1, state->MotorOut[1]);
-        analogWrite(PWM2, state->MotorOut[2]);
-        analogWrite(PWM3, state->MotorOut[3]);
-        analogWrite(PWM4, state->MotorOut[4]);
-        analogWrite(PWM5, state->MotorOut[5]);
-        analogWrite(PWM6, state->MotorOut[6]);
-        analogWrite(PWM7, state->MotorOut[7]);
-    }
-	else
-	{
-		analogWrite(PWM0, 0);
-        analogWrite(PWM1, 0);
-        analogWrite(PWM2, 0);
-        analogWrite(PWM3, 0);
-        analogWrite(PWM4, 0);
-        analogWrite(PWM5, 0);
-        analogWrite(PWM6, 0);
-        analogWrite(PWM7, 0);
-    
-	}
 }

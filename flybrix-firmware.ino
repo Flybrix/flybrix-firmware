@@ -1,10 +1,14 @@
+#include <SPI.h>
+#include <SdFat.h>
+#include <FastLED.h>
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2015, 2016 Flying Selfie Inc.
     *
     *  License and other details available at: http://www.flybrix.com/firmware
 
-    Credit is due to several other projects, including:
+    Credit for inspiration and guidance is due to several other projects, including:
     - multiwii ("https://github.com/multiwii")
+    - cleanflight ("https://github.com/cleanflight")
     - phoenix flight controller ("https://github.com/cTn-dev/Phoenix-FlightController")
 
 */
@@ -35,6 +39,10 @@
 #include "localization.h"
 #include "debug.h"
 #include "version.h"
+#include "board.h"
+#include "cardManagement.h"
+#include "serialFork.h"
+#include "testMode.h"
 
 struct Systems {
     // subsystem objects initialize pins when created
@@ -70,24 +78,30 @@ Systems::Systems()
       airframe{&state},
       pilot{&state},
       control{&state, CONFIG.data},
-      conf{&state, RX, &control, &CONFIG, &led}  // listen for configuration inputs
+      conf{&state, RX, &control, &CONFIG, &led, &pilot}  // listen for configuration inputs
 {
 }
 
 void setup() {
+
     config_handler = [&](CONFIG_struct& config){
       sys.control.parseConfig(config);
     };
 
+    config_verifier = [&](const CONFIG_struct& config) {
+        bool retval{true};
+        retval &= sys.control.verifyConfig(config);
+        return retval;
+    };
+
     debug_serial_comm = &sys.conf;
 
-    // setup USB debug serial
-    Serial.begin(9600);  // USB is always 12 Mbit/sec
-
     // MPU9250 is limited to 400kHz bus speed.
-    Wire.begin(I2C_MASTER, 0x00, I2C_PINS_18_19, I2C_PULLUP_EXT, I2C_RATE_400);  // For I2C pins 18 and 19
+    Wire.begin(I2C_MASTER, 0x00, board::I2C_PINS, board::I2C_PULLUP, I2C_RATE_400);  // For I2C pins 18 and 19
     sys.state.set(STATUS_BOOT);
     sys.led.update();
+
+    bool go_to_test_mode{isEmptyEEPROM()};
 
     // load stored settings (this will reinitialize if there is no data in the EEPROM!
     readEEPROM();
@@ -126,40 +140,42 @@ void setup() {
             ;
     }
 
+    sys.led.update();
+
+    // factory test pattern runs only once
+    if (go_to_test_mode)
+        runTestMode(sys.state, sys.led, sys.motors);
+
+    // Perform intial check for an SD card
+    sdcard::startup();
+
     sys.state.clear(STATUS_BOOT);
     sys.state.set(STATUS_IDLE);
     sys.led.update();
 }
 
-// Main loop variables
-
-uint32_t start_time = 0;
-uint32_t state_updates = 0;
-uint32_t interrupt_waits = 0;
-uint32_t control_updates = 0;
-uint32_t mpu_reads = 0;
-uint32_t mag_reads = 0;
-uint32_t bmp_reads = 0;
-uint32_t pwr_reads = 0;
-
 uint32_t low_battery_counter = 0;
-
-#define DEF_PROCESS_VARIABLES(F) uint32_t iterations_at_##F##Hz = 0;
-
-/* F is target frequency, D is a tuning factor */
-#define RUN_PROCESS(F)                               \
-    iterations_at_##F##Hz = RunProcess<F>(micros()); \
-    sys.i2c.update();
-
-DEF_PROCESS_VARIABLES(1000)
-DEF_PROCESS_VARIABLES(500)
-DEF_PROCESS_VARIABLES(100)
-DEF_PROCESS_VARIABLES(40)
-DEF_PROCESS_VARIABLES(10)
-DEF_PROCESS_VARIABLES(1)
 
 template <uint32_t f>
 uint32_t RunProcess(uint32_t start);
+
+template <uint32_t... Freqs>
+struct freqlist{};
+
+void RunProcessesHelper(freqlist<>) {
+}
+
+template <uint32_t F, uint32_t... Fargs>
+void RunProcessesHelper(freqlist<F, Fargs...>) {
+    RunProcess<F>(micros());
+    sys.i2c.update();
+    RunProcessesHelper(freqlist<Fargs...>());
+}
+
+template <uint32_t... Freqs>
+void RunProcesses() {
+    RunProcessesHelper(freqlist<Freqs...>());
+}
 
 template <uint32_t f>
 bool ProcessTask();
@@ -170,21 +186,14 @@ void loop() {
 
     sys.state.loopCount++;
 
-    if (start_time == 0) {
-        start_time = micros();
-    }
-
     sys.i2c.update();  // manages a queue of requests for mpu, mag, bmp
 
     if (sys.mpu.ready) {
         if (!skip_state_update) {
             sys.state.updateStateIMU(micros());  // update state as often as we can
-            state_updates++;
         } else {
-            interrupt_waits++;
         }
         if (sys.mpu.startMeasurement()) {
-            mpu_reads++;
             skip_state_update = false;
         } else {
             skip_state_update = true;  // stop updating state until we queue another mpu measurement
@@ -197,43 +206,35 @@ void loop() {
         sys.motors.updateAllChannels();
     } else {
         sys.control.calculateControlVectors();
-        control_updates++;
 
         sys.airframe.updateMotorsMix();
         sys.motors.updateAllChannels();
     }
 
-    RUN_PROCESS(1000)
-    RUN_PROCESS(500)
-    RUN_PROCESS(500)
-    RUN_PROCESS(100)
-    RUN_PROCESS(40)
-    RUN_PROCESS(10)
-    RUN_PROCESS(1)
+    RunProcesses<1000, 100, 40, 35, 30, 10, 1>();
 }
-
-uint32_t eeprom_log_start = EEPROM_LOG_START;
 
 template <>
 bool ProcessTask<1000>() {
-    static uint16_t counter{0};
-    if (++counter > sys.conf.GetSendStateDelay() - 1) {
-        counter = 0;
-        sys.conf.SendState(micros(), [&](uint8_t* data, size_t length) {
-            if (eeprom_log_start + length >= EEPROM_LOG_END) {
-                sys.state.set(STATUS_LOG_FULL);
-                return;
-            }
-            for (size_t i = 0; i < length; ++i)
-                EEPROM.write(eeprom_log_start++, data[i]);
-        });
+    static uint16_t counterSerial{0};
+    static uint16_t counterSdCard{0};
+    if (++counterSerial > sys.conf.GetSendStateDelay() - 1) {
+        counterSerial = 0;
+        sys.conf.SendState(micros());
     }
-    counter %= 1000;
+    if (++counterSdCard > sys.conf.GetSdCardStateDelay() - 1) {
+        counterSdCard = 0;
+        sys.conf.SendState(micros(), 0xFFFFFFFF, true);
+    }
+    counterSerial %= 1000;
+    counterSdCard %= 1000;
+    if (LEDFastUpdate)
+        LEDFastUpdate();
     return true;
 }
 
 template <>
-bool ProcessTask<500>() {
+bool ProcessTask<30>() {
     sys.led.update();  // update quickly to support color dithering
     return true;
 }
@@ -243,7 +244,6 @@ bool ProcessTask<100>() {
     if (sys.bmp.ready) {
         sys.state.updateStatePT(micros());
         sys.bmp.startMeasurement();
-        bmp_reads++;
     } else {
         return false;
     }
@@ -257,8 +257,14 @@ bool ProcessTask<100>() {
         sys.state.clear(STATUS_SET_MPU_BIAS);
     }
 
-    sys.conf.ReadData();  // Respond to commands from the Configurator chrome extension
+    sys.conf.Read();  // Respond to commands from the Configurator chrome extension
 
+    return true;
+}
+
+template <>
+bool ProcessTask<35>() {
+    flushSerial();
     return true;
 }
 
@@ -267,7 +273,6 @@ bool ProcessTask<40>() {
     sys.pilot.processCommands();
 
     sys.pwr.measureRawLevels();  // read all ADCs
-    pwr_reads++;
 
     // check for low voltage condition
     if ( ((1/50)/0.003*1.2/65536 * sys.state.I1_raw ) > 1.0f ){ //if total battery current > 1A
@@ -300,7 +305,6 @@ template <>
 bool ProcessTask<10>() {
     if (sys.mag.ready) {
         sys.mag.startMeasurement();
-        mag_reads++;
     } else {
         return false;
     }
@@ -310,39 +314,6 @@ bool ProcessTask<10>() {
 
 template <>
 bool ProcessTask<1>() {
-#ifdef DEBUG
-    float elapsed_seconds = (micros() - start_time) / 1000000.0;
-    Serial.print("DEBUG: elapsed time (seconds)   = ");
-    Serial.println(elapsed_seconds);
-    Serial.print("DEBUG: main loop rate (Hz)      = ");
-    Serial.println(sys.state.loopCount / elapsed_seconds);
-    Serial.print("DEBUG: state update rate (Hz)   = ");
-    Serial.println(state_updates / elapsed_seconds);
-    Serial.print("DEBUG: control update rate (Hz) = ");
-    Serial.println(control_updates / elapsed_seconds);
-    Serial.print("DEBUG: mpu read rate (Hz) = ");
-    Serial.println(mpu_reads / elapsed_seconds);
-    Serial.print("DEBUG: mag read rate (Hz) = ");
-    Serial.println(mag_reads / elapsed_seconds);
-    Serial.print("DEBUG: bmp read rate (Hz) = ");
-    Serial.println(bmp_reads / elapsed_seconds);
-    Serial.print("DEBUG: pwr read rate (Hz) = ");
-    Serial.println(pwr_reads / elapsed_seconds);
-    Serial.print("DEBUG: 500Hz rate (Hz) = ");
-    Serial.println(iterations_at_500Hz / elapsed_seconds);
-    Serial.print("DEBUG: 100Hz rate (Hz) = ");
-    Serial.println(iterations_at_100Hz / elapsed_seconds);
-    Serial.print("DEBUG:  40Hz rate (Hz) = ");
-    Serial.println(iterations_at_40Hz / elapsed_seconds);
-    Serial.print("DEBUG:  10Hz rate (Hz) = ");
-    Serial.println(iterations_at_10Hz / elapsed_seconds);
-    Serial.print("DEBUG:   1Hz rate (Hz) = ");
-    Serial.println(iterations_at_1Hz / elapsed_seconds);
-    Serial.print("DEBUG: interrupt wait rate (Hz) = ");
-    Serial.println(interrupt_waits / elapsed_seconds);
-    Serial.println("");
-#endif
-
     return true;
 }
 

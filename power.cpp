@@ -5,15 +5,16 @@
 */
 
 #include "power.h"
+#include "board.h"
 #include "state.h"
 
 PowerMonitor::PowerMonitor(State* __state) {
     state = __state;
 
     // REFERENCE: https://github.com/pedvide/ADC
-    pinMode(V0_DETECT, INPUT);
-    pinMode(I0_DETECT, INPUT);
-    pinMode(I1_DETECT, INPUT);
+    pinMode(board::V0_DETECT, INPUT);
+    pinMode(board::I0_DETECT, INPUT);
+    pinMode(board::I1_DETECT, INPUT);
 
     adc.setReference(ADC_REF_1V2, ADC_0);
     adc.setAveraging(1, ADC_0);                     // set number of averages
@@ -21,7 +22,7 @@ PowerMonitor::PowerMonitor(State* __state) {
     adc.setConversionSpeed(ADC_HIGH_SPEED, ADC_0);  // change the conversion speed
     adc.setSamplingSpeed(ADC_HIGH_SPEED, ADC_0);    // change the sampling speed
 
-    adc.setReference(ADC_REF_1V2, ADC_1);
+    adc.setReference(BOARD_ADC_REF, ADC_1);
     adc.setAveraging(1, ADC_1);                     // set number of averages
     adc.setResolution(16, ADC_1);                   // set bits of resolution
     adc.setConversionSpeed(ADC_HIGH_SPEED, ADC_1);  // change the conversion speed
@@ -43,15 +44,15 @@ float PowerMonitor::getElectronicsPower(void) {
 }
 
 uint16_t PowerMonitor::getV0Raw(void) {
-    return (uint16_t)adc.analogRead(V0_DETECT, ADC_1);
+    return (uint16_t)adc.analogRead(board::V0_DETECT, ADC_1);
 }
 
 uint16_t PowerMonitor::getI0Raw(void) {
-    return (uint16_t)adc.analogRead(I0_DETECT, ADC_0);
+    return (uint16_t)adc.analogRead(board::I0_DETECT, ADC_0);
 }
 
 uint16_t PowerMonitor::getI1Raw(void) {
-    return (uint16_t)adc.analogRead(I1_DETECT, ADC_0);
+    return (uint16_t)adc.analogRead(board::I1_DETECT, ADC_0);
 }
 
 float PowerMonitor::getV0(void) {

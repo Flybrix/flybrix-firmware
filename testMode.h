@@ -3,11 +3,14 @@
     *
     *  License and other details available at: http://www.flybrix.com/firmware
 
-    <debug.h/cpp>
+    <testMode.h/cpp>
 
-    Utility functions for debugging
+    Test mode for LED and motor functionality
+
 */
 
-#include "debug.h"
+class LED;
+class Motors;
+class State;
 
-SerialComm* debug_serial_comm{nullptr};
+void runTestMode(State& state, LED& led, Motors& motors);

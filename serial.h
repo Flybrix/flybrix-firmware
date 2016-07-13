@@ -15,6 +15,7 @@
 #include "cobs.h"
 
 union CONFIG_union;
+class PilotCommand;
 class Control;
 class LED;
 class State;
@@ -44,14 +45,15 @@ class SerialComm {
         COM_MOTOR_OVERRIDE_SPEED_5 = 1 << 10,
         COM_MOTOR_OVERRIDE_SPEED_6 = 1 << 11,
         COM_MOTOR_OVERRIDE_SPEED_7 = 1 << 12,
-        COM_MOTOR_OVERRIDE_SPEED_ALL =
-            COM_MOTOR_OVERRIDE_SPEED_0 | COM_MOTOR_OVERRIDE_SPEED_1 | COM_MOTOR_OVERRIDE_SPEED_2 | COM_MOTOR_OVERRIDE_SPEED_3 |
-            COM_MOTOR_OVERRIDE_SPEED_4 | COM_MOTOR_OVERRIDE_SPEED_5 | COM_MOTOR_OVERRIDE_SPEED_6 | COM_MOTOR_OVERRIDE_SPEED_7 ,
+        COM_MOTOR_OVERRIDE_SPEED_ALL = COM_MOTOR_OVERRIDE_SPEED_0 | COM_MOTOR_OVERRIDE_SPEED_1 | COM_MOTOR_OVERRIDE_SPEED_2 | COM_MOTOR_OVERRIDE_SPEED_3 | COM_MOTOR_OVERRIDE_SPEED_4 |
+                                       COM_MOTOR_OVERRIDE_SPEED_5 | COM_MOTOR_OVERRIDE_SPEED_6 | COM_MOTOR_OVERRIDE_SPEED_7,
         COM_SET_COMMAND_OVERRIDE = 1 << 13,
         COM_SET_STATE_MASK = 1 << 14,
         COM_SET_STATE_DELAY = 1 << 15,
-        COM_REQ_HISTORY = 1 << 16,
+        COM_SET_SD_WRITE_DELAY = 1 << 16,
         COM_SET_LED = 1 << 17,
+        COM_SET_SERIAL_RC = 1 << 18,
+        COM_SET_CARD_RECORDING = 1 << 19,
     };
 
     enum StateFields : uint32_t {
@@ -86,33 +88,35 @@ class SerialComm {
         STATE_LOOP_COUNT = 1 << 27,
     };
 
-    explicit SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, const CONFIG_union* config, LED* led);
+    explicit SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, CONFIG_union* config, LED* led, PilotCommand* command);
 
-    void ReadData();
+    void Read();
 
     void SendConfiguration() const;
     void SendDebugString(const String& string, MessageType type = MessageType::DebugString) const;
-    void SendState(uint32_t timestamp_us, void (*extra_handler)(uint8_t*, size_t) = nullptr, uint32_t mask = 0) const;
+    void SendState(uint32_t timestamp_us, uint32_t mask = 0, bool redirect_to_sd_card = false) const;
     void SendResponse(uint32_t mask, uint32_t response) const;
 
     uint16_t GetSendStateDelay() const;
+    uint16_t GetSdCardStateDelay() const;
     void SetStateMsg(uint32_t values);
     void AddToStateMsg(uint32_t values);
     void RemoveFromStateMsg(uint32_t values);
 
    private:
-    void ProcessData();
+    void ProcessData(CobsReaderBuffer& data_input);
 
     uint16_t PacketSize(uint32_t mask) const;
 
     State* state;
     const volatile uint16_t* ppm;
     const Control* control;
-    const CONFIG_union* config;
+    CONFIG_union* config;
     LED* led;
-    uint16_t send_state_delay{1001}; //anything over 1000 turns off state messages
+    PilotCommand* command;
+    uint16_t send_state_delay{1001};  // anything over 1000 turns off state messages
+    uint16_t sd_card_state_delay{2};  // write to SD at the highest rate by default
     uint32_t state_mask{0x7fffff};
-    CobsReader<500> data_input;
 };
 
 #endif

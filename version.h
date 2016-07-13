@@ -3,13 +3,9 @@
     *
     *  License and other details available at: http://www.flybrix.com/firmware
 
-    <version.h/cpp>
+    <version.h>
 
-    EEPROM based configuration data storage structure
-
-    Nonvolatile parameters are being stored inside an CONFIG structure
-    that can be accesed as data union, for easier manipulation as a javascript
-    ArrayBuffer object over serial.
+    Definitions for the firmware version.
 
 */
 
@@ -18,6 +14,6 @@
 
 #define FIRMWARE_VERSION_A 1
 #define FIRMWARE_VERSION_B 2
-#define FIRMWARE_VERSION_C 0
+#define FIRMWARE_VERSION_C 1
 
 #endif
