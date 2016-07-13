@@ -76,7 +76,7 @@ Systems::Systems()
       pwr{&state},        // onboard power monitoring object
       motors{&state},     // eight PWM channels
       airframe{&state},
-      pilot{&state},
+      pilot{&state, &receiver},
       control{&state, CONFIG.data},
       conf{&state, RX, &control, &CONFIG, &led, &pilot}  // listen for configuration inputs
 {

@@ -64,14 +64,14 @@ void initializeEEPROM(void) {  // Default Settings
     CONFIG.data.magBias[2] = 0.0f;  // Bz (milligauss)
 
     // RX -- PKZ3341 sends: RHS left/right, RHS up/down, LHS up/down, LHS left/right, RHS click (latch), LHS button(momentary)
-    CONFIG.data.assignedChannel[0] = 2;  // map throttle to LHS up/down
-    CONFIG.data.assignedChannel[1] = 1;  // map pitch to RHS up/down
-    CONFIG.data.assignedChannel[2] = 0;  // map roll to RHS left/righ
-    CONFIG.data.assignedChannel[3] = 3;  // map yaw to LHS up/down
-    CONFIG.data.assignedChannel[4] = 4;  // map AUX1 to RHS click
-    CONFIG.data.assignedChannel[5] = 5;  // map AUX2 to LHS click
+    CONFIG.data.channelAssignment[0] = 2;  // map throttle to LHS up/down
+    CONFIG.data.channelAssignment[1] = 1;  // map pitch to RHS up/down
+    CONFIG.data.channelAssignment[2] = 0;  // map roll to RHS left/righ
+    CONFIG.data.channelAssignment[3] = 3;  // map yaw to LHS up/down
+    CONFIG.data.channelAssignment[4] = 4;  // map AUX1 to RHS click
+    CONFIG.data.channelAssignment[5] = 5;  // map AUX2 to LHS click
 
-    CONFIG.data.commandInversion = 3; //invert pitch and roll
+    CONFIG.data.channelInversion = 6; //invert both pitch and roll
 
     CONFIG.data.channelMidpoint[0] = 1515;
     CONFIG.data.channelMidpoint[1] = 1515;

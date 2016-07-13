@@ -152,9 +152,19 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
     if (mask & COM_SET_SERIAL_RC) {
         uint8_t enabled;
         int16_t throttle, pitch, roll, yaw;
-        if (data_input.ParseInto(enabled, throttle, pitch, roll, yaw)) {
-            command->useSerialInput(enabled);
-            command->setRCValues(throttle, pitch, roll, yaw);
+        uint8_t auxmask;
+        if (data_input.ParseInto(enabled, throttle, pitch, roll, yaw, auxmask)) {
+            if (enabled){
+                state->command_source_mask |= COMMAND_READY_BTLE;
+                state->command_AUX_mask = auxmask;
+                state->command_throttle = throttle;
+                state->command_pitch = pitch;
+                state->command_roll = roll;
+                state->command_yaw = yaw;
+            }
+            else {
+                state->command_source_mask &= ~COMMAND_READY_BTLE;
+            }
             ack_data |= COM_SET_SERIAL_RC;
         }
     }
@@ -289,7 +299,7 @@ void SerialComm::SendState(uint32_t timestamp_us, uint32_t mask, bool redirect_t
             payload.Append(ppm[i]);
     }
     if (mask & SerialComm::STATE_AUX_CHAN_MASK)
-        payload.Append(state->AUX_chan_mask);
+        payload.Append(state->command_AUX_mask);
     if (mask & SerialComm::STATE_COMMANDS)
         payload.Append(state->command_throttle, state->command_pitch, state->command_roll, state->command_yaw);
     if (mask & SerialComm::STATE_F_AND_T)

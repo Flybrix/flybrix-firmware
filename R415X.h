@@ -14,13 +14,61 @@
 
 #include "Arduino.h"
 
+class State;
+
+class PPMchannel {
+   public:
+    PPMchannel(){};
+
+    uint16_t val = 1500;
+
+    uint16_t mid = 1500;
+    static const uint16_t min = 1100;
+    static const uint16_t max = 1900;
+
+    void update(uint16_t newVal) {
+        val = newVal;
+    };
+
+    boolean isLow() {
+        return ((val - min) < (max - min) / 10);
+    };
+    boolean isHigh() {
+        return ((max - val) < (max - min) / 10);
+    };
+    boolean isMid() {
+        return (abs(val - mid) < (max - min) / 10);
+    };
+
+    // R/C controllers are sold with a specified "mode" that is either "mode 1" or "mode 2"
+    // our default settings assume a "mode 2" controller, but the channels can be remapped if desired.
+    // "mode 2" puts "throttle/yaw" on left stick and "pitch/roll" on the right
+    // "mode 1" puts "pitch/yaw" on left stick and "throttle/roll" on the right
+    // in both modes, sticks "down" or "right" produce LOW ppm values, while sticks "up" or "left" give high values
+    //
+    // We want our sticks to map cleanly over to our flyer's coordinate system:
+    //   ( +x = right, +y = forward, +z = up) which implies (+pitch = nose up, +roll = RHS down, +yaw = CCW viewed from above)
+    //
+    // ***** To match this convention, we must invert the direction of the pitch and roll commands *****
+    //
+    // This is done using 'CONFIG.data.channelInversion'.
+    //
+};
+
 class R415X {
    public:
     R415X();
-    void attemptToBind(uint16_t milliseconds);
+    void getCommandData(State* state);
 
    private:
     void initialize_isr(void);
+    
+    PPMchannel throttle;
+    PPMchannel pitch;
+    PPMchannel roll;
+    PPMchannel yaw;
+    PPMchannel AUX1;
+    PPMchannel AUX2;
 
 };  // class R415X
 

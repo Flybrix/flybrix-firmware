@@ -45,8 +45,9 @@ class State {
     uint32_t p0 = 25600000;  // initial pressure, set to 1 bar by default
 
     // Command
-    uint8_t AUX_chan_mask = 0;  // bitfield order is {AUX1_low, AUX1_mid, AUX1_high, AUX2_low, AUX2_mid, AUX2_high, x, x} (LSB-->MSB)
-    int16_t invalidRXcount = 0;
+    int16_t command_invalid_count = 0;
+    uint8_t command_source_mask = 0; // bitfield order is {x, R415X, BTLE, x, x, x, x, x} (LSB-->MSB)
+    uint8_t command_AUX_mask = 0; // bitfield order is {AUX1_low, AUX1_mid, AUX1_high, AUX2_low, AUX2_mid, AUX2_high, x, x} (LSB-->MSB)
     int16_t command_throttle = 0, command_pitch = 0, command_roll = 0, command_yaw = 0;
 
     // Control
@@ -86,6 +87,10 @@ class State {
 };  // end of class State
 
 #define DEG2RAD 0.01745329251f
+
+// Controller ready codes
+#define COMMAND_READY_R415X 0x01
+#define COMMAND_READY_BTLE 0x02
 
 // STATUS BITS
 #define STATUS_BOOT 0x0001

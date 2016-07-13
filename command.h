@@ -13,79 +13,23 @@
 #define command_h
 
 #include "Arduino.h"
-
 #include "R415X.h"
 
 class State;
 
-class PPMchannel {
-   public:
-    PPMchannel(){};
-
-    uint16_t val = 1500;
-
-    uint16_t mid = 1500;
-    static const uint16_t min = 1100;
-    static const uint16_t max = 1900;
-
-    void update(uint16_t newVal) {
-        val = newVal;
-    };
-
-    boolean isLow() {
-        return ((val - min) < (max - min) / 10);
-    };
-    boolean isHigh() {
-        return ((max - val) < (max - min) / 10);
-    };
-    boolean isMid() {
-        return (abs(val - mid) < (max - min) / 10);
-    };
-
-    // R/C controllers are sold with a specified "mode" that is either "mode 1" or "mode 2"
-    // our default settings assume a "mode 2" controller, but the channels can be remapped if desired.
-    // "mode 2" puts "throttle/yaw" on left stick and "pitch/roll" on the right
-    // "mode 1" puts "pitch/yaw" on left stick and "throttle/roll" on the right
-    // in both modes, sticks "down" or "right" produce LOW ppm values, while sticks "up" or "left" give high values
-    //
-    // We want our sticks to map cleanly over to our flyer's coordinate system:
-    //   ( +x = right, +y = forward, +z = up) which implies (+pitch = nose up, +roll = RHS down, +yaw = CCW viewed from above)
-    //
-    // ***** To match this convention, we must invert the direction of the pitch and roll commands *****
-    //
-    // This is done using 'CONFIG.data.commandInversion' at the end of command.cpp, when we scale for use in the state command variables.
-    //
-};
-
 class PilotCommand {
    public:
-    PilotCommand(State* state);
+    PilotCommand(State* state, R415X* receiver);
     void processCommands(void);
-    void useSerialInput(bool);
-    void setRCValues(int16_t throttle, int16_t pitch, int16_t roll, int16_t yaw);
 
    private:
     State* state;
-    void loadRxData();
+    R415X* receiver;
 
     boolean blockEnabling = true;
     boolean recentlyEnabled = false;
     uint16_t throttleHoldOff = 0;  // hold controls low for some time after enabling
 
-    PPMchannel throttle;
-    PPMchannel pitch;
-    PPMchannel roll;
-    PPMchannel yaw;
-    PPMchannel AUX1;
-    PPMchannel AUX2;
-
-    int16_t* throttle_command;
-    int16_t* pitch_command;
-    int16_t* roll_command;
-    int16_t* yaw_command;
-
-    bool serialInput{false};
-    int16_t throttle_man{0}, pitch_man{0}, roll_man{0}, yaw_man{0};
 };
 
 #endif

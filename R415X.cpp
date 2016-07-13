@@ -7,6 +7,8 @@
 #include "R415X.h"
 #include "board.h"
 
+#include "state.h"
+
 volatile uint16_t RX[RC_CHANNEL_COUNT];  // filled by the interrupt with valid data
 volatile uint16_t RX_errors = 0;  // count dropped frames
 volatile uint16_t startPulse = 0;  // keeps track of the last received pulse position
@@ -14,8 +16,7 @@ volatile uint16_t RX_buffer[RC_CHANNEL_COUNT];  // buffer data in anticipation o
 volatile uint8_t RX_channel = 0;  // we are collecting data for this channel
 
 R415X::R415X() {
-    attemptToBind(50); //this calls initialize_isr
-    //initialize_isr();
+    initialize_isr();
 }
 
 void R415X::initialize_isr(void) {
@@ -54,7 +55,6 @@ extern "C" void ftm1_isr(void) {
     // too long : pulseWidth > RX_PPM_SYNCPULSE_MAX;
     if (pulseWidth < 2700 || (pulseWidth > 6300 && pulseWidth < RX_PPM_SYNCPULSE_MIN) || pulseWidth > RX_PPM_SYNCPULSE_MAX) {
         RX_errors++;
-
         RX_channel = RC_CHANNEL_COUNT + 1;           // set RX_channel out of range to drop frame
     } else if (pulseWidth > RX_PPM_SYNCPULSE_MIN) {  // this is the sync pulse
         if (RX_channel <= RC_CHANNEL_COUNT) {        // valid frame = push from our buffer
@@ -73,12 +73,74 @@ extern "C" void ftm1_isr(void) {
     startPulse = stopPulse;  // Save time at pulse start
 }
 
-void R415X::attemptToBind(uint16_t milliseconds) {
-    pinMode(board::RX_DAT, OUTPUT);
-    digitalWrite(board::RX_DAT, LOW);
-    delay(milliseconds);
-    pinMode(board::RX_DAT, INPUT);  // WE ARE ASSUMING RX_DAT IS PIN 3 IN FTM1 SETUP!
+void R415X::getCommandData(State* state) {
+    
+    cli();  // disable interrupts
 
-    // after we bind, we must setup our timer again.
-    initialize_isr();
+    // if R415X is working, we should never see anything less than 900!
+    for (uint8_t i = 0; i < RC_CHANNEL_COUNT; i++) {
+        if (RX[i] < 900) {
+            // tell state that R415X is not ready and return
+            state->command_source_mask &= ~COMMAND_READY_R415X;
+            sei();  // enable interrupts
+            return; // don't load bad data into state
+        }
+    }
+    
+    // read data into PPMchannel objects using receiver channels assigned from configuration
+    throttle.update(RX[CONFIG.data.channelAssignment[0]]);
+    pitch.update(RX[CONFIG.data.channelAssignment[1]]);
+    roll.update(RX[CONFIG.data.channelAssignment[2]]);
+    yaw.update(RX[CONFIG.data.channelAssignment[3]]);
+    AUX1.update(RX[CONFIG.data.channelAssignment[4]]);
+    AUX2.update(RX[CONFIG.data.channelAssignment[5]]);
+
+    // update midpoints from config
+    throttle.mid = CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[0]];
+    pitch.mid = CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[1]];
+    roll.mid = CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[2]];
+    yaw.mid = CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[3]];
+    AUX1.mid = CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[4]];
+    AUX2.mid = CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[5]];
+
+    sei();  // enable interrupts
+    
+    // tell state R415X is working and translate PPMChannel data into the four command level and aux mask
+    state->command_source_mask |= COMMAND_READY_R415X;
+
+    state->command_AUX_mask = 0x00;  // reset the AUX mode bitmask
+    // bitfield order is {AUX1_low, AUX1_mid, AUX1_high, AUX2_low, AUX2_mid, AUX2_high, x, x} (LSB-->MSB)
+    if (AUX1.isLow()) {
+        state->command_AUX_mask |= (1 << 0);
+    } else if (AUX1.isMid()) {
+        state->command_AUX_mask |= (1 << 1);
+    } else if (AUX1.isHigh()) {
+        state->command_AUX_mask |= (1 << 2);
+    }
+    if (AUX2.isLow()) {
+        state->command_AUX_mask |= (1 << 3);
+    } else if (AUX2.isMid()) {
+        state->command_AUX_mask |= (1 << 4);
+    } else if (AUX2.isHigh()) {
+        state->command_AUX_mask |= (1 << 5);
+    }
+    
+    // in some cases it is impossible to get a ppm channel to be close enought to the midpoint (~1500 usec) because the controller trim is too coarse to correct a small error
+    // we get around this by creating a small dead zone around the midpoint of signed channel, specified in usec units
+    int16_t pitch_delta = pitch.val - CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[1]];
+    int16_t  roll_delta =  roll.val - CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[2]];
+    int16_t   yaw_delta =   yaw.val - CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[3]];
+    pitch.val = (pitch_delta > 0) ? max(CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[1]], pitch.val - CONFIG.data.channelDeadzone[CONFIG.data.channelAssignment[1]]) : 
+                                    min(CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[1]], pitch.val + CONFIG.data.channelDeadzone[CONFIG.data.channelAssignment[1]]);
+     roll.val = ( roll_delta > 0) ? max(CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[2]],  roll.val - CONFIG.data.channelDeadzone[CONFIG.data.channelAssignment[2]]) : 
+                                    min(CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[2]],  roll.val + CONFIG.data.channelDeadzone[CONFIG.data.channelAssignment[2]]);
+      yaw.val = (  yaw_delta > 0) ? max(CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[3]],   yaw.val - CONFIG.data.channelDeadzone[CONFIG.data.channelAssignment[3]]) : 
+                                    min(CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[3]],   yaw.val + CONFIG.data.channelDeadzone[CONFIG.data.channelAssignment[3]]);
+
+    uint16_t throttle_threshold = ((throttle.max - throttle.min) / 10) + throttle.min; // keep bottom 10% of throttle stick to mean 'off'
+ 
+    state->command_throttle = constrain((throttle.val - throttle_threshold) * 4095 / (throttle.max - throttle_threshold), 0, 4095);
+    state->command_pitch =    constrain((1-2*((CONFIG.data.channelInversion >> 1) & 1))*(pitch.val - CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[1]]) * 4095 / (pitch.max - pitch.min), -2047, 2047);
+    state->command_roll =     constrain((1-2*((CONFIG.data.channelInversion >> 2) & 1))*( roll.val - CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[2]]) * 4095 / ( roll.max -  roll.min), -2047, 2047);
+    state->command_yaw =      constrain((1-2*((CONFIG.data.channelInversion >> 3) & 1))*(  yaw.val - CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[3]]) * 4095 / (  yaw.max -   yaw.min), -2047, 2047);
 }

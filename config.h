@@ -35,9 +35,9 @@ struct __attribute__((packed)) CONFIG_struct {
     // magnetometer bias values
     float magBias[3];
 
-    // RX channel mapping
-    uint8_t assignedChannel[6];
-    uint8_t commandInversion; //bitfield order is {pitch_command, roll_command, yaw_command, x, x, x, x, x} (LSB-->MSB)
+    // R415X channel mapping
+    uint8_t channelAssignment[6];
+    uint8_t channelInversion; //bitfield order is {throttle_channel, pitch_channel, roll_channel, yaw_channel, x, x, x, x} (LSB-->MSB)
     uint16_t channelMidpoint[6]; // ideally 1500usec
     uint16_t channelDeadzone[6]; // usec units
 
