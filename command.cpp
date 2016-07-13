@@ -20,12 +20,12 @@ PilotCommand::PilotCommand(State* __state, R415X* __receiver)
 
 void PilotCommand::processCommands(void) {
 
-    if (state->command_source_mask & !COMMAND_READY_BTLE){
+    if (!(state->command_source_mask & COMMAND_READY_BTLE)){
         // if we aren't receiving bluetooth command data, try to get it from the R415X
         receiver->getCommandData(state);
     }
   
-    if (!(state->command_source_mask & COMMAND_READY_R415X) && !(state->command_source_mask & COMMAND_READY_BTLE)){
+    if (!(state->command_source_mask & (COMMAND_READY_R415X | COMMAND_READY_BTLE))){
         // we have no command data!
         state->command_invalid_count += 2;
         if (state->command_invalid_count > 100) {
