@@ -15,6 +15,7 @@
 #include <i2c_t3.h>
 
 #define BETA
+#define BOARD_ADC_REF ADC_REF_3V3 //ADC_REF_1V2
 
 namespace board {
 #ifdef ALPHA
@@ -145,6 +146,10 @@ constexpr uint8_t COUNT{4};
 constexpr Position POSITION[]{
     {LEFT, BACK}, {LEFT, FRONT}, {RIGHT, FRONT}, {RIGHT, BACK},
 };
+}
+
+namespace bluetooth {
+constexpr uint8_t RESET{28};
 }
 }
 }

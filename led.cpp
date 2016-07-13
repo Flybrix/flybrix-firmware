@@ -5,7 +5,6 @@
 */
 
 #include "led.h"
-#include "board.h"
 #include "state.h"
 
 void (*LEDFastUpdate)(){nullptr};
@@ -236,6 +235,18 @@ void LED::use(Pattern pattern, CRGB color_right, CRGB color_left, bool red_indic
     LED_driver.setColor(color_left, {-128, -128}, {0, 127});
 }
 
+void LED::setWhite(board::led::Position lower_left, board::led::Position upper_right, bool red_indicator, bool green_indicator) {
+    colorRight = CRGB::Black;
+    colorLeft = CRGB::Black;
+    override = true;
+    oldStatus = 0;
+    red_indicator ? indicatorRedOn() : indicatorRedOff();
+    green_indicator ? indicatorGreenOn() : indicatorGreenOff();
+    LED_driver.setPattern(LED::SOLID);
+    LED_driver.setColor(CRGB::Black);
+    LED_driver.setColor(CRGB::White, lower_left, upper_right);
+}
+
 namespace {
 struct LightCase {
     LightCase(uint16_t status, LED::Pattern pattern, CRGB colorRight, CRGB colorLeft, bool indicatorRed = false, bool indicatorGreen = false);
@@ -259,12 +270,12 @@ const LightCase INDICATIONS[]{
     {STATUS_MPU_FAIL, LED::SOLID, CRGB::Black, CRGB::Red, true},
     {STATUS_BMP_FAIL, LED::SOLID, CRGB::Red, CRGB::Black, true},
     {STATUS_BOOT, LED::SOLID, CRGB::Green},
-    {STATUS_UNPAIRED, LED::FLASH, CRGB::White, CRGB::White, false, true},  // for pcba testing purposes -- a "good" board will end up in this state
+    {STATUS_UNPAIRED, LED::FLASH, CRGB::Orange, CRGB::Orange},
     {STATUS_RX_FAIL, LED::FLASH, CRGB::Red},
-    {STATUS_FAIL_STABILITY, LED::FLASH, CRGB::Yellow},
-    {STATUS_FAIL_ANGLE, LED::FLASH, CRGB::Yellow},
+    {STATUS_FAIL_STABILITY, LED::FLASH, CRGB::Black, CRGB::Blue},
+    {STATUS_FAIL_ANGLE, LED::FLASH, CRGB::Blue, CRGB::Black},
     {STATUS_OVERRIDE, LED::BEACON, CRGB::Red},
-    {STATUS_TEMP_WARNING, LED::FLASH, CRGB::Yellow},
+    {STATUS_TEMP_WARNING, LED::FLASH, CRGB::Red},
     {STATUS_BATTERY_LOW, LED::BEACON, CRGB::Orange},
     {STATUS_ENABLING, LED::FLASH, CRGB::Blue},
     {STATUS_ENABLED, LED::BEACON, CRGB::Blue},

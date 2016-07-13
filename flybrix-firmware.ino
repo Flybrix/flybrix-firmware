@@ -1,10 +1,14 @@
+#include <SPI.h>
+#include <SdFat.h>
+#include <FastLED.h>
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2015, 2016 Flying Selfie Inc.
     *
     *  License and other details available at: http://www.flybrix.com/firmware
 
-    Credit is due to several other projects, including:
+    Credit for inspiration and guidance is due to several other projects, including:
     - multiwii ("https://github.com/multiwii")
+    - cleanflight ("https://github.com/cleanflight")
     - phoenix flight controller ("https://github.com/cTn-dev/Phoenix-FlightController")
 
 */
@@ -37,6 +41,8 @@
 #include "version.h"
 #include "board.h"
 #include "cardManagement.h"
+#include "serialFork.h"
+#include "testMode.h"
 
 struct Systems {
     // subsystem objects initialize pins when created
@@ -77,6 +83,7 @@ Systems::Systems()
 }
 
 void setup() {
+
     config_handler = [&](CONFIG_struct& config){
       sys.control.parseConfig(config);
     };
@@ -93,6 +100,8 @@ void setup() {
     Wire.begin(I2C_MASTER, 0x00, board::I2C_PINS, board::I2C_PULLUP, I2C_RATE_400);  // For I2C pins 18 and 19
     sys.state.set(STATUS_BOOT);
     sys.led.update();
+
+    bool go_to_test_mode{isEmptyEEPROM()};
 
     // load stored settings (this will reinitialize if there is no data in the EEPROM!
     readEEPROM();
@@ -132,6 +141,11 @@ void setup() {
     }
 
     sys.led.update();
+
+    // factory test pattern runs only once
+    if (go_to_test_mode)
+        runTestMode(sys.state, sys.led, sys.motors);
+
     // Perform intial check for an SD card
     sdcard::startup();
 
@@ -197,17 +211,23 @@ void loop() {
         sys.motors.updateAllChannels();
     }
 
-    RunProcesses<1000, 100, 40, 30, 10, 1>();
+    RunProcesses<1000, 100, 40, 35, 30, 10, 1>();
 }
 
 template <>
 bool ProcessTask<1000>() {
-    static uint16_t counter{0};
-    if (++counter > sys.conf.GetSendStateDelay() - 1) {
-        counter = 0;
+    static uint16_t counterSerial{0};
+    static uint16_t counterSdCard{0};
+    if (++counterSerial > sys.conf.GetSendStateDelay() - 1) {
+        counterSerial = 0;
         sys.conf.SendState(micros());
     }
-    counter %= 1000;
+    if (++counterSdCard > sys.conf.GetSdCardStateDelay() - 1) {
+        counterSdCard = 0;
+        sys.conf.SendState(micros(), 0xFFFFFFFF, true);
+    }
+    counterSerial %= 1000;
+    counterSdCard %= 1000;
     if (LEDFastUpdate)
         LEDFastUpdate();
     return true;
@@ -239,6 +259,12 @@ bool ProcessTask<100>() {
 
     sys.conf.Read();  // Respond to commands from the Configurator chrome extension
 
+    return true;
+}
+
+template <>
+bool ProcessTask<35>() {
+    flushSerial();
     return true;
 }
 

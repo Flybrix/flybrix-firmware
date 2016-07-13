@@ -40,9 +40,93 @@ struct USBComm {
 };
 
 USBComm usb_comm;
+
 #ifndef ALPHA
-// TODO: Create a Bluetooth interface
-// Bluetooth bluetooth{115200};
+struct Bluetooth {
+    Bluetooth() {
+        pinMode(board::bluetooth::RESET, OUTPUT);
+        digitalWrite(board::bluetooth::RESET, HIGH);
+        Serial1.begin(57600);
+    }
+
+    bool read() {
+        while (Serial1.available()) {
+            data_input.AppendToBuffer(Serial1.read());
+            if (data_input.IsDone())
+                return true;
+        }
+        return false;
+    }
+
+    void write(uint8_t* data, size_t length) {
+        data_output.push(data, length);
+    }
+
+    CobsReaderBuffer& buffer() {
+        return data_input;
+    }
+
+    void flush() {
+        size_t l{data_output.hasData()};
+        if (!l)
+            return;
+        Serial1.write(data_output.pop(), l);
+    }
+
+   private:
+    struct BluetoothBuffer {
+        size_t hasData() {
+            size_t increment{(readerPointer <= writerPointer) ? (writerPointer - readerPointer) : (bufferSize - readerPointer)};
+            if (increment > bufferChunk)
+                return bufferChunk;
+            return increment;
+        }
+
+        bool canFit(size_t size) {
+            if (readerPointer <= writerPointer)
+                return bufferSize - (writerPointer - readerPointer) > size;
+            else
+                return readerPointer - writerPointer > size;
+        }
+
+        const uint8_t* pop() {
+            size_t outputPointer{readerPointer};
+            readerPointer += hasData();
+            if (readerPointer >= bufferSize)
+                readerPointer -= bufferSize;
+            return data + outputPointer;
+        }
+
+        void push(uint8_t* input_data, size_t length) {
+            if (!canFit(length))  // The buffer is too full
+                return;
+            size_t lengthSubtraction{0};
+            if (bufferSize - writerPointer < length)
+                lengthSubtraction = length - (bufferSize - writerPointer);
+            length -= lengthSubtraction;
+            for (size_t pos = 0; pos < length; ++pos)
+                data[writerPointer++] = input_data[pos];
+            if (writerPointer == bufferSize) {
+                writerPointer = 0;
+                push(input_data + length, lengthSubtraction);
+            }
+        }
+
+       private:
+        static constexpr size_t bufferCount{40};
+        static constexpr size_t bufferChunk{20};
+        static constexpr size_t bufferSize{bufferCount * bufferChunk};
+        uint8_t data[bufferSize];
+        size_t writerPointer{0};
+        size_t readerPointer{0};
+    };
+
+    size_t writerPosition{0};
+    BluetoothBuffer data_output;
+    CobsReaderBuffer data_input;
+};
+
+Bluetooth bluetooth;
 #endif
 }
 
@@ -50,9 +134,8 @@ CobsReaderBuffer* readSerial() {
     if (usb_comm.read())
         return &usb_comm.buffer();
 #ifndef ALPHA
-// TODO: Handle bluetooth the same way
-//  if (bluetooth.read())
-//      return &bluetooth.buffer();
+    if (bluetooth.read())
+        return &bluetooth.buffer();
 #endif
     return nullptr;
 }
@@ -60,7 +143,12 @@ CobsReaderBuffer* readSerial() {
 void writeSerial(uint8_t* data, size_t length) {
     usb_comm.write(data, length);
 #ifndef ALPHA
-// TODO: Handle bluetooth the same way
-//  bluetooth.write(data, length);
+    bluetooth.write(data, length);
+#endif
+}
+
+void flushSerial() {
+#ifndef ALPHA
+    bluetooth.flush();
 #endif
 }

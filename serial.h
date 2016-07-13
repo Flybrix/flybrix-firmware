@@ -50,7 +50,7 @@ class SerialComm {
         COM_SET_COMMAND_OVERRIDE = 1 << 13,
         COM_SET_STATE_MASK = 1 << 14,
         COM_SET_STATE_DELAY = 1 << 15,
-        COM_REQ_HISTORY = 1 << 16,
+        COM_SET_SD_WRITE_DELAY = 1 << 16,
         COM_SET_LED = 1 << 17,
         COM_SET_SERIAL_RC = 1 << 18,
         COM_SET_CARD_RECORDING = 1 << 19,
@@ -94,10 +94,11 @@ class SerialComm {
 
     void SendConfiguration() const;
     void SendDebugString(const String& string, MessageType type = MessageType::DebugString) const;
-    void SendState(uint32_t timestamp_us, uint32_t mask = 0) const;
+    void SendState(uint32_t timestamp_us, uint32_t mask = 0, bool redirect_to_sd_card = false) const;
     void SendResponse(uint32_t mask, uint32_t response) const;
 
     uint16_t GetSendStateDelay() const;
+    uint16_t GetSdCardStateDelay() const;
     void SetStateMsg(uint32_t values);
     void AddToStateMsg(uint32_t values);
     void RemoveFromStateMsg(uint32_t values);
@@ -114,6 +115,7 @@ class SerialComm {
     LED* led;
     PilotCommand* command;
     uint16_t send_state_delay{1001};  // anything over 1000 turns off state messages
+    uint16_t sd_card_state_delay{2};  // write to SD at the highest rate by default
     uint32_t state_mask{0x7fffff};
 };
 

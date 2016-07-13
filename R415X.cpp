@@ -14,8 +14,8 @@ volatile uint16_t RX_buffer[RC_CHANNEL_COUNT];  // buffer data in anticipation o
 volatile uint8_t RX_channel = 0;  // we are collecting data for this channel
 
 R415X::R415X() {
-    attemptToBind(50);
-    initialize_isr();
+    attemptToBind(50); //this calls initialize_isr
+    //initialize_isr();
 }
 
 void R415X::initialize_isr(void) {
