@@ -24,7 +24,7 @@ void PilotCommand::processCommands(void) {
         // if we aren't receiving bluetooth command data, try to get it from the R415X
         receiver->getCommandData(state);
     }
-  
+
     if (!(state->command_source_mask & (COMMAND_READY_R415X | COMMAND_READY_BTLE))){
         // we have no command data!
         state->command_invalid_count += 2;
@@ -43,8 +43,8 @@ void PilotCommand::processCommands(void) {
         }
     }
 
-    bool attempting_to_enable  = state->command_AUX_mask & (1 << 0); //AUX1 is low
-    bool attempting_to_disable = state->command_AUX_mask & (1 << 3); //AUX1 is high
+    bool attempting_to_enable  = state->command_AUX_mask & (1 >> 0);  // AUX1 is low
+    bool attempting_to_disable = state->command_AUX_mask & (1 >> 2);  // AUX1 is high
 
     if (blockEnabling && attempting_to_enable && !state->is(STATUS_OVERRIDE)) {  // user attempted to enable, but we are blocking it
         state->clear(STATUS_IDLE);
@@ -52,24 +52,22 @@ void PilotCommand::processCommands(void) {
         state->set(STATUS_FAIL_ANGLE);  // set both flags as indication
     }
     blockEnabling = false;  // we block enable on the first run!
-
-    if (attempting_to_enable && !state->is(STATUS_OVERRIDE)) {
-        if (!state->is(STATUS_ENABLED) && !state->is(STATUS_FAIL_STABILITY) && !state->is(STATUS_FAIL_ANGLE)) {
+    if (!state->is(STATUS_OVERRIDE)) {
+        if (attempting_to_enable && !state->is(STATUS_ENABLED | STATUS_FAIL_STABILITY | STATUS_FAIL_ANGLE)) {
             state->processMotorEnablingIteration();
             recentlyEnabled = true;
             throttleHoldOff = 80;  // @40Hz -- hold for 2 sec
             if (state->is(STATUS_ENABLED))
                 sdcard::openFile();
         }
-    } else if (attempting_to_disable && !state->is(STATUS_OVERRIDE)) {
-        if (state->is(STATUS_ENABLED) || state->is(STATUS_FAIL_STABILITY) || state->is(STATUS_FAIL_ANGLE)) {
+        if (attempting_to_disable && state->is(STATUS_ENABLED | STATUS_FAIL_STABILITY | STATUS_FAIL_ANGLE)) {
             state->disableMotors();
             sdcard::closeFile();
         }
     }
 
     bool throttle_is_low = (state->command_throttle == 0);
- 
+
     if (recentlyEnabled || throttle_is_low) {
         state->command_throttle = 0;
         state->command_pitch    = 0;
@@ -87,4 +85,3 @@ void PilotCommand::processCommands(void) {
 
     // in the future, this would be the place to look for other combination inputs or for AUX levels that mean something
 }
-
