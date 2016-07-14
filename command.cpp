@@ -43,8 +43,8 @@ void PilotCommand::processCommands(void) {
         }
     }
 
-    bool attempting_to_enable  = state->command_AUX_mask & (1 >> 0);  // AUX1 is low
-    bool attempting_to_disable = state->command_AUX_mask & (1 >> 2);  // AUX1 is high
+    bool attempting_to_enable  = state->command_AUX_mask & (1 << 0);  // AUX1 is low
+    bool attempting_to_disable = state->command_AUX_mask & (1 << 2);  // AUX1 is high
 
     if (blockEnabling && attempting_to_enable && !state->is(STATUS_OVERRIDE)) {  // user attempted to enable, but we are blocking it
         state->clear(STATUS_IDLE);
