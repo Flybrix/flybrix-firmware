@@ -74,7 +74,7 @@ extern "C" void ftm1_isr(void) {
 }
 
 void R415X::getCommandData(State* state) {
-    
+
     cli();  // disable interrupts
 
     // if R415X is working, we should never see anything less than 900!
@@ -86,14 +86,14 @@ void R415X::getCommandData(State* state) {
             return; // don't load bad data into state
         }
     }
-    
+
     // read data into PPMchannel objects using receiver channels assigned from configuration
-    throttle.update(RX[CONFIG.data.channelAssignment[0]]);
-    pitch.update(RX[CONFIG.data.channelAssignment[1]]);
-    roll.update(RX[CONFIG.data.channelAssignment[2]]);
-    yaw.update(RX[CONFIG.data.channelAssignment[3]]);
-    AUX1.update(RX[CONFIG.data.channelAssignment[4]]);
-    AUX2.update(RX[CONFIG.data.channelAssignment[5]]);
+    throttle.val = RX[CONFIG.data.channelAssignment[0]];
+    pitch.val = RX[CONFIG.data.channelAssignment[1]];
+    roll.val = RX[CONFIG.data.channelAssignment[2]];
+    yaw.val = RX[CONFIG.data.channelAssignment[3]];
+    AUX1.val = RX[CONFIG.data.channelAssignment[4]];
+    AUX2.val = RX[CONFIG.data.channelAssignment[5]];
 
     // update midpoints from config
     throttle.mid = CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[0]];
@@ -103,8 +103,16 @@ void R415X::getCommandData(State* state) {
     AUX1.mid = CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[4]];
     AUX2.mid = CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[5]];
 
+    // update deadzones from config
+    throttle.deadzone = CONFIG.data.channelDeadzone[CONFIG.data.channelAssignment[0]];
+    pitch.deadzone = CONFIG.data.channelDeadzone[CONFIG.data.channelAssignment[1]];
+    roll.deadzone = CONFIG.data.channelDeadzone[CONFIG.data.channelAssignment[2]];
+    yaw.deadzone = CONFIG.data.channelDeadzone[CONFIG.data.channelAssignment[3]];
+    AUX1.deadzone = CONFIG.data.channelDeadzone[CONFIG.data.channelAssignment[4]];
+    AUX2.deadzone = CONFIG.data.channelDeadzone[CONFIG.data.channelAssignment[5]];
+
     sei();  // enable interrupts
-    
+
     // tell state R415X is working and translate PPMChannel data into the four command level and aux mask
     state->command_source_mask |= COMMAND_READY_R415X;
 
@@ -124,23 +132,17 @@ void R415X::getCommandData(State* state) {
     } else if (AUX2.isHigh()) {
         state->command_AUX_mask |= (1 << 5);
     }
-    
+
     // in some cases it is impossible to get a ppm channel to be close enought to the midpoint (~1500 usec) because the controller trim is too coarse to correct a small error
     // we get around this by creating a small dead zone around the midpoint of signed channel, specified in usec units
-    int16_t pitch_delta = pitch.val - CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[1]];
-    int16_t  roll_delta =  roll.val - CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[2]];
-    int16_t   yaw_delta =   yaw.val - CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[3]];
-    pitch.val = (pitch_delta > 0) ? max(CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[1]], pitch.val - CONFIG.data.channelDeadzone[CONFIG.data.channelAssignment[1]]) : 
-                                    min(CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[1]], pitch.val + CONFIG.data.channelDeadzone[CONFIG.data.channelAssignment[1]]);
-     roll.val = ( roll_delta > 0) ? max(CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[2]],  roll.val - CONFIG.data.channelDeadzone[CONFIG.data.channelAssignment[2]]) : 
-                                    min(CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[2]],  roll.val + CONFIG.data.channelDeadzone[CONFIG.data.channelAssignment[2]]);
-      yaw.val = (  yaw_delta > 0) ? max(CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[3]],   yaw.val - CONFIG.data.channelDeadzone[CONFIG.data.channelAssignment[3]]) : 
-                                    min(CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[3]],   yaw.val + CONFIG.data.channelDeadzone[CONFIG.data.channelAssignment[3]]);
+    pitch.val = pitch.applyDeadzone();
+     roll.val =  roll.applyDeadzone();
+      yaw.val =   yaw.applyDeadzone();
 
     uint16_t throttle_threshold = ((throttle.max - throttle.min) / 10) + throttle.min; // keep bottom 10% of throttle stick to mean 'off'
- 
+
     state->command_throttle = constrain((throttle.val - throttle_threshold) * 4095 / (throttle.max - throttle_threshold), 0, 4095);
-    state->command_pitch =    constrain((1-2*((CONFIG.data.channelInversion >> 1) & 1))*(pitch.val - CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[1]]) * 4095 / (pitch.max - pitch.min), -2047, 2047);
-    state->command_roll =     constrain((1-2*((CONFIG.data.channelInversion >> 2) & 1))*( roll.val - CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[2]]) * 4095 / ( roll.max -  roll.min), -2047, 2047);
-    state->command_yaw =      constrain((1-2*((CONFIG.data.channelInversion >> 3) & 1))*(  yaw.val - CONFIG.data.channelMidpoint[CONFIG.data.channelAssignment[3]]) * 4095 / (  yaw.max -   yaw.min), -2047, 2047);
+    state->command_pitch =    constrain((1-2*((CONFIG.data.channelInversion >> 1) & 1)) * (pitch.val - pitch.mid) * 4095 / (pitch.max - pitch.min), -2047, 2047);
+    state->command_roll =     constrain((1-2*((CONFIG.data.channelInversion >> 2) & 1)) * ( roll.val -  roll.mid) * 4095 / ( roll.max -  roll.min), -2047, 2047);
+    state->command_yaw =      constrain((1-2*((CONFIG.data.channelInversion >> 3) & 1)) * (  yaw.val -   yaw.mid) * 4095 / (  yaw.max -   yaw.min), -2047, 2047);
 }

@@ -23,20 +23,27 @@ class PPMchannel {
     uint16_t val = 1500;
 
     uint16_t mid = 1500;
+    uint16_t deadzone = 0;
     static const uint16_t min = 1100;
     static const uint16_t max = 1900;
 
-    void update(uint16_t newVal) {
-        val = newVal;
-    };
+    uint16_t applyDeadzone() {
+        if (val > mid + deadzone) {
+            return val - deadzone;
+        }
+        if (val < mid - deadzone) {
+            return val + deadzone;
+        }
+        return mid;
+    }
 
-    boolean isLow() {
+    bool isLow() {
         return ((val - min) < (max - min) / 10);
     };
-    boolean isHigh() {
+    bool isHigh() {
         return ((max - val) < (max - min) / 10);
     };
-    boolean isMid() {
+    bool isMid() {
         return (abs(val - mid) < (max - min) / 10);
     };
 
@@ -62,7 +69,7 @@ class R415X {
 
    private:
     void initialize_isr(void);
-    
+
     PPMchannel throttle;
     PPMchannel pitch;
     PPMchannel roll;
