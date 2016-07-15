@@ -6,8 +6,6 @@
 
 #include "command.h"
 
-#include "config.h"  //CONFIG variable
-
 #include "state.h"
 
 #include "R415X.h"

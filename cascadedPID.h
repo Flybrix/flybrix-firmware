@@ -15,7 +15,7 @@
 
 class CascadedPID final {
    public:
-    CascadedPID(float* master_terms, float* slave_terms);
+    CascadedPID(const float* master_terms, const float* slave_terms);
 
     void isMasterWrapped(bool wrapped = true) {
         master_.isWrapped(wrapped);

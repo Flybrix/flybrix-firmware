@@ -35,6 +35,17 @@ class AK8963 : public CallbackProcessor {
 
     uint8_t getID();
 
+    struct __attribute__((packed)) MagBias {
+        bool verify() const {
+            return true;
+        }
+        float x;
+        float y;
+        float z;
+    } mag_bias;
+
+    static_assert(sizeof(MagBias) == 3 * 4, "Data is not packed");
+
    private:
     State *state;
     I2CManager *i2c;
@@ -51,7 +62,7 @@ class AK8963 : public CallbackProcessor {
 
     // 16-bit raw values, bias correction, factory calibration
     int16_t magCount[3] = {0, 0, 0};
-    // bias is stored in CONFIG
+    // bias is stored in MagBias
     float magCalibration[3] = {0.0, 0.0, 0.0};
 
     // buffers for processCallback
