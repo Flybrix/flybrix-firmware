@@ -5,14 +5,44 @@
 */
 
 #include "R415X.h"
+
 #include "board.h"
 #include "state.h"
+#include "debug.h"
 
 volatile uint16_t RX[RC_CHANNEL_COUNT];  // filled by the interrupt with valid data
 volatile uint16_t RX_errors = 0;  // count dropped frames
 volatile uint16_t startPulse = 0;  // keeps track of the last received pulse position
 volatile uint16_t RX_buffer[RC_CHANNEL_COUNT];  // buffer data in anticipation of a valid frame
 volatile uint8_t RX_channel = 0;  // we are collecting data for this channel
+
+bool R415X::ChannelProperties::verify() const {
+    bool ok{true};
+    bool assigned[] = {false, false, false, false, false, false};
+    for (size_t idx = 0; idx < 6; ++idx) {
+        uint8_t assig = assignment[idx];
+        if (assig < 0 || assig > 5) {
+            ok = false;
+            DebugPrint("All channel assignments must be within the [0, 5] range");
+        } else if (assigned[assig]) {
+            ok = false;
+            DebugPrint("Duplicate channel assignment detected");
+        } else {
+            assigned[assig] = true;
+        }
+    }
+    for (size_t idx = 0; idx < 6; ++idx) {
+        if (midpoint[idx] < PPMchannel::min || midpoint[idx] > PPMchannel::max) {
+            ok = false;
+            DebugPrint("Channel midpoints must be within the channel range");
+        }
+        if (midpoint[idx] < deadzone[idx]) {
+            ok = false;
+            DebugPrint("Channel deadzone cannot be larger than the midpoint value");
+        }
+    }
+    return ok;
+}
 
 R415X::R415X() {
     initialize_isr();

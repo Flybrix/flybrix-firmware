@@ -68,9 +68,7 @@ class R415X {
     void getCommandData(State* state);
 
     struct __attribute__((packed)) ChannelProperties {
-        bool verify() const {
-            return true;
-        }
+        bool verify() const;
         uint8_t assignment[6];
         uint8_t inversion;     // bitfield order is {throttle_channel, pitch_channel, roll_channel, yaw_channel, x, x, x, x} (LSB-->MSB)
         uint16_t midpoint[6];  // ideally 1500usec
