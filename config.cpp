@@ -232,9 +232,10 @@ CONFIG_union readEEPROM() {
         for (uint16_t i = 0; i < sizeof(struct CONFIG_struct); i++) {
             CONFIG.raw[i] = EEPROM.read(i);
         }
-        // Verify version
-        if ((CONFIG.data.version.major != FIRMWARE_VERSION_A) || (CONFIG.data.version.minor != FIRMWARE_VERSION_B) || (CONFIG.data.version.patch != FIRMWARE_VERSION_C)) {
-            // Version doesn't match, re-initialize to default values
+        // Verify version and general settings
+        if (CONFIG.data.verify()) {
+            // If the stored configuration isn't legal in any way, report it
+            // via debug and reset it
             writeEEPROM(CONFIG_union());  // store the default values
             return readEEPROM();
         } else {
