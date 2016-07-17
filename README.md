@@ -7,7 +7,7 @@ Dependencies:
 * arduino 1.6.7 from https://www.arduino.cc/en/Main/Software
 * teensyduino libraries from https://www.pjrc.com/teensy/teensyduino.html
 * teensy loader from https://www.pjrc.com/teensy/loader.html
-* SDFat library must be patched to use nonstandard pins (see 'SdSpiTeensy3.cpp.diff')
+* SDFat library from https://github.com/greiman/SdFat must be patched to use nonstandard pins (see 'SdSpiTeensy3.cpp.diff')
 
 
 Tips:
