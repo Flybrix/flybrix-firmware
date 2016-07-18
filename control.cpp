@@ -31,9 +31,9 @@ Control::Control(State* __state, const PIDParameters& config)
     parseConfig(pid_parameters);
 }
 
-bool Control::verify(const PIDParameters& config) {
+bool Control::PIDParameters::verify() const {
     bool retval{true};
-    if (!(config.pid_bypass & (1 << THRUST_SLAVE))) {
+    if (!(pid_bypass & (1 << THRUST_SLAVE))) {
         // If the thrust slave is enabled
         DebugPrint("The slave PID of the thrust regulator must be disabled for now");
         retval = false;
@@ -42,6 +42,8 @@ bool Control::verify(const PIDParameters& config) {
 }
 
 void Control::parseConfig(const PIDParameters& config) {
+    pid_parameters = config;
+
     thrust_pid = {pid_parameters.thrust_master, pid_parameters.thrust_slave};
     pitch_pid = {pid_parameters.pitch_master, pid_parameters.pitch_slave};
     roll_pid = {pid_parameters.roll_master, pid_parameters.roll_slave};

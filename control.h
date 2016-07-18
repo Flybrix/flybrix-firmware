@@ -24,7 +24,6 @@ class Control {
     struct PIDParameters;
 
     Control(State* state, const PIDParameters& config);
-    static bool verify(const PIDParameters& config);
     void parseConfig(const PIDParameters& config);
 
     void calculateControlVectors();
@@ -32,9 +31,8 @@ class Control {
     State* state;
 
     struct __attribute__((packed)) PIDParameters {
-        bool verify() const {
-            return true;
-        }
+        bool verify() const;
+
         float thrust_master[7];  // parameters are {P,I,D,integral windup guard, D filter delay sec, setpoint filter delay sec, command scaling factor}
         float pitch_master[7];
         float roll_master[7];

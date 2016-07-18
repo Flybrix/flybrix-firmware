@@ -204,7 +204,6 @@ void CONFIG_struct::applyTo(Systems& systems) const {
     systems.airframe.mix_table = mix_table;
     systems.mag.mag_bias = mag_bias;
     systems.receiver.channel = channel;
-    systems.control.pid_parameters = pid_parameters;
     systems.state.parameters = state_parameters;
 
     systems.control.parseConfig(pid_parameters);
