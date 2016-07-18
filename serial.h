@@ -14,11 +14,11 @@
 #include <Arduino.h>
 #include "cobs.h"
 
-union CONFIG_union;
 class PilotCommand;
 class Control;
 class LED;
 class State;
+struct Systems;
 
 class SerialComm {
    public:
@@ -88,7 +88,7 @@ class SerialComm {
         STATE_LOOP_COUNT = 1 << 27,
     };
 
-    explicit SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, CONFIG_union* config, LED* led, PilotCommand* command);
+    explicit SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, Systems* systems, LED* led, PilotCommand* command);
 
     void Read();
 
@@ -111,7 +111,7 @@ class SerialComm {
     State* state;
     const volatile uint16_t* ppm;
     const Control* control;
-    CONFIG_union* config;
+    Systems* systems;
     LED* led;
     PilotCommand* command;
     uint16_t send_state_delay{1001};  // anything over 1000 turns off state messages

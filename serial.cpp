@@ -14,6 +14,7 @@
 #include "config.h"  //CONFIG variable
 #include "control.h"
 #include "led.h"
+#include "systems.h"
 
 namespace {
 using CobsPayloadGeneric = CobsPayload<500>;  // impacts memory use only; packet size should be <= client packet size
@@ -39,8 +40,8 @@ inline void WritePIDData(CobsPayload<N>& payload, const PID& pid) {
 }
 }
 
-SerialComm::SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, CONFIG_union* config, LED* led, PilotCommand* command)
-    : state{state}, ppm{ppm}, control{control}, config{config}, led{led}, command{command} {
+SerialComm::SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, Systems* systems, LED* led, PilotCommand* command)
+    : state{state}, ppm{ppm}, control{control}, systems{systems}, led{led}, command{command} {
 }
 
 void SerialComm::Read() {
@@ -66,16 +67,17 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
     if (mask & COM_SET_EEPROM_DATA) {
         CONFIG_union tmp_config;
         if (data_input.ParseInto(tmp_config.raw)) {
-            if (!config_verifier || config_verifier(tmp_config.data)) {
-                config->data = tmp_config.data;
-                writeEEPROM();  // TODO: deal with side effect code
+            if (tmp_config.data.verify()) {
+                tmp_config.data.applyTo(*systems);
+                writeEEPROM(tmp_config);  // TODO: deal with side effect code
                 ack_data |= COM_SET_EEPROM_DATA;
             }
         }
     }
     if (mask & COM_REINIT_EEPROM_DATA) {
-        initializeEEPROM();  // TODO: deal with side effect code
-        writeEEPROM();       // TODO: deal with side effect code
+        CONFIG_union tmp_config;
+        tmp_config.data.applyTo(*systems);
+        writeEEPROM(tmp_config);  // TODO: deal with side effect code
         ack_data |= COM_REINIT_EEPROM_DATA;
     }
     if (mask & COM_REQ_EEPROM_DATA) {
@@ -154,15 +156,14 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
         int16_t throttle, pitch, roll, yaw;
         uint8_t auxmask;
         if (data_input.ParseInto(enabled, throttle, pitch, roll, yaw, auxmask)) {
-            if (enabled){
+            if (enabled) {
                 state->command_source_mask |= COMMAND_READY_BTLE;
                 state->command_AUX_mask = auxmask;
                 state->command_throttle = throttle;
                 state->command_pitch = pitch;
                 state->command_roll = roll;
                 state->command_yaw = yaw;
-            }
-            else {
+            } else {
                 state->command_source_mask &= ~COMMAND_READY_BTLE;
             }
             ack_data |= COM_SET_SERIAL_RC;
@@ -187,7 +188,7 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
 void SerialComm::SendConfiguration() const {
     CobsPayloadGeneric payload;
     WriteProtocolHead(SerialComm::MessageType::Command, COM_SET_EEPROM_DATA, payload);
-    payload.Append(config->raw);
+    payload.Append(CONFIG_struct(*systems));
     WriteToOutput(payload);
 }
 

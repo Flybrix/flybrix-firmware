@@ -67,6 +67,16 @@ class R415X {
     R415X();
     void getCommandData(State* state);
 
+    struct __attribute__((packed)) ChannelProperties {
+        bool verify() const;
+        uint8_t assignment[6];
+        uint8_t inversion;     // bitfield order is {throttle_channel, pitch_channel, roll_channel, yaw_channel, x, x, x, x} (LSB-->MSB)
+        uint16_t midpoint[6];  // ideally 1500usec
+        uint16_t deadzone[6];  // usec units
+    } channel;
+
+    static_assert(sizeof(ChannelProperties) == 6 + 1 + 6 * 2 * 2, "Data is not packed");
+
    private:
     void initialize_isr(void);
 
@@ -81,11 +91,11 @@ class R415X {
 
 // global variables used by the interrupt callback
 #define RC_CHANNEL_COUNT 6
-extern volatile uint16_t RX[RC_CHANNEL_COUNT];  // filled by the interrupt with valid data
-extern volatile uint16_t RX_errors;  // count dropped frames
-extern volatile uint16_t startPulse;  // keeps track of the last received pulse position
+extern volatile uint16_t RX[RC_CHANNEL_COUNT];         // filled by the interrupt with valid data
+extern volatile uint16_t RX_errors;                    // count dropped frames
+extern volatile uint16_t startPulse;                   // keeps track of the last received pulse position
 extern volatile uint16_t RX_buffer[RC_CHANNEL_COUNT];  // buffer data in anticipation of a valid frame
-extern volatile uint8_t RX_channel;  // we are collecting data for this channel
+extern volatile uint8_t RX_channel;                    // we are collecting data for this channel
 
 #define RX_PPM_SYNCPULSE_MIN 7500   // 2.5ms
 #define RX_PPM_SYNCPULSE_MAX 48000  // 16 ms (seems to be about 13.4ms on the scope)

@@ -10,8 +10,7 @@
 
 #include "cascadedPID.h"
 
-CascadedPID::CascadedPID(float* master_terms, float* slave_terms)
-    : master_(master_terms), slave_(slave_terms) {
+CascadedPID::CascadedPID(const float* master_terms, const float* slave_terms) : master_(master_terms), slave_(slave_terms) {
 }
 
 float CascadedPID::Compute(uint32_t now, bool use_master, bool use_slave) {
