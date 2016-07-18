@@ -233,7 +233,7 @@ CONFIG_union readEEPROM() {
             CONFIG.raw[i] = EEPROM.read(i);
         }
         // Verify version and general settings
-        if (CONFIG.data.verify()) {
+        if (!CONFIG.data.verify()) {
             // If the stored configuration isn't legal in any way, report it
             // via debug and reset it
             writeEEPROM(CONFIG_union());  // store the default values
