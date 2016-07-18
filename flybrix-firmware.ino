@@ -57,6 +57,18 @@ void setup() {
 
     bool go_to_test_mode{isEmptyEEPROM()};
 
+
+
+  //PIN 12 of teensy is BMD (P0.13)
+  //PIN 30 of teensy is BMD (PO.14) AT Mode
+  //PIN 28 of teensy is BMD RST 
+  // 20 - CTS P0.05
+  // 0 - Rx P0.06
+  // 6 - RTS P0.05 
+  // 1 - Tx
+
+setBluetoothUart();
+
     // load stored settings (this will reinitialize if there is no data in the EEPROM!
     readEEPROM().data.applyTo(sys);
     sys.state.resetState();

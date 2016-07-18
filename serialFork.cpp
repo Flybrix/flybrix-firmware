@@ -130,6 +130,50 @@ Bluetooth bluetooth;
 #endif
 }
 
+
+void setBluetoothUart()
+{
+  pinMode(30, OUTPUT);
+  pinMode(28, OUTPUT);
+  digitalWriteFast(30,LOW); //set AT mode
+  digitalWriteFast(28,LOW); //reset BMD
+  delay(10);
+  digitalWriteFast(28,HIGH); //reset BMD complete, now in AT mode
+  uint8_t data[18];
+  data[0] = 'a';
+  data[1] = 't';
+  data[2] = '$';
+  data[3] = 'u';
+  data[4] = 'e';
+  data[5] = 'n';
+  data[6] = ' ';
+  data[7] = '0';
+  data[8] = '1';
+  data[9] = '\n';
+  bluetooth.write(data,10);
+  
+  data[3] = 'n';
+  data[4] = 'a';
+  data[5] = 'm';
+  data[6] = 'e';
+  data[7] = ' ';
+  data[8] = 'F';
+  data[9] = 'L';
+  data[10] = 'Y';
+  data[11] = 'B';
+  data[12] = 'R';
+  data[13] = 'I';
+  data[14] = 'X';
+  data[15] = '\n';
+  bluetooth.write(data,16);
+  
+  delay(10);
+  digitalWriteFast(30,HIGH);
+  digitalWriteFast(28,LOW); //reset BMD
+  delay(10);
+  digitalWriteFast(28,HIGH); //reset BMD complete, now not in AT mode
+}
+
 CobsReaderBuffer* readSerial() {
     if (usb_comm.read())
         return &usb_comm.buffer();
