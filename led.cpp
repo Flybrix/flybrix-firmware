@@ -266,6 +266,12 @@ void LED::changeLights() {
     use(LED::ALTERNATE, CRGB::Red, CRGB::Red, CRGB::Red, CRGB::Red, true, false);  // No status bits set
 }
 
+void LED::parseConfig(const States& states) {
+    this->states = states;
+    oldStatus = ~state->status;
+    update();
+}
+
 void LED::indicatorRedOn() {
     digitalWriteFast(board::RED_LED, HIGH);
 }

@@ -206,9 +206,9 @@ void CONFIG_struct::applyTo(Systems& systems) const {
     systems.receiver.channel = channel;
     systems.control.pid_parameters = pid_parameters;
     systems.state.parameters = state_parameters;
-    systems.led.states = led_states;
 
     systems.control.parseConfig(pid_parameters);
+    systems.led.parseConfig(led_states);
 }
 
 template <class T>

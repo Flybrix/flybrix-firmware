@@ -103,6 +103,8 @@ class LED {
 
     static_assert(sizeof(States) == 16 * sizeof(StateCase), "Data is not packed");
 
+    void parseConfig(const States& states);
+
    private:
     void use(Pattern pattern, CRGB color_right_front, CRGB color_right_back, CRGB color_left_front, CRGB color_left_back, bool red_indicator, bool green_indicator);
     void changeLights();
