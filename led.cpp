@@ -197,11 +197,15 @@ void LED::set(Pattern pattern, uint8_t red_a, uint8_t green_a, uint8_t blue_a, u
 }
 
 void LED::set(Pattern pattern, CRGB color_right, CRGB color_left, bool red_indicator, bool green_indicator) {
+    set(pattern, color_right, color_right, color_left, color_left, red_indicator, green_indicator);
+}
+
+void LED::set(Pattern pattern, CRGB color_right_front, CRGB color_right_back, CRGB color_left_front, CRGB color_left_back, bool red_indicator, bool green_indicator) {
     override = pattern != LED::NO_OVERRIDE;
     oldStatus = 0;
     if (!override)
         return;
-    use(pattern, color_right, color_left, red_indicator, green_indicator);
+    use(pattern, color_right_front, color_right_back, color_left_front, color_left_back, red_indicator, green_indicator);
 }
 
 void LED::set(Pattern pattern, CRGB color, bool red_indicator, bool green_indicator) {
@@ -215,29 +219,34 @@ void LED::update() {
     }
     if (LED_driver.getPattern() == LED::ALTERNATE && !(LED_driver.getCycleIndex() & 15)) {
         if (LED_driver.getCycleIndex() & 16) {
-            LED_driver.setColor(colorRight, {0, -128}, {127, 127});
+            LED_driver.setColor(color_right_front, {0, 0}, {127, 127});
+            LED_driver.setColor(color_right_back, {0, -128}, {127, 0});
             LED_driver.setColor(CRGB::Black, {-128, -128}, {0, 127});
         } else {
             LED_driver.setColor(CRGB::Black, {0, -128}, {127, 127});
-            LED_driver.setColor(colorLeft, {-128, -128}, {0, 127});
+            LED_driver.setColor(color_left_front, {-128, 0}, {0, 127});
+            LED_driver.setColor(color_left_back, {-128, -128}, {0, 0});
         }
     }
     LED_driver.update();
 }
 
-void LED::use(Pattern pattern, CRGB color_right, CRGB color_left, bool red_indicator, bool green_indicator) {
-    colorRight = color_right;
-    colorLeft = color_left;
+void LED::use(Pattern pattern, CRGB color_right_front, CRGB color_right_back, CRGB color_left_front, CRGB color_left_back, bool red_indicator, bool green_indicator) {
+    this->color_right_front = color_right_front;
+    this->color_right_back = color_right_back;
+    this->color_left_front = color_left_front;
+    this->color_left_back = color_left_back;
     red_indicator ? indicatorRedOn() : indicatorRedOff();
     green_indicator ? indicatorGreenOn() : indicatorGreenOff();
     LED_driver.setPattern(pattern);
-    LED_driver.setColor(color_right, {0, -128}, {127, 127});
-    LED_driver.setColor(color_left, {-128, -128}, {0, 127});
+    LED_driver.setColor(color_right_front, {0, 0}, {127, 127});
+    LED_driver.setColor(color_right_back, {0, -128}, {127, 0});
+    LED_driver.setColor(color_left_front, {-128, 0}, {0, 127});
+    LED_driver.setColor(color_left_back, {-128, -128}, {0, 0});
 }
 
 void LED::setWhite(board::led::Position lower_left, board::led::Position upper_right, bool red_indicator, bool green_indicator) {
-    colorRight = CRGB::Black;
-    colorLeft = CRGB::Black;
+    color_right_front = color_right_back = color_left_front = color_left_back = CRGB::Black;
     override = true;
     oldStatus = 0;
     red_indicator ? indicatorRedOn() : indicatorRedOff();
@@ -250,11 +259,11 @@ void LED::setWhite(board::led::Position lower_left, board::led::Position upper_r
 void LED::changeLights() {
     for (const StateCase& s : states.states) {
         if (!s.status || state->is(s.status)) {
-            use(s.pattern, s.color_right_front.crgb(), s.color_left_front.crgb(), s.indicator_red, s.indicator_green);
+            use(s.pattern, s.color_right_front.crgb(), s.color_right_back.crgb(), s.color_left_front.crgb(), s.color_left_back.crgb(), s.indicator_red, s.indicator_green);
             return;
         }
     }
-    use(LED::ALTERNATE, CRGB::Red, CRGB::Red, true, false);  // No status bits set
+    use(LED::ALTERNATE, CRGB::Red, CRGB::Red, CRGB::Red, CRGB::Red, true, false);  // No status bits set
 }
 
 void LED::indicatorRedOn() {

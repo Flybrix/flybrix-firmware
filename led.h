@@ -39,6 +39,7 @@ class LED {
 
     void set(Pattern pattern, uint8_t red_a, uint8_t green_a, uint8_t blue_a, uint8_t red_b, uint8_t green_b, uint8_t blue_b, bool red_indicator, bool green_indicator);
 
+    void set(Pattern pattern, CRGB color_right_front, CRGB color_right_back, CRGB color_left_front, CRGB color_left_back, bool red_indicator, bool green_indicator);
     void set(Pattern pattern, CRGB color_right, CRGB color_left, bool red_indicator, bool green_indicator);
     void set(Pattern pattern, CRGB color, bool red_indicator = false, bool green_indicator = false);
 
@@ -103,7 +104,7 @@ class LED {
     static_assert(sizeof(States) == 16 * sizeof(StateCase), "Data is not packed");
 
    private:
-    void use(Pattern pattern, CRGB color_right, CRGB color_left, bool red_indicator, bool green_indicator);
+    void use(Pattern pattern, CRGB color_right_front, CRGB color_right_back, CRGB color_left_front, CRGB color_left_back, bool red_indicator, bool green_indicator);
     void changeLights();
 
     void indicatorRedOn();
@@ -115,7 +116,10 @@ class LED {
     uint16_t oldStatus{0};
     bool override{false};
 
-    CRGB colorRight{CRGB::Black}, colorLeft{CRGB::Black};
+    CRGB color_right_front{CRGB::Black};
+    CRGB color_right_back{CRGB::Black};
+    CRGB color_left_front{CRGB::Black};
+    CRGB color_left_back{CRGB::Black};
 };
 
 #endif
