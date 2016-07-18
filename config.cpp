@@ -176,6 +176,22 @@ CONFIG_struct::CONFIG_struct() {  // Default Settings
     state_parameters.enable[0] = 0.001f;  // max variance
     state_parameters.enable[1] = 30.0f;   // max angle
 
+    led_states = LED::States{{
+        LED::StateCase(STATUS_MPU_FAIL, LED::SOLID, CRGB::Black, CRGB::Red, true),
+        LED::StateCase(STATUS_BMP_FAIL, LED::SOLID, CRGB::Red, CRGB::Black, true),
+        LED::StateCase(STATUS_BOOT, LED::SOLID, CRGB::Green),
+        LED::StateCase(STATUS_UNPAIRED, LED::FLASH, CRGB::Orange, CRGB::Orange),
+        LED::StateCase(STATUS_RX_FAIL, LED::FLASH, CRGB::Red),
+        LED::StateCase(STATUS_FAIL_STABILITY, LED::FLASH, CRGB::Black, CRGB::Blue),
+        LED::StateCase(STATUS_FAIL_ANGLE, LED::FLASH, CRGB::Blue, CRGB::Black),
+        LED::StateCase(STATUS_OVERRIDE, LED::BEACON, CRGB::Red),
+        LED::StateCase(STATUS_TEMP_WARNING, LED::FLASH, CRGB::Red),
+        LED::StateCase(STATUS_BATTERY_LOW, LED::BEACON, CRGB::Orange),
+        LED::StateCase(STATUS_ENABLING, LED::FLASH, CRGB::Blue),
+        LED::StateCase(STATUS_ENABLED, LED::BEACON, CRGB::Blue),
+        LED::StateCase(STATUS_IDLE, LED::BEACON, CRGB::Green),
+    }};
+
     // This function will only initialize data variables
     // writeEEPROM() needs to be called manually to store this data in EEPROM
 }
@@ -190,6 +206,7 @@ void CONFIG_struct::applyTo(Systems& systems) const {
     systems.receiver.channel = channel;
     systems.control.pid_parameters = pid_parameters;
     systems.state.parameters = state_parameters;
+    systems.led.states = led_states;
 
     systems.control.parseConfig(pid_parameters);
 }
@@ -206,7 +223,7 @@ bool verifyArgs(T& var, TArgs&... varArgs) {
 }
 
 bool CONFIG_struct::verify() const {
-    return verifyArgs(version, pcb, mix_table, mag_bias, channel, pid_parameters, state_parameters);
+    return verifyArgs(version, pcb, mix_table, mag_bias, channel, pid_parameters, state_parameters, led_states);
 }
 
 void writeEEPROM(const CONFIG_union& CONFIG) {

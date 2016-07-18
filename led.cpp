@@ -247,49 +247,13 @@ void LED::setWhite(board::led::Position lower_left, board::led::Position upper_r
     LED_driver.setColor(CRGB::White, lower_left, upper_right);
 }
 
-namespace {
-struct LightCase {
-    LightCase(uint16_t status, LED::Pattern pattern, CRGB colorRight, CRGB colorLeft, bool indicatorRed = false, bool indicatorGreen = false);
-    LightCase(uint16_t status, LED::Pattern pattern, CRGB color);
-    uint16_t status;
-    LED::Pattern pattern;
-    CRGB colorRight;
-    CRGB colorLeft;
-    bool indicatorRed;
-    bool indicatorGreen;
-};
-
-LightCase::LightCase(uint16_t status, LED::Pattern pattern, CRGB colorRight, CRGB colorLeft, bool indicatorRed, bool indicatorGreen)
-    : status{status}, pattern{pattern}, colorRight{colorRight}, colorLeft{colorLeft}, indicatorRed{indicatorRed}, indicatorGreen{indicatorGreen} {
-}
-
-LightCase::LightCase(uint16_t status, LED::Pattern pattern, CRGB color) : LightCase{status, pattern, color, color, false, false} {
-}
-
-const LightCase INDICATIONS[]{
-    {STATUS_MPU_FAIL, LED::SOLID, CRGB::Black, CRGB::Red, true},
-    {STATUS_BMP_FAIL, LED::SOLID, CRGB::Red, CRGB::Black, true},
-    {STATUS_BOOT, LED::SOLID, CRGB::Green},
-    {STATUS_UNPAIRED, LED::FLASH, CRGB::Orange, CRGB::Orange},
-    {STATUS_RX_FAIL, LED::FLASH, CRGB::Red},
-    {STATUS_FAIL_STABILITY, LED::FLASH, CRGB::Black, CRGB::Blue},
-    {STATUS_FAIL_ANGLE, LED::FLASH, CRGB::Blue, CRGB::Black},
-    {STATUS_OVERRIDE, LED::BEACON, CRGB::Red},
-    {STATUS_TEMP_WARNING, LED::FLASH, CRGB::Red},
-    {STATUS_BATTERY_LOW, LED::BEACON, CRGB::Orange},
-    {STATUS_ENABLING, LED::FLASH, CRGB::Blue},
-    {STATUS_ENABLED, LED::BEACON, CRGB::Blue},
-    {STATUS_IDLE, LED::BEACON, CRGB::Green},  // breathe instead?
-};
-
-}  // namespace
-
 void LED::changeLights() {
-    for (const LightCase& s : INDICATIONS)
-        if (state->is(s.status)) {
-            use(s.pattern, s.colorRight, s.colorLeft, s.indicatorRed, s.indicatorGreen);
+    for (const StateCase& s : states.states) {
+        if (!s.status || state->is(s.status)) {
+            use(s.pattern, s.color_right_front.crgb(), s.color_left_front.crgb(), s.indicator_red, s.indicator_green);
             return;
         }
+    }
     use(LED::ALTERNATE, CRGB::Red, CRGB::Red, true, false);  // No status bits set
 }
 

@@ -23,6 +23,7 @@
 #include "R415X.h"
 #include "airframe.h"
 #include "control.h"
+#include "led.h"
 #include "state.h"
 #include "version.h"
 
@@ -53,11 +54,12 @@ struct __attribute__((packed)) CONFIG_struct {
     R415X::ChannelProperties channel;
     Control::PIDParameters pid_parameters;
     State::Parameters state_parameters;
+    LED::States led_states;
 };
 
 static_assert(sizeof(CONFIG_struct) ==
                   sizeof(Version) + sizeof(PcbTransform) + sizeof(Airframe::MixTable) + sizeof(AK8963::MagBias) + sizeof(R415X::ChannelProperties) + sizeof(State::Parameters) +
-                      sizeof(Control::PIDParameters),
+                      sizeof(Control::PIDParameters) + sizeof(LED::States),
               "Data is not packed");
 
 union CONFIG_union {
