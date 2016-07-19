@@ -197,7 +197,7 @@ CONFIG_struct::CONFIG_struct() {  // Default Settings
 }
 
 CONFIG_struct::CONFIG_struct(Systems& sys)
-    : mix_table(sys.airframe.mix_table), mag_bias(sys.mag.mag_bias), channel(sys.receiver.channel), pid_parameters(sys.control.pid_parameters), state_parameters(sys.state.parameters) {
+    : mix_table(sys.airframe.mix_table), mag_bias(sys.mag.mag_bias), channel(sys.receiver.channel), pid_parameters(sys.control.pid_parameters), state_parameters(sys.state.parameters), led_states(sys.led.states) {
 }
 
 void CONFIG_struct::applyTo(Systems& systems) const {
