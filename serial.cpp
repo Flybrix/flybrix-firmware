@@ -17,7 +17,7 @@
 #include "systems.h"
 
 namespace {
-using CobsPayloadGeneric = CobsPayload<500>;  // impacts memory use only; packet size should be <= client packet size
+using CobsPayloadGeneric = CobsPayload<1000>;  // impacts memory use only; packet size should be <= client packet size
 
 template <std::size_t N>
 inline void WriteProtocolHead(SerialComm::MessageType type, uint32_t mask, CobsPayload<N>& payload) {
