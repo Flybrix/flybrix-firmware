@@ -42,6 +42,17 @@ struct __attribute__((packed)) PcbTransform {
 static_assert(sizeof(PcbTransform) == 3 * 2 * 4, "Data is not packed");
 
 struct __attribute__((packed)) CONFIG_struct {
+    enum Field : uint16_t {
+        VERSION = 1 << 0,
+        PCB = 1 << 1,
+        MIX_TABLE = 1 << 2,
+        MAG_BIAS = 1 << 3,
+        CHANNEL = 1 << 4,
+        PID_PARAMETERS = 1 << 5,
+        STATE_PARAMETERS = 1 << 6,
+        LED_STATES = 1 << 7,
+    };
+
     CONFIG_struct();
     explicit CONFIG_struct(Systems& sys);
     void applyTo(Systems& systems) const;

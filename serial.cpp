@@ -179,6 +179,102 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
             ack_data |= COM_SET_CARD_RECORDING;
         }
     }
+    if (mask & COM_SET_PARTIAL_EEPROM_DATA) {
+        uint16_t submask;
+        if (data_input.ParseInto(submask)) {
+            CONFIG_union tmp_config(*systems);
+            bool success{true};
+            if (success && (submask & CONFIG_struct::VERSION)) {
+                success = data_input.ParseInto(tmp_config.data.version);
+            }
+            if (success && (submask & CONFIG_struct::PCB)) {
+                success = data_input.ParseInto(tmp_config.data.pcb);
+            }
+            if (success && (submask & CONFIG_struct::MIX_TABLE)) {
+                success = data_input.ParseInto(tmp_config.data.mix_table);
+            }
+            if (success && (submask & CONFIG_struct::MAG_BIAS)) {
+                success = data_input.ParseInto(tmp_config.data.mag_bias);
+            }
+            if (success && (submask & CONFIG_struct::CHANNEL)) {
+                success = data_input.ParseInto(tmp_config.data.channel);
+            }
+            if (success && (submask & CONFIG_struct::PID_PARAMETERS)) {
+                success = data_input.ParseInto(tmp_config.data.pid_parameters);
+            }
+            if (success && (submask & CONFIG_struct::STATE_PARAMETERS)) {
+                success = data_input.ParseInto(tmp_config.data.state_parameters);
+            }
+            if (success && (submask & CONFIG_struct::LED_STATES)) {
+                // split up LED states further, since the variable is giant
+                uint16_t led_mask;
+                success = data_input.ParseInto(led_mask);
+                for (size_t led_code = 0; success && (led_code < 16); ++led_code) {
+                    if (led_mask & (1 << led_code)) {
+                        success = data_input.ParseInto(tmp_config.data.led_states.states[led_code]);
+                    }
+                }
+            }
+            if (success && tmp_config.data.verify()) {
+                tmp_config.data.applyTo(*systems);
+                writeEEPROM(tmp_config);  // TODO: deal with side effect code
+                ack_data |= COM_SET_PARTIAL_EEPROM_DATA;
+            }
+        }
+    }
+    if (mask & COM_REINIT_PARTIAL_EEPROM_DATA) {
+        uint16_t submask;
+        if (data_input.ParseInto(submask)) {
+            CONFIG_union tmp_config(*systems);
+            CONFIG_union default_config;
+            bool success{true};
+            if (submask & CONFIG_struct::VERSION) {
+                tmp_config.data.version = default_config.data.version;
+            }
+            if (submask & CONFIG_struct::PCB) {
+                tmp_config.data.pcb = default_config.data.pcb;
+            }
+            if (submask & CONFIG_struct::MIX_TABLE) {
+                tmp_config.data.mix_table = default_config.data.mix_table;
+            }
+            if (submask & CONFIG_struct::MAG_BIAS) {
+                tmp_config.data.mag_bias = default_config.data.mag_bias;
+            }
+            if (submask & CONFIG_struct::CHANNEL) {
+                tmp_config.data.channel = default_config.data.channel;
+            }
+            if (submask & CONFIG_struct::PID_PARAMETERS) {
+                tmp_config.data.pid_parameters = default_config.data.pid_parameters;
+            }
+            if (submask & CONFIG_struct::STATE_PARAMETERS) {
+                tmp_config.data.state_parameters = default_config.data.state_parameters;
+            }
+            if (submask & CONFIG_struct::LED_STATES) {
+                uint16_t led_mask;
+                success = data_input.ParseInto(led_mask);
+                for (size_t led_code = 0; success && (led_code < 16); ++led_code) {
+                    if (led_mask & (1 << led_code)) {
+                        tmp_config.data.led_states.states[led_code] = default_config.data.led_states.states[led_code];
+                    }
+                }
+            }
+            if (success && tmp_config.data.verify()) {
+                tmp_config.data.applyTo(*systems);
+                writeEEPROM(tmp_config);  // TODO: deal with side effect code
+                ack_data |= COM_REINIT_PARTIAL_EEPROM_DATA;
+            }
+        }
+    }
+    if (mask & COM_REQ_PARTIAL_EEPROM_DATA) {
+        uint16_t submask;
+        if (data_input.ParseInto(submask)) {
+            uint16_t led_mask{0};
+            if (!(submask & CONFIG_struct::LED_STATES) || data_input.ParseInto(led_mask)) {
+                SendPartialConfiguration(submask, led_mask);
+                ack_data |= COM_REQ_PARTIAL_EEPROM_DATA;
+            }
+        }
+    }
 
     if (mask & COM_REQ_RESPONSE) {
         SendResponse(mask, ack_data);
@@ -189,6 +285,45 @@ void SerialComm::SendConfiguration() const {
     CobsPayloadGeneric payload;
     WriteProtocolHead(SerialComm::MessageType::Command, COM_SET_EEPROM_DATA, payload);
     payload.Append(CONFIG_struct(*systems));
+    WriteToOutput(payload);
+}
+
+void SerialComm::SendPartialConfiguration(uint16_t submask, uint16_t led_mask) const {
+    CobsPayloadGeneric payload;
+    WriteProtocolHead(SerialComm::MessageType::Command, COM_SET_PARTIAL_EEPROM_DATA, payload);
+
+    CONFIG_union tmp_config(*systems);
+    payload.Append(submask);
+    if (submask & CONFIG_struct::VERSION) {
+        payload.Append(tmp_config.data.version);
+    }
+    if (submask & CONFIG_struct::PCB) {
+        payload.Append(tmp_config.data.pcb);
+    }
+    if (submask & CONFIG_struct::MIX_TABLE) {
+        payload.Append(tmp_config.data.mix_table);
+    }
+    if (submask & CONFIG_struct::MAG_BIAS) {
+        payload.Append(tmp_config.data.mag_bias);
+    }
+    if (submask & CONFIG_struct::CHANNEL) {
+        payload.Append(tmp_config.data.channel);
+    }
+    if (submask & CONFIG_struct::PID_PARAMETERS) {
+        payload.Append(tmp_config.data.pid_parameters);
+    }
+    if (submask & CONFIG_struct::STATE_PARAMETERS) {
+        payload.Append(tmp_config.data.state_parameters);
+    }
+    if (submask & CONFIG_struct::LED_STATES) {
+        payload.Append(led_mask);
+        for (size_t led_code = 0; led_code < 16; ++led_code) {
+            if (led_mask & (1 << led_code)) {
+                payload.Append(tmp_config.data.led_states.states[led_code]);
+            }
+        }
+    }
+
     WriteToOutput(payload);
 }
 

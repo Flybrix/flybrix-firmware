@@ -54,6 +54,9 @@ class SerialComm {
         COM_SET_LED = 1 << 17,
         COM_SET_SERIAL_RC = 1 << 18,
         COM_SET_CARD_RECORDING = 1 << 19,
+        COM_SET_PARTIAL_EEPROM_DATA = 1 << 20,
+        COM_REINIT_PARTIAL_EEPROM_DATA = 1 << 21,
+        COM_REQ_PARTIAL_EEPROM_DATA = 1 << 22,
     };
 
     enum StateFields : uint32_t {
@@ -93,6 +96,7 @@ class SerialComm {
     void Read();
 
     void SendConfiguration() const;
+    void SendPartialConfiguration(uint16_t submask, uint16_t led_mask) const;
     void SendDebugString(const String& string, MessageType type = MessageType::DebugString) const;
     void SendState(uint32_t timestamp_us, uint32_t mask = 0, bool redirect_to_sd_card = false) const;
     void SendResponse(uint32_t mask, uint32_t response) const;
