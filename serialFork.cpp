@@ -49,6 +49,8 @@ struct Bluetooth {
         Serial1.begin(57600);
     }
 
+    void setBluetoothUart();
+
     bool read() {
         while (Serial1.available()) {
             data_input.AppendToBuffer(Serial1.read());
@@ -127,51 +129,78 @@ struct Bluetooth {
 };
 
 Bluetooth bluetooth;
+
+void flushATmodeResponse() {
+    // We can't ignore responses provided by AT mode
+    delay(100);
+    while (!Serial1.available()) {
+    }
+    while (Serial1.read() != '\n') {
+    }
+}
+
+void Bluetooth::setBluetoothUart() {
+    // PIN 12 of teensy is BMD (P0.13)
+    // PIN 30 of teensy is BMD (PO.14) AT Mode
+    // PIN 28 of teensy is BMD RST
+    // 20 - CTS P0.05
+    // 0 - Rx P0.06
+    // 6 - RTS P0.05
+    // 1 - Tx
+    pinMode(board::bluetooth::MODE, OUTPUT);
+    pinMode(board::bluetooth::RESET, OUTPUT);
+    digitalWriteFast(board::bluetooth::MODE, LOW);   // set AT mode
+    digitalWriteFast(board::bluetooth::RESET, LOW);  // reset BMD
+    delay(100);
+    digitalWriteFast(board::bluetooth::RESET, HIGH);  // reset BMD complete, now in AT mode
+    delay(2500); // time needed initialization of AT mode
+    uint8_t data[18];
+
+    data[0] = 'a';
+    data[1] = 't';
+    data[2] = '$';
+
+    data[3] = 'u';
+    data[4] = 'e';
+    data[5] = 'n';
+    data[6] = ' ';
+    data[7] = '0';
+    data[8] = '1';
+    data[9] = '\n';
+    Serial1.write(data, 10);
+
+    flushATmodeResponse();
+
+    data[3] = 'n';
+    data[4] = 'a';
+    data[5] = 'm';
+    data[6] = 'e';
+    data[7] = ' ';
+    data[8] = 'F';
+    data[9] = 'L';
+    data[10] = 'Y';
+    data[11] = 'B';
+    data[12] = 'R';
+    data[13] = 'I';
+    data[14] = 'X';
+    data[15] = '\n';
+    Serial1.write(data, 16);
+
+    flushATmodeResponse();
+
+    digitalWriteFast(board::bluetooth::MODE, HIGH);
+    digitalWriteFast(board::bluetooth::RESET, LOW);  // reset BMD
+    delay(100);
+    digitalWriteFast(board::bluetooth::RESET, HIGH);  // reset BMD complete, now not in AT mode
+}
+
 #endif
 }
 
-
-void setBluetoothUart()
-{
-  pinMode(30, OUTPUT);
-  pinMode(28, OUTPUT);
-  digitalWriteFast(30,LOW); //set AT mode
-  digitalWriteFast(28,LOW); //reset BMD
-  delay(10);
-  digitalWriteFast(28,HIGH); //reset BMD complete, now in AT mode
-  uint8_t data[18];
-  data[0] = 'a';
-  data[1] = 't';
-  data[2] = '$';
-  data[3] = 'u';
-  data[4] = 'e';
-  data[5] = 'n';
-  data[6] = ' ';
-  data[7] = '0';
-  data[8] = '1';
-  data[9] = '\n';
-  bluetooth.write(data,10);
-  
-  data[3] = 'n';
-  data[4] = 'a';
-  data[5] = 'm';
-  data[6] = 'e';
-  data[7] = ' ';
-  data[8] = 'F';
-  data[9] = 'L';
-  data[10] = 'Y';
-  data[11] = 'B';
-  data[12] = 'R';
-  data[13] = 'I';
-  data[14] = 'X';
-  data[15] = '\n';
-  bluetooth.write(data,16);
-  
-  delay(10);
-  digitalWriteFast(30,HIGH);
-  digitalWriteFast(28,LOW); //reset BMD
-  delay(10);
-  digitalWriteFast(28,HIGH); //reset BMD complete, now not in AT mode
+void setBluetoothUart() {
+#ifndef ALPHA
+    bluetooth.setBluetoothUart();
+#endif
 }
 
 CobsReaderBuffer* readSerial() {
