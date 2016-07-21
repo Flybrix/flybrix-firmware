@@ -29,6 +29,7 @@ class PilotCommand {
     boolean blockEnabling = true;
     boolean recentlyEnabled = false;
     uint16_t throttleHoldOff = 0;  // hold controls low for some time after enabling
+    uint8_t bluetoothTolerance{0};
 
 };
 
