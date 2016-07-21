@@ -19,9 +19,9 @@ PilotCommand::PilotCommand(State* __state, R415X* __receiver)
 void PilotCommand::processCommands(void) {
 
     if (!(state->command_source_mask & COMMAND_READY_BTLE)){
-        if (bluetoothAllowance) {
+        if (bluetoothTolerance) {
             // we allow bluetooth a generous 1s before we give up on it
-            --bluetoothAllowance;
+            --bluetoothTolerance;
         } else {
             // if we aren't receiving bluetooth command data, try to get it from the R415X
             receiver->getCommandData(state);
@@ -30,7 +30,7 @@ void PilotCommand::processCommands(void) {
     else{
         //mark the BTLE data as used
         state->command_source_mask &= ~(COMMAND_READY_BTLE);
-        bluetoothAllowance = 40;
+        bluetoothTolerance = 40;
     }
 
     if (!(state->command_source_mask & (COMMAND_READY_R415X | COMMAND_READY_BTLE))){
