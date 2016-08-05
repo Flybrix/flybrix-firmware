@@ -4,6 +4,7 @@
     *  License and other details available at: http://www.flybrix.com/firmware
 */
 
+#include "debug.h"
 #include "state.h"
 
 #include <Arduino.h>
@@ -36,7 +37,13 @@ float State::fast_cosine(float x_deg) {
 
 bool State::upright(void) {
     // cos(angle) = (a dot g) / |a| / |g| = -a[2]
-    return (-accel_filter[2] > fast_cosine(parameters.enable[1]));
+    // cos(angle)^2 = a[2]*a[2] / (a dot a)
+    float cos_test_angle = fast_cosine(parameters.enable[1]);
+    float a_dot_a = 0.0f;
+    for (uint8_t i = 0; i < 3; i++) {
+        a_dot_a += accel_filter[i] * accel_filter[i];
+    }
+    return (accel_filter[2]*accel_filter[2] > a_dot_a*cos_test_angle*cos_test_angle );
 }
 
 void State::processMotorEnablingIteration(void) {
