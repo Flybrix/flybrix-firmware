@@ -26,6 +26,8 @@ CONFIG_struct::CONFIG_struct() {  // Default Settings
     pcb.translation[1] = 0.0f;  // y (mm)
     pcb.translation[2] = 0.0f;  // z (mm)
 
+    id.id = 0;
+
     // default configuration is the flat8 octocopter:
     //  * CH0 ( CW: red +, blue -, type A prop) at full front right
     //  * CH2 (CCW: wht +, blk  -, type B prop) at mid front right
@@ -208,7 +210,8 @@ CONFIG_struct::CONFIG_struct() {  // Default Settings
 }
 
 CONFIG_struct::CONFIG_struct(Systems& sys)
-    : mix_table(sys.airframe.mix_table),
+    : id(sys.id),
+      mix_table(sys.airframe.mix_table),
       mag_bias(sys.mag.mag_bias),
       channel(sys.receiver.channel),
       pid_parameters(sys.control.pid_parameters),
@@ -224,6 +227,7 @@ void CONFIG_struct::applyTo(Systems& systems) const {
 
     systems.control.parseConfig(pid_parameters);
     systems.led.parseConfig(led_states);
+    systems.id = id;
 }
 
 template <class T>
@@ -239,7 +243,7 @@ bool verifyArgs(T& var, TArgs&... varArgs) {
 
 bool CONFIG_struct::verify() const {
     return verifyArgs(version, pcb, mix_table, mag_bias, channel,
-                      pid_parameters, state_parameters, led_states);
+                      pid_parameters, state_parameters, led_states, id);
 }
 
 void writeEEPROM(const CONFIG_union& CONFIG) {

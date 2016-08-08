@@ -29,6 +29,19 @@
 
 struct Systems;
 
+struct __attribute__((packed)) ConfigID {
+    ConfigID() : ConfigID{0} {
+    }
+    explicit ConfigID(uint32_t id) : id{id} {
+    }
+    bool verify() const {
+        return true;
+    }
+    uint32_t id;
+};
+
+static_assert(sizeof(ConfigID) == 4, "Data is not packed");
+
 struct __attribute__((packed)) PcbTransform {
     PcbTransform()
         : orientation{0.0f, 0.0f, 0.0f}, translation{0.0f, 0.0f, 0.0f} {
@@ -46,13 +59,14 @@ static_assert(sizeof(PcbTransform) == 3 * 2 * 4, "Data is not packed");
 struct __attribute__((packed)) CONFIG_struct {
     enum Field : uint16_t {
         VERSION = 1 << 0,
-        PCB = 1 << 1,
-        MIX_TABLE = 1 << 2,
-        MAG_BIAS = 1 << 3,
-        CHANNEL = 1 << 4,
-        PID_PARAMETERS = 1 << 5,
-        STATE_PARAMETERS = 1 << 6,
-        LED_STATES = 1 << 7,
+        ID = 1 << 1,
+        PCB = 1 << 2,
+        MIX_TABLE = 1 << 3,
+        MAG_BIAS = 1 << 4,
+        CHANNEL = 1 << 5,
+        PID_PARAMETERS = 1 << 6,
+        STATE_PARAMETERS = 1 << 7,
+        LED_STATES = 1 << 8,
     };
 
     CONFIG_struct();
@@ -61,6 +75,7 @@ struct __attribute__((packed)) CONFIG_struct {
     bool verify() const;
 
     Version version;
+    ConfigID id;
     PcbTransform pcb;
     Airframe::MixTable mix_table;
     AK8963::MagBias mag_bias;
@@ -71,12 +86,14 @@ struct __attribute__((packed)) CONFIG_struct {
 };
 
 static_assert(sizeof(CONFIG_struct) ==
-                  sizeof(Version) + sizeof(PcbTransform) +
+                  sizeof(Version) + sizeof(ConfigID) + sizeof(PcbTransform) +
                       sizeof(Airframe::MixTable) + sizeof(AK8963::MagBias) +
                       sizeof(R415X::ChannelProperties) +
                       sizeof(State::Parameters) +
                       sizeof(Control::PIDParameters) + sizeof(LED::States),
               "Data is not packed");
+
+static_assert(sizeof(CONFIG_struct) == 619, "Data does not have expected size");
 
 union CONFIG_union {
     CONFIG_union() : data{CONFIG_struct()} {

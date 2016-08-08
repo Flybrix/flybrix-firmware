@@ -11,12 +11,12 @@
 #define SYSTEMS_H
 
 #include "AK8963.h"
-#include "AK8963.h"
 #include "BMP280.h"
 #include "MPU9250.h"
 #include "R415X.h"
 #include "airframe.h"
 #include "command.h"
+#include "config.h"
 #include "control.h"
 #include "i2cManager.h"
 #include "led.h"
@@ -45,6 +45,8 @@ struct Systems {
     PilotCommand pilot;
     Control control;
     SerialComm conf;
+
+    ConfigID id;
 };
 
 #endif /* end of include guard: SYSTEMS_H */
