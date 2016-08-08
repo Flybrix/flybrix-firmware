@@ -30,12 +30,14 @@
 struct Systems;
 
 struct __attribute__((packed)) PcbTransform {
-    PcbTransform() : orientation{0.0f, 0.0f, 0.0f}, translation{0.0f, 0.0f, 0.0f} {
+    PcbTransform()
+        : orientation{0.0f, 0.0f, 0.0f}, translation{0.0f, 0.0f, 0.0f} {
     }
     bool verify() const {
         return true;
     }
-    float orientation[3];  // pitch/roll/yaw in standard flyer coordinate system --> applied in that order!
+    float orientation[3];  // pitch/roll/yaw in standard flyer coordinate system
+                           // --> applied in that order!
     float translation[3];  // translation in standard flyer coordinate system
 };
 
@@ -69,7 +71,10 @@ struct __attribute__((packed)) CONFIG_struct {
 };
 
 static_assert(sizeof(CONFIG_struct) ==
-                  sizeof(Version) + sizeof(PcbTransform) + sizeof(Airframe::MixTable) + sizeof(AK8963::MagBias) + sizeof(R415X::ChannelProperties) + sizeof(State::Parameters) +
+                  sizeof(Version) + sizeof(PcbTransform) +
+                      sizeof(Airframe::MixTable) + sizeof(AK8963::MagBias) +
+                      sizeof(R415X::ChannelProperties) +
+                      sizeof(State::Parameters) +
                       sizeof(Control::PIDParameters) + sizeof(LED::States),
               "Data is not packed");
 

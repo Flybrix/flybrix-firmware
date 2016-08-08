@@ -35,11 +35,17 @@ CONFIG_struct::CONFIG_struct() {  // Default Settings
     //  * CH3 ( CW: red +, blue -, type A prop) at mid front left
     //  * CH5 (CCW: wht +, blk  -, type B prop) at mid rear left
     //  * CH7 ( CW: red +, blue -, type A prop) at rull rear left
-    // Note that the same mixtable can be used to build a quad on CH0, CH6, CH1, CH7
+    // Note that the same mixtable can be used to build a quad on
+    // CH0, CH6, CH1, CH7
     //
-    // pitch positive (nose up) needs a Tx negative restoring torque --> (Tx<0) should drop the nose by increasing rear channels and decreasing front channels
-    // roll positive (right side down) needs a Ty negative restoring torque --> (Ty<0) should raise the right side by increasing right channels and decreasing left channels
-    // yaw positive (CCW rotation from top down) needs a Tz negative restoring torque --> (Tz<0) should decrease CCW motors & increase CW motors
+    // pitch positive (nose up) needs a Tx negative restoring torque -->
+    // (Tx<0) should drop the nose by increasing rear channels and decreasing
+    // front channels
+    // roll positive (right side down) needs a Ty negative restoring torque -->
+    // (Ty<0) should raise the right side by increasing right channels and
+    // decreasing left channels
+    // yaw positive (CCW rotation from top down) needs a Tz negative restoring
+    // torque --> (Tz<0) should decrease CCW motors & increase CW motors
     //
     mix_table.fz[0] = 1;
     mix_table.tx[0] = 1;
@@ -78,7 +84,8 @@ CONFIG_struct::CONFIG_struct() {  // Default Settings
     mag_bias.y = 0.0f;  // By (milligauss)
     mag_bias.z = 0.0f;  // Bz (milligauss)
 
-    // RX -- PKZ3341 sends: RHS left/right, RHS up/down, LHS up/down, LHS left/right, RHS click (latch), LHS button(momentary)
+    // RX -- PKZ3341 sends: RHS left/right, RHS up/down, LHS up/down, LHS
+    // left/right, RHS click (latch), LHS button(momentary)
     channel.assignment[0] = 2;  // map throttle to LHS up/down
     channel.assignment[1] = 1;  // map pitch to RHS up/down
     channel.assignment[2] = 0;  // map roll to RHS left/righ
@@ -142,7 +149,7 @@ CONFIG_struct::CONFIG_struct() {  // Default Settings
     pid_parameters.thrust_slave[3] = 10.0f;   // Windup guard
     pid_parameters.thrust_slave[4] = 0.001f;  // D filter usec (150Hz)
     pid_parameters.thrust_slave[5] = 0.001f;  // setpoint filter usec (300Hz)
-    pid_parameters.thrust_slave[6] = 0.3f;    // (meters/sec / full stick action)
+    pid_parameters.thrust_slave[6] = 0.3f;  // (meters/sec / full stick action)
 
     pid_parameters.pitch_slave[0] = 20.0f;   // P
     pid_parameters.pitch_slave[1] = 8.0f;    // I
@@ -168,7 +175,8 @@ CONFIG_struct::CONFIG_struct() {  // Default Settings
     pid_parameters.yaw_slave[5] = 0.001f;  // setpoint filter usec (300Hz)
     pid_parameters.yaw_slave[6] = 240.0f;  // (deg/sec / full stick action)
 
-    pid_parameters.pid_bypass = BYPASS_THRUST_MASTER | BYPASS_THRUST_SLAVE | BYPASS_YAW_MASTER;  // AHRS/Horizon mode
+    pid_parameters.pid_bypass = BYPASS_THRUST_MASTER | BYPASS_THRUST_SLAVE |
+                                BYPASS_YAW_MASTER;  // AHRS/Horizon mode
 
     state_parameters.state_estimation[0] = 1.00f;  // 2*kp or BETA
     state_parameters.state_estimation[1] = 0.01f;  // 2*ki
@@ -177,12 +185,15 @@ CONFIG_struct::CONFIG_struct() {  // Default Settings
     state_parameters.enable[1] = 30.0f;   // max angle
 
     led_states = LED::States{{
-        LED::StateCase(STATUS_MPU_FAIL, LED::SOLID, CRGB::Black, CRGB::Red, true),
-        LED::StateCase(STATUS_BMP_FAIL, LED::SOLID, CRGB::Red, CRGB::Black, true),
+        LED::StateCase(STATUS_MPU_FAIL, LED::SOLID, CRGB::Black, CRGB::Red,
+                       true),
+        LED::StateCase(STATUS_BMP_FAIL, LED::SOLID, CRGB::Red, CRGB::Black,
+                       true),
         LED::StateCase(STATUS_BOOT, LED::SOLID, CRGB::Green),
         LED::StateCase(STATUS_UNPAIRED, LED::FLASH, CRGB::Orange, CRGB::Orange),
         LED::StateCase(STATUS_RX_FAIL, LED::FLASH, CRGB::Red),
-        LED::StateCase(STATUS_FAIL_STABILITY, LED::FLASH, CRGB::Black, CRGB::Blue),
+        LED::StateCase(STATUS_FAIL_STABILITY, LED::FLASH, CRGB::Black,
+                       CRGB::Blue),
         LED::StateCase(STATUS_FAIL_ANGLE, LED::FLASH, CRGB::Blue, CRGB::Black),
         LED::StateCase(STATUS_OVERRIDE, LED::BEACON, CRGB::Red),
         LED::StateCase(STATUS_TEMP_WARNING, LED::FLASH, CRGB::Red),
@@ -197,7 +208,12 @@ CONFIG_struct::CONFIG_struct() {  // Default Settings
 }
 
 CONFIG_struct::CONFIG_struct(Systems& sys)
-    : mix_table(sys.airframe.mix_table), mag_bias(sys.mag.mag_bias), channel(sys.receiver.channel), pid_parameters(sys.control.pid_parameters), state_parameters(sys.state.parameters), led_states(sys.led.states) {
+    : mix_table(sys.airframe.mix_table),
+      mag_bias(sys.mag.mag_bias),
+      channel(sys.receiver.channel),
+      pid_parameters(sys.control.pid_parameters),
+      state_parameters(sys.state.parameters),
+      led_states(sys.led.states) {
 }
 
 void CONFIG_struct::applyTo(Systems& systems) const {
@@ -222,7 +238,8 @@ bool verifyArgs(T& var, TArgs&... varArgs) {
 }
 
 bool CONFIG_struct::verify() const {
-    return verifyArgs(version, pcb, mix_table, mag_bias, channel, pid_parameters, state_parameters, led_states);
+    return verifyArgs(version, pcb, mix_table, mag_bias, channel,
+                      pid_parameters, state_parameters, led_states);
 }
 
 void writeEEPROM(const CONFIG_union& CONFIG) {
