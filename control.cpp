@@ -5,7 +5,6 @@
 */
 
 #include "control.h"
-#include "config.h"
 #include "debug.h"
 #include "state.h"
 
@@ -22,18 +21,19 @@ enum PID_ID {
 };
 }
 
-Control::Control(State* __state, CONFIG_struct& config)
+Control::Control(State* __state, const PIDParameters& config)
     : state(__state),
-      thrust_pid{config.thrustMasterPIDParameters, config.thrustSlavePIDParameters},
-      pitch_pid{config.pitchMasterPIDParameters, config.pitchSlavePIDParameters},
-      roll_pid{config.rollMasterPIDParameters, config.rollSlavePIDParameters},
-      yaw_pid{config.yawMasterPIDParameters, config.yawSlavePIDParameters} {
-    parseConfig(config);
+      pid_parameters(config),
+      thrust_pid{config.thrust_master, config.thrust_slave},
+      pitch_pid{config.pitch_master, config.pitch_slave},
+      roll_pid{config.roll_master, config.roll_slave},
+      yaw_pid{config.yaw_master, config.yaw_slave} {
+    parseConfig(pid_parameters);
 }
 
-bool Control::verifyConfig(const CONFIG_struct& config) const {
+bool Control::PIDParameters::verify() const {
     bool retval{true};
-    if (!(config.pidBypass & (1 << THRUST_SLAVE))) {
+    if (!(pid_bypass & (1 << THRUST_SLAVE))) {
         // If the thrust slave is enabled
         DebugPrint("The slave PID of the thrust regulator must be disabled for now");
         retval = false;
@@ -41,14 +41,16 @@ bool Control::verifyConfig(const CONFIG_struct& config) const {
     return retval;
 }
 
-void Control::parseConfig(CONFIG_struct& config) {
-    thrust_pid = {config.thrustMasterPIDParameters, config.thrustSlavePIDParameters};
-    pitch_pid = {config.pitchMasterPIDParameters, config.pitchSlavePIDParameters};
-    roll_pid = {config.rollMasterPIDParameters, config.rollSlavePIDParameters};
-    yaw_pid = {config.yawMasterPIDParameters, config.yawSlavePIDParameters};
+void Control::parseConfig(const PIDParameters& config) {
+    pid_parameters = config;
+
+    thrust_pid = {pid_parameters.thrust_master, pid_parameters.thrust_slave};
+    pitch_pid = {pid_parameters.pitch_master, pid_parameters.pitch_slave};
+    roll_pid = {pid_parameters.roll_master, pid_parameters.roll_slave};
+    yaw_pid = {pid_parameters.yaw_master, pid_parameters.yaw_slave};
 
     for (uint8_t i = 0; i < 8; ++i)
-        pidEnabled[i] = ((config.pidBypass & (1 << i)) == 0);
+        pidEnabled[i] = ((pid_parameters.pid_bypass & (1 << i)) == 0);
 
     // all slaves are rate controllers; set up the master pids as wrapped angle controllers
     pitch_pid.isMasterWrapped();

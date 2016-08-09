@@ -29,7 +29,7 @@ class IIRfilter {
 
 class PID {
    public:
-    explicit PID(float* terms)
+    explicit PID(const float* terms)
         : Kp{terms[0]},
           Ki{terms[1]},
           Kd{terms[2]},

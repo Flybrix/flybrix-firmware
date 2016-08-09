@@ -12,8 +12,8 @@
 #ifndef state_h
 #define state_h
 
+#include <cstdint>
 #include "localization.h"
-#include "config.h"  // for CONFIG
 
 class State {
    public:
@@ -26,16 +26,16 @@ class State {
     uint16_t status = 0;
     void set(const uint16_t status_bit);
     void clear(const uint16_t status_bit);
-    boolean is(const uint16_t status_bit) const;
+    bool is(const uint16_t status_bit) const;
 
     // Power
     uint16_t V0_raw = 0, I0_raw = 0, I1_raw = 0;  // raw ADC levels
 
     // MPU9250 and AK8963
-    float R[3][3];  // rotation matrix from pcb to flyer frame
-    float accel[3] = {0.0, 0.0, 0.0};  // g's        -- (x,y,z)
-    float gyro[3] = {0.0, 0.0, 0.0};  // deg/sec    -- (x,y,z)
-    float mag[3] = {0.0, 0.0, 0.0};  // milligauss -- (x,y,z)
+    float R[3][3];                                                                  // rotation matrix from pcb to flyer frame
+    float accel[3] = {0.0, 0.0, 0.0};                                               // g's        -- (x,y,z)
+    float gyro[3] = {0.0, 0.0, 0.0};                                                // deg/sec    -- (x,y,z)
+    float mag[3] = {0.0, 0.0, 0.0};                                                 // milligauss -- (x,y,z)
     float accel_filter[3] = {0.0, 0.0, 0.0}, accel_filter_sq[3] = {0.0, 0.0, 0.0};  // for stability variance calculation
     float gyro_filter[3] = {0.0, 0.0, 0.0};                                         // for gyro drift correction
 
@@ -45,8 +45,9 @@ class State {
     uint32_t p0 = 25600000;  // initial pressure, set to 1 bar by default
 
     // Command
-    uint8_t AUX_chan_mask = 0;  // bitfield order is {AUX1_low, AUX1_mid, AUX1_high, AUX2_low, AUX2_mid, AUX2_high, x, x} (LSB-->MSB)
-    int16_t invalidRXcount = 0;
+    int16_t command_invalid_count = 0;
+    uint8_t command_source_mask = 0;  // bitfield order is {x, R415X, BTLE, x, x, x, x, x} (LSB-->MSB)
+    uint8_t command_AUX_mask = 0;     // bitfield order is {AUX1_low, AUX1_mid, AUX1_high, AUX2_low, AUX2_mid, AUX2_high, x, x} (LSB-->MSB)
     int16_t command_throttle = 0, command_pitch = 0, command_roll = 0, command_yaw = 0;
 
     // Control
@@ -57,8 +58,8 @@ class State {
 
     // Kinematics
     float kinematicsAngle[3] = {0.0f, 0.0f, 0.0f};  // radians -- pitch/roll/yaw (x,y,z)
-    float kinematicsRate[3] = {0.0f, 0.0f, 0.0f};  // radians/sec -- pitch/roll/yaw (x,y,z) rates
-    float kinematicsAltitude = 0.0f;  // meters
+    float kinematicsRate[3] = {0.0f, 0.0f, 0.0f};   // radians/sec -- pitch/roll/yaw (x,y,z) rates
+    float kinematicsAltitude = 0.0f;                // meters
 
     // Motors
     void processMotorEnablingIteration();  // must be called ~80 times to enable motors.
@@ -73,9 +74,22 @@ class State {
     // const float* q; //quaternion storage for logging
     float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
 
+    struct __attribute__((packed)) Parameters {
+        bool verify() const {
+            return true;
+        }
+        // state estimation parameters for tuning
+        float state_estimation[2];  // Madwick 2Kp, 2Ki
+
+        // limits for enabling motors
+        float enable[2];  // variance and gravity angle
+    } parameters;
+
+    static_assert(sizeof(Parameters) == 2 * 2 * 4, "Data is not packed");
+
    private:
-    boolean stable();
-    boolean upright();
+    bool stable();
+    bool upright();
     float fast_cosine(float x_deg);
 
     float mixRadians(float w1, float a1, float a2);
@@ -86,6 +100,10 @@ class State {
 };  // end of class State
 
 #define DEG2RAD 0.01745329251f
+
+// Controller ready codes
+#define COMMAND_READY_R415X 0x01
+#define COMMAND_READY_BTLE 0x02
 
 // STATUS BITS
 #define STATUS_BOOT 0x0001

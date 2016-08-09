@@ -19,60 +19,93 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 
-struct __attribute__((packed)) CONFIG_struct {
-    uint8_t version[3];
+#include "AK8963.h"
+#include "R415X.h"
+#include "airframe.h"
+#include "control.h"
+#include "led.h"
+#include "state.h"
+#include "version.h"
 
-    // for future use
-    float pcbOrientation[3];  // pitch/roll/yaw in standard flyer coordinate system --> applied in that order!
-    float pcbTranslation[3];  // translation in standard flyer coordinate system
+struct Systems;
 
-    // control to motor map
-    int8_t mixTableFz[8];
-    int8_t mixTableTx[8];
-    int8_t mixTableTy[8];
-    int8_t mixTableTz[8];
-
-    // magnetometer bias values
-    float magBias[3];
-
-    // RX channel mapping
-    uint8_t assignedChannel[6];
-    uint8_t commandInversion; //bitfield order is {pitch_command, roll_command, yaw_command, x, x, x, x, x} (LSB-->MSB)
-    uint16_t channelMidpoint[6]; // ideally 1500usec
-    uint16_t channelDeadzone[6]; // usec units
-
-    // tunable control parameters
-    float thrustMasterPIDParameters[7]; //parameters are {P,I,D,integral windup guard, D filter delay sec, setpoint filter delay sec, command scaling factor}
-    float pitchMasterPIDParameters[7];
-    float rollMasterPIDParameters[7];
-    float yawMasterPIDParameters[7];
-
-    float thrustSlavePIDParameters[7];
-    float pitchSlavePIDParameters[7];
-    float rollSlavePIDParameters[7];
-    float yawSlavePIDParameters[7];
-
-    uint8_t pidBypass; //bitfield order for bypass: {thrustMaster, pitchMaster, rollMaster, yawMaster, thrustSlave, pitchSlave, rollSlave, yawSlave} (LSB-->MSB)
-
-    // state estimation parameters for tuning
-    float stateEstimationParameters[2];  // Madwick 2Kp, 2Ki
-
-    // limits for enabling motors
-    float enableParameters[2];  // variance and gravity angle
+struct __attribute__((packed)) ConfigID {
+    ConfigID() : ConfigID{0} {
+    }
+    explicit ConfigID(uint32_t id) : id{id} {
+    }
+    bool verify() const {
+        return true;
+    }
+    uint32_t id;
 };
+
+static_assert(sizeof(ConfigID) == 4, "Data is not packed");
+
+struct __attribute__((packed)) PcbTransform {
+    PcbTransform()
+        : orientation{0.0f, 0.0f, 0.0f}, translation{0.0f, 0.0f, 0.0f} {
+    }
+    bool verify() const {
+        return true;
+    }
+    float orientation[3];  // pitch/roll/yaw in standard flyer coordinate system
+                           // --> applied in that order!
+    float translation[3];  // translation in standard flyer coordinate system
+};
+
+static_assert(sizeof(PcbTransform) == 3 * 2 * 4, "Data is not packed");
+
+struct __attribute__((packed)) CONFIG_struct {
+    enum Field : uint16_t {
+        VERSION = 1 << 0,
+        ID = 1 << 1,
+        PCB = 1 << 2,
+        MIX_TABLE = 1 << 3,
+        MAG_BIAS = 1 << 4,
+        CHANNEL = 1 << 5,
+        PID_PARAMETERS = 1 << 6,
+        STATE_PARAMETERS = 1 << 7,
+        LED_STATES = 1 << 8,
+    };
+
+    CONFIG_struct();
+    explicit CONFIG_struct(Systems& sys);
+    void applyTo(Systems& systems) const;
+    bool verify() const;
+
+    Version version;
+    ConfigID id;
+    PcbTransform pcb;
+    Airframe::MixTable mix_table;
+    AK8963::MagBias mag_bias;
+    R415X::ChannelProperties channel;
+    Control::PIDParameters pid_parameters;
+    State::Parameters state_parameters;
+    LED::States led_states;
+};
+
+static_assert(sizeof(CONFIG_struct) ==
+                  sizeof(Version) + sizeof(ConfigID) + sizeof(PcbTransform) +
+                      sizeof(Airframe::MixTable) + sizeof(AK8963::MagBias) +
+                      sizeof(R415X::ChannelProperties) +
+                      sizeof(State::Parameters) +
+                      sizeof(Control::PIDParameters) + sizeof(LED::States),
+              "Data is not packed");
+
+static_assert(sizeof(CONFIG_struct) == 619, "Data does not have expected size");
 
 union CONFIG_union {
+    CONFIG_union() : data{CONFIG_struct()} {
+    }
+    explicit CONFIG_union(Systems& systems) : data{CONFIG_struct(systems)} {
+    }
     struct CONFIG_struct data;
-    uint8_t raw[sizeof(struct CONFIG_struct)];
+    uint8_t raw[sizeof(CONFIG_struct)];
 };
 
-extern void(*config_handler)(CONFIG_struct&);
-extern bool(*config_verifier)(const CONFIG_struct&);
-
-extern CONFIG_union CONFIG;
-extern void initializeEEPROM(void);
-extern void writeEEPROM(void);
-extern void readEEPROM(void);
+void writeEEPROM(const CONFIG_union& CONFIG);
+CONFIG_union readEEPROM();
 bool isEmptyEEPROM();
 
 #endif

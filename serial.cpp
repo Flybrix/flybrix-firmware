@@ -14,9 +14,10 @@
 #include "config.h"  //CONFIG variable
 #include "control.h"
 #include "led.h"
+#include "systems.h"
 
 namespace {
-using CobsPayloadGeneric = CobsPayload<500>;  // impacts memory use only; packet size should be <= client packet size
+using CobsPayloadGeneric = CobsPayload<1000>;  // impacts memory use only; packet size should be <= client packet size
 
 template <std::size_t N>
 inline void WriteProtocolHead(SerialComm::MessageType type, uint32_t mask, CobsPayload<N>& payload) {
@@ -39,8 +40,8 @@ inline void WritePIDData(CobsPayload<N>& payload, const PID& pid) {
 }
 }
 
-SerialComm::SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, CONFIG_union* config, LED* led, PilotCommand* command)
-    : state{state}, ppm{ppm}, control{control}, config{config}, led{led}, command{command} {
+SerialComm::SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, Systems* systems, LED* led, PilotCommand* command)
+    : state{state}, ppm{ppm}, control{control}, systems{systems}, led{led}, command{command} {
 }
 
 void SerialComm::Read() {
@@ -66,16 +67,17 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
     if (mask & COM_SET_EEPROM_DATA) {
         CONFIG_union tmp_config;
         if (data_input.ParseInto(tmp_config.raw)) {
-            if (!config_verifier || config_verifier(tmp_config.data)) {
-                config->data = tmp_config.data;
-                writeEEPROM();  // TODO: deal with side effect code
+            if (tmp_config.data.verify()) {
+                tmp_config.data.applyTo(*systems);
+                writeEEPROM(tmp_config);  // TODO: deal with side effect code
                 ack_data |= COM_SET_EEPROM_DATA;
             }
         }
     }
     if (mask & COM_REINIT_EEPROM_DATA) {
-        initializeEEPROM();  // TODO: deal with side effect code
-        writeEEPROM();       // TODO: deal with side effect code
+        CONFIG_union tmp_config;
+        tmp_config.data.applyTo(*systems);
+        writeEEPROM(tmp_config);  // TODO: deal with side effect code
         ack_data |= COM_REINIT_EEPROM_DATA;
     }
     if (mask & COM_REQ_EEPROM_DATA) {
@@ -152,9 +154,18 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
     if (mask & COM_SET_SERIAL_RC) {
         uint8_t enabled;
         int16_t throttle, pitch, roll, yaw;
-        if (data_input.ParseInto(enabled, throttle, pitch, roll, yaw)) {
-            command->useSerialInput(enabled);
-            command->setRCValues(throttle, pitch, roll, yaw);
+        uint8_t auxmask;
+        if (data_input.ParseInto(enabled, throttle, pitch, roll, yaw, auxmask)) {
+            if (enabled) {
+                state->command_source_mask |= COMMAND_READY_BTLE;
+                state->command_AUX_mask = auxmask;
+                state->command_throttle = throttle;
+                state->command_pitch = pitch;
+                state->command_roll = roll;
+                state->command_yaw = yaw;
+            } else {
+                state->command_source_mask &= ~COMMAND_READY_BTLE;
+            }
             ack_data |= COM_SET_SERIAL_RC;
         }
     }
@@ -168,6 +179,102 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
             ack_data |= COM_SET_CARD_RECORDING;
         }
     }
+    if (mask & COM_SET_PARTIAL_EEPROM_DATA) {
+        uint16_t submask;
+        if (data_input.ParseInto(submask)) {
+            CONFIG_union tmp_config(*systems);
+            bool success{true};
+            if (success && (submask & CONFIG_struct::VERSION)) {
+                success = data_input.ParseInto(tmp_config.data.version);
+            }
+            if (success && (submask & CONFIG_struct::PCB)) {
+                success = data_input.ParseInto(tmp_config.data.pcb);
+            }
+            if (success && (submask & CONFIG_struct::MIX_TABLE)) {
+                success = data_input.ParseInto(tmp_config.data.mix_table);
+            }
+            if (success && (submask & CONFIG_struct::MAG_BIAS)) {
+                success = data_input.ParseInto(tmp_config.data.mag_bias);
+            }
+            if (success && (submask & CONFIG_struct::CHANNEL)) {
+                success = data_input.ParseInto(tmp_config.data.channel);
+            }
+            if (success && (submask & CONFIG_struct::PID_PARAMETERS)) {
+                success = data_input.ParseInto(tmp_config.data.pid_parameters);
+            }
+            if (success && (submask & CONFIG_struct::STATE_PARAMETERS)) {
+                success = data_input.ParseInto(tmp_config.data.state_parameters);
+            }
+            if (success && (submask & CONFIG_struct::LED_STATES)) {
+                // split up LED states further, since the variable is giant
+                uint16_t led_mask;
+                success = data_input.ParseInto(led_mask);
+                for (size_t led_code = 0; success && (led_code < 16); ++led_code) {
+                    if (led_mask & (1 << led_code)) {
+                        success = data_input.ParseInto(tmp_config.data.led_states.states[led_code]);
+                    }
+                }
+            }
+            if (success && tmp_config.data.verify()) {
+                tmp_config.data.applyTo(*systems);
+                writeEEPROM(tmp_config);  // TODO: deal with side effect code
+                ack_data |= COM_SET_PARTIAL_EEPROM_DATA;
+            }
+        }
+    }
+    if (mask & COM_REINIT_PARTIAL_EEPROM_DATA) {
+        uint16_t submask;
+        if (data_input.ParseInto(submask)) {
+            CONFIG_union tmp_config(*systems);
+            CONFIG_union default_config;
+            bool success{true};
+            if (submask & CONFIG_struct::VERSION) {
+                tmp_config.data.version = default_config.data.version;
+            }
+            if (submask & CONFIG_struct::PCB) {
+                tmp_config.data.pcb = default_config.data.pcb;
+            }
+            if (submask & CONFIG_struct::MIX_TABLE) {
+                tmp_config.data.mix_table = default_config.data.mix_table;
+            }
+            if (submask & CONFIG_struct::MAG_BIAS) {
+                tmp_config.data.mag_bias = default_config.data.mag_bias;
+            }
+            if (submask & CONFIG_struct::CHANNEL) {
+                tmp_config.data.channel = default_config.data.channel;
+            }
+            if (submask & CONFIG_struct::PID_PARAMETERS) {
+                tmp_config.data.pid_parameters = default_config.data.pid_parameters;
+            }
+            if (submask & CONFIG_struct::STATE_PARAMETERS) {
+                tmp_config.data.state_parameters = default_config.data.state_parameters;
+            }
+            if (submask & CONFIG_struct::LED_STATES) {
+                uint16_t led_mask;
+                success = data_input.ParseInto(led_mask);
+                for (size_t led_code = 0; success && (led_code < 16); ++led_code) {
+                    if (led_mask & (1 << led_code)) {
+                        tmp_config.data.led_states.states[led_code] = default_config.data.led_states.states[led_code];
+                    }
+                }
+            }
+            if (success && tmp_config.data.verify()) {
+                tmp_config.data.applyTo(*systems);
+                writeEEPROM(tmp_config);  // TODO: deal with side effect code
+                ack_data |= COM_REINIT_PARTIAL_EEPROM_DATA;
+            }
+        }
+    }
+    if (mask & COM_REQ_PARTIAL_EEPROM_DATA) {
+        uint16_t submask;
+        if (data_input.ParseInto(submask)) {
+            uint16_t led_mask{0};
+            if (!(submask & CONFIG_struct::LED_STATES) || data_input.ParseInto(led_mask)) {
+                SendPartialConfiguration(submask, led_mask);
+                ack_data |= COM_REQ_PARTIAL_EEPROM_DATA;
+            }
+        }
+    }
 
     if (mask & COM_REQ_RESPONSE) {
         SendResponse(mask, ack_data);
@@ -177,7 +284,46 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
 void SerialComm::SendConfiguration() const {
     CobsPayloadGeneric payload;
     WriteProtocolHead(SerialComm::MessageType::Command, COM_SET_EEPROM_DATA, payload);
-    payload.Append(config->raw);
+    payload.Append(CONFIG_struct(*systems));
+    WriteToOutput(payload);
+}
+
+void SerialComm::SendPartialConfiguration(uint16_t submask, uint16_t led_mask) const {
+    CobsPayloadGeneric payload;
+    WriteProtocolHead(SerialComm::MessageType::Command, COM_SET_PARTIAL_EEPROM_DATA, payload);
+
+    CONFIG_union tmp_config(*systems);
+    payload.Append(submask);
+    if (submask & CONFIG_struct::VERSION) {
+        payload.Append(tmp_config.data.version);
+    }
+    if (submask & CONFIG_struct::PCB) {
+        payload.Append(tmp_config.data.pcb);
+    }
+    if (submask & CONFIG_struct::MIX_TABLE) {
+        payload.Append(tmp_config.data.mix_table);
+    }
+    if (submask & CONFIG_struct::MAG_BIAS) {
+        payload.Append(tmp_config.data.mag_bias);
+    }
+    if (submask & CONFIG_struct::CHANNEL) {
+        payload.Append(tmp_config.data.channel);
+    }
+    if (submask & CONFIG_struct::PID_PARAMETERS) {
+        payload.Append(tmp_config.data.pid_parameters);
+    }
+    if (submask & CONFIG_struct::STATE_PARAMETERS) {
+        payload.Append(tmp_config.data.state_parameters);
+    }
+    if (submask & CONFIG_struct::LED_STATES) {
+        payload.Append(led_mask);
+        for (size_t led_code = 0; led_code < 16; ++led_code) {
+            if (led_mask & (1 << led_code)) {
+                payload.Append(tmp_config.data.led_states.states[led_code]);
+            }
+        }
+    }
+
     WriteToOutput(payload);
 }
 
@@ -289,7 +435,7 @@ void SerialComm::SendState(uint32_t timestamp_us, uint32_t mask, bool redirect_t
             payload.Append(ppm[i]);
     }
     if (mask & SerialComm::STATE_AUX_CHAN_MASK)
-        payload.Append(state->AUX_chan_mask);
+        payload.Append(state->command_AUX_mask);
     if (mask & SerialComm::STATE_COMMANDS)
         payload.Append(state->command_throttle, state->command_pitch, state->command_roll, state->command_yaw);
     if (mask & SerialComm::STATE_F_AND_T)

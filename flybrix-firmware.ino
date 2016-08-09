@@ -43,57 +43,11 @@
 #include "cardManagement.h"
 #include "serialFork.h"
 #include "testMode.h"
+#include "systems.h"
 
-struct Systems {
-    // subsystem objects initialize pins when created
-    // Storing inside a struct forces the right initialization order
-    R415X receiver;
-
-    I2CManager i2c;
-    State state;
-    LED led;
-
-    BMP280 bmp;
-    MPU9250 mpu;
-    AK8963 mag;
-    PowerMonitor pwr;
-    Motors motors;
-    Airframe airframe;
-    PilotCommand pilot;
-    Control control;
-    SerialComm conf;
-    Systems();
-} sys;
-
-Systems::Systems()
-    : receiver{},
-      i2c{},
-      state{},
-      led{&state},
-      bmp{&state, &i2c},  // pressure sensor object
-      mpu{&state, &i2c},  // inertial sensor object
-      mag{&state, &i2c},  // magnetometer
-      pwr{&state},        // onboard power monitoring object
-      motors{&state},     // eight PWM channels
-      airframe{&state},
-      pilot{&state},
-      control{&state, CONFIG.data},
-      conf{&state, RX, &control, &CONFIG, &led, &pilot}  // listen for configuration inputs
-{
-}
+Systems sys;
 
 void setup() {
-
-    config_handler = [&](CONFIG_struct& config){
-      sys.control.parseConfig(config);
-    };
-
-    config_verifier = [&](const CONFIG_struct& config) {
-        bool retval{true};
-        retval &= sys.control.verifyConfig(config);
-        return retval;
-    };
-
     debug_serial_comm = &sys.conf;
 
     // MPU9250 is limited to 400kHz bus speed.
@@ -103,8 +57,10 @@ void setup() {
 
     bool go_to_test_mode{isEmptyEEPROM()};
 
+    setBluetoothUart();
+
     // load stored settings (this will reinitialize if there is no data in the EEPROM!
-    readEEPROM();
+    readEEPROM().data.applyTo(sys);
     sys.state.resetState();
 
     sys.state.set(STATUS_BMP_FAIL);

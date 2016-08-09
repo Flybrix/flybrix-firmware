@@ -5,35 +5,28 @@
 */
 
 #include "config.h"
-#include "version.h"
 
-void(*config_handler)(CONFIG_struct&) {nullptr};
-bool(*config_verifier)(const CONFIG_struct&) {nullptr};
+#include "systems.h"
 
-CONFIG_union CONFIG;  // global CONFIG variable
+#define BYPASS_THRUST_MASTER 1 << 0
+#define BYPASS_PITCH_MASTER 1 << 1
+#define BYPASS_ROLL_MASTER 1 << 2
+#define BYPASS_YAW_MASTER 1 << 3
+#define BYPASS_THRUST_SLAVE 1 << 4
+#define BYPASS_PITCH_SLAVE 1 << 5
+#define BYPASS_ROLL_SLAVE 1 << 6
+#define BYPASS_YAW_SLAVE 1 << 7
 
-#define BYPASS_THRUST_MASTER 1<<0
-#define BYPASS_PITCH_MASTER  1<<1
-#define BYPASS_ROLL_MASTER   1<<2
-#define BYPASS_YAW_MASTER    1<<3
-#define BYPASS_THRUST_SLAVE  1<<4
-#define BYPASS_PITCH_SLAVE   1<<5
-#define BYPASS_ROLL_SLAVE    1<<6
-#define BYPASS_YAW_SLAVE     1<<7
+CONFIG_struct::CONFIG_struct() {  // Default Settings
+    pcb.orientation[0] = 0.0f;    // pitch; applied first
+    pcb.orientation[1] = 0.0f;    // roll;  applied second
+    pcb.orientation[2] = 0.0f;    // yaw;   applied last
 
-void initializeEEPROM(void) {  // Default Settings
+    pcb.translation[0] = 0.0f;  // x (mm)
+    pcb.translation[1] = 0.0f;  // y (mm)
+    pcb.translation[2] = 0.0f;  // z (mm)
 
-    CONFIG.data.version[0] = FIRMWARE_VERSION_A;
-    CONFIG.data.version[1] = FIRMWARE_VERSION_B;
-    CONFIG.data.version[2] = FIRMWARE_VERSION_C;
-
-    CONFIG.data.pcbOrientation[0] = 0.0f;  // pitch; applied first
-    CONFIG.data.pcbOrientation[1] = 0.0f;  // roll;  applied second
-    CONFIG.data.pcbOrientation[2] = 0.0f;  // yaw;   applied last
-
-    CONFIG.data.pcbTranslation[0] = 0.0f;  // x (mm)
-    CONFIG.data.pcbTranslation[1] = 0.0f;  // y (mm)
-    CONFIG.data.pcbTranslation[2] = 0.0f;  // z (mm)
+    id.id = 0;
 
     // default configuration is the flat8 octocopter:
     //  * CH0 ( CW: red +, blue -, type A prop) at full front right
@@ -43,162 +36,247 @@ void initializeEEPROM(void) {  // Default Settings
     //  * CH1 (CCW: wht +, blk  -, type B prop) at full front left
     //  * CH3 ( CW: red +, blue -, type A prop) at mid front left
     //  * CH5 (CCW: wht +, blk  -, type B prop) at mid rear left
-    //  * CH7 ( CW: red +, blue -, type A prop) at rull rear left 
-    // Note that the same mixtable can be used to build a quad on CH0, CH6, CH1, CH7    
+    //  * CH7 ( CW: red +, blue -, type A prop) at rull rear left
+    // Note that the same mixtable can be used to build a quad on
+    // CH0, CH6, CH1, CH7
     //
-    // pitch positive (nose up) needs a Tx negative restoring torque --> (Tx<0) should drop the nose by increasing rear channels and decreasing front channels
-    // roll positive (right side down) needs a Ty negative restoring torque --> (Ty<0) should raise the right side by increasing right channels and decreasing left channels
-    // yaw positive (CCW rotation from top down) needs a Tz negative restoring torque --> (Tz<0) should decrease CCW motors & increase CW motors
+    // pitch positive (nose up) needs a Tx negative restoring torque -->
+    // (Tx<0) should drop the nose by increasing rear channels and decreasing
+    // front channels
+    // roll positive (right side down) needs a Ty negative restoring torque -->
+    // (Ty<0) should raise the right side by increasing right channels and
+    // decreasing left channels
+    // yaw positive (CCW rotation from top down) needs a Tz negative restoring
+    // torque --> (Tz<0) should decrease CCW motors & increase CW motors
     //
-    CONFIG.data.mixTableFz[0] =  1; CONFIG.data.mixTableTx[0] =  1; CONFIG.data.mixTableTy[0] = -1; CONFIG.data.mixTableTz[0] =  1;
-    CONFIG.data.mixTableFz[1] =  1; CONFIG.data.mixTableTx[1] =  1; CONFIG.data.mixTableTy[1] =  1; CONFIG.data.mixTableTz[1] = -1;
-    CONFIG.data.mixTableFz[2] =  1; CONFIG.data.mixTableTx[2] =  1; CONFIG.data.mixTableTy[2] = -1; CONFIG.data.mixTableTz[2] = -1;
-    CONFIG.data.mixTableFz[3] =  1; CONFIG.data.mixTableTx[3] =  1; CONFIG.data.mixTableTy[3] =  1; CONFIG.data.mixTableTz[3] =  1;
-    CONFIG.data.mixTableFz[4] =  1; CONFIG.data.mixTableTx[4] = -1; CONFIG.data.mixTableTy[4] = -1; CONFIG.data.mixTableTz[4] =  1;
-    CONFIG.data.mixTableFz[5] =  1; CONFIG.data.mixTableTx[5] = -1; CONFIG.data.mixTableTy[5] =  1; CONFIG.data.mixTableTz[5] = -1;
-    CONFIG.data.mixTableFz[6] =  1; CONFIG.data.mixTableTx[6] = -1; CONFIG.data.mixTableTy[6] = -1; CONFIG.data.mixTableTz[6] = -1;
-    CONFIG.data.mixTableFz[7] =  1; CONFIG.data.mixTableTx[7] = -1; CONFIG.data.mixTableTy[7] =  1; CONFIG.data.mixTableTz[7] =  1;
+    mix_table.fz[0] = 1;
+    mix_table.tx[0] = 1;
+    mix_table.ty[0] = -1;
+    mix_table.tz[0] = 1;
+    mix_table.fz[1] = 1;
+    mix_table.tx[1] = 1;
+    mix_table.ty[1] = 1;
+    mix_table.tz[1] = -1;
+    mix_table.fz[2] = 1;
+    mix_table.tx[2] = 1;
+    mix_table.ty[2] = -1;
+    mix_table.tz[2] = -1;
+    mix_table.fz[3] = 1;
+    mix_table.tx[3] = 1;
+    mix_table.ty[3] = 1;
+    mix_table.tz[3] = 1;
+    mix_table.fz[4] = 1;
+    mix_table.tx[4] = -1;
+    mix_table.ty[4] = -1;
+    mix_table.tz[4] = 1;
+    mix_table.fz[5] = 1;
+    mix_table.tx[5] = -1;
+    mix_table.ty[5] = 1;
+    mix_table.tz[5] = -1;
+    mix_table.fz[6] = 1;
+    mix_table.tx[6] = -1;
+    mix_table.ty[6] = -1;
+    mix_table.tz[6] = -1;
+    mix_table.fz[7] = 1;
+    mix_table.tx[7] = -1;
+    mix_table.ty[7] = 1;
+    mix_table.tz[7] = 1;
 
-    CONFIG.data.magBias[0] = 0.0f;  // Bx (milligauss)
-    CONFIG.data.magBias[1] = 0.0f;  // By (milligauss)
-    CONFIG.data.magBias[2] = 0.0f;  // Bz (milligauss)
+    mag_bias.x = 0.0f;  // Bx (milligauss)
+    mag_bias.y = 0.0f;  // By (milligauss)
+    mag_bias.z = 0.0f;  // Bz (milligauss)
 
-    // RX -- PKZ3341 sends: RHS left/right, RHS up/down, LHS up/down, LHS left/right, RHS click (latch), LHS button(momentary)
-    CONFIG.data.assignedChannel[0] = 2;  // map throttle to LHS up/down
-    CONFIG.data.assignedChannel[1] = 1;  // map pitch to RHS up/down
-    CONFIG.data.assignedChannel[2] = 0;  // map roll to RHS left/righ
-    CONFIG.data.assignedChannel[3] = 3;  // map yaw to LHS up/down
-    CONFIG.data.assignedChannel[4] = 4;  // map AUX1 to RHS click
-    CONFIG.data.assignedChannel[5] = 5;  // map AUX2 to LHS click
+    // RX -- PKZ3341 sends: RHS left/right, RHS up/down, LHS up/down, LHS
+    // left/right, RHS click (latch), LHS button(momentary)
+    channel.assignment[0] = 2;  // map throttle to LHS up/down
+    channel.assignment[1] = 1;  // map pitch to RHS up/down
+    channel.assignment[2] = 0;  // map roll to RHS left/righ
+    channel.assignment[3] = 3;  // map yaw to LHS up/down
+    channel.assignment[4] = 4;  // map AUX1 to RHS click
+    channel.assignment[5] = 5;  // map AUX2 to LHS click
 
-    CONFIG.data.commandInversion = 3; //invert pitch and roll
+    channel.inversion = 6;  // invert both pitch and roll
 
-    CONFIG.data.channelMidpoint[0] = 1515;
-    CONFIG.data.channelMidpoint[1] = 1515;
-    CONFIG.data.channelMidpoint[2] = 1500;
-    CONFIG.data.channelMidpoint[3] = 1520;
-    CONFIG.data.channelMidpoint[4] = 1500;
-    CONFIG.data.channelMidpoint[5] = 1500;
+    channel.midpoint[0] = 1515;
+    channel.midpoint[1] = 1515;
+    channel.midpoint[2] = 1500;
+    channel.midpoint[3] = 1520;
+    channel.midpoint[4] = 1500;
+    channel.midpoint[5] = 1500;
 
-    CONFIG.data.channelDeadzone[0] = 20;
-    CONFIG.data.channelDeadzone[1] = 20;
-    CONFIG.data.channelDeadzone[2] = 20;
-    CONFIG.data.channelDeadzone[3] = 40;
-    CONFIG.data.channelDeadzone[4] = 20;
-    CONFIG.data.channelDeadzone[5] = 20;
+    channel.deadzone[0] = 20;
+    channel.deadzone[1] = 20;
+    channel.deadzone[2] = 20;
+    channel.deadzone[3] = 40;
+    channel.deadzone[4] = 20;
+    channel.deadzone[5] = 20;
 
     // PID Parameters
 
-    CONFIG.data.thrustMasterPIDParameters[0] = 1.0f;  // P
-    CONFIG.data.thrustMasterPIDParameters[1] = 0.0f;  // I
-    CONFIG.data.thrustMasterPIDParameters[2] = 0.0f;  // D
-    CONFIG.data.thrustMasterPIDParameters[3] = 0.0f;  // Windup guard
-    CONFIG.data.thrustMasterPIDParameters[4] = 0.005f;  // D filter usec (15Hz)
-    CONFIG.data.thrustMasterPIDParameters[5] = 0.005f;  // setpoint filter usec (30Hz)
-    CONFIG.data.thrustMasterPIDParameters[6] = 1.0f;  // (meters / full stick action)
+    pid_parameters.thrust_master[0] = 1.0f;    // P
+    pid_parameters.thrust_master[1] = 0.0f;    // I
+    pid_parameters.thrust_master[2] = 0.0f;    // D
+    pid_parameters.thrust_master[3] = 0.0f;    // Windup guard
+    pid_parameters.thrust_master[4] = 0.005f;  // D filter usec (15Hz)
+    pid_parameters.thrust_master[5] = 0.005f;  // setpoint filter usec (30Hz)
+    pid_parameters.thrust_master[6] = 1.0f;    // (meters / full stick action)
 
-    CONFIG.data.pitchMasterPIDParameters[0] = 5.0f;  // P
-    CONFIG.data.pitchMasterPIDParameters[1] = 1.0f;  // I
-    CONFIG.data.pitchMasterPIDParameters[2] = 0.0f;  // D
-    CONFIG.data.pitchMasterPIDParameters[3] = 10.0f;  // Windup guard
-    CONFIG.data.pitchMasterPIDParameters[4] = 0.005f;  // D filter usec (15Hz)
-    CONFIG.data.pitchMasterPIDParameters[5] = 0.005f;  // setpoint filter usec (30Hz)
-    CONFIG.data.pitchMasterPIDParameters[6] = 10.0f;  // (degrees / full stick action)
+    pid_parameters.pitch_master[0] = 5.0f;    // P
+    pid_parameters.pitch_master[1] = 1.0f;    // I
+    pid_parameters.pitch_master[2] = 0.0f;    // D
+    pid_parameters.pitch_master[3] = 10.0f;   // Windup guard
+    pid_parameters.pitch_master[4] = 0.005f;  // D filter usec (15Hz)
+    pid_parameters.pitch_master[5] = 0.005f;  // setpoint filter usec (30Hz)
+    pid_parameters.pitch_master[6] = 10.0f;   // (degrees / full stick action)
 
-    CONFIG.data.rollMasterPIDParameters[0] = 5.0f;  // P
-    CONFIG.data.rollMasterPIDParameters[1] = 1.0f;  // I
-    CONFIG.data.rollMasterPIDParameters[2] = 0.0f;  // D
-    CONFIG.data.rollMasterPIDParameters[3] = 10.0f;  // Windup guard
-    CONFIG.data.rollMasterPIDParameters[4] = 0.005f;  // D filter usec (15Hz)
-    CONFIG.data.rollMasterPIDParameters[5] = 0.005f;  // setpoint filter usec (30Hz)
-    CONFIG.data.rollMasterPIDParameters[6] = 10.0f;  // (degrees / full stick action)
+    pid_parameters.roll_master[0] = 5.0f;    // P
+    pid_parameters.roll_master[1] = 1.0f;    // I
+    pid_parameters.roll_master[2] = 0.0f;    // D
+    pid_parameters.roll_master[3] = 10.0f;   // Windup guard
+    pid_parameters.roll_master[4] = 0.005f;  // D filter usec (15Hz)
+    pid_parameters.roll_master[5] = 0.005f;  // setpoint filter usec (30Hz)
+    pid_parameters.roll_master[6] = 10.0f;   // (degrees / full stick action)
 
-    CONFIG.data.yawMasterPIDParameters[0] = 5.0f;  // P
-    CONFIG.data.yawMasterPIDParameters[1] = 1.0f;  // I
-    CONFIG.data.yawMasterPIDParameters[2] = 0.0f;  // D
-    CONFIG.data.yawMasterPIDParameters[3] = 10.0f;  // Windup guard
-    CONFIG.data.yawMasterPIDParameters[4] = 0.005f;  // D filter usec (15Hz)
-    CONFIG.data.yawMasterPIDParameters[5] = 0.005f;  // setpoint filter usec (30Hz)
-    CONFIG.data.yawMasterPIDParameters[6] = 180.0f;  // (degrees / full stick action)
+    pid_parameters.yaw_master[0] = 5.0f;    // P
+    pid_parameters.yaw_master[1] = 1.0f;    // I
+    pid_parameters.yaw_master[2] = 0.0f;    // D
+    pid_parameters.yaw_master[3] = 10.0f;   // Windup guard
+    pid_parameters.yaw_master[4] = 0.005f;  // D filter usec (15Hz)
+    pid_parameters.yaw_master[5] = 0.005f;  // setpoint filter usec (30Hz)
+    pid_parameters.yaw_master[6] = 180.0f;  // (degrees / full stick action)
 
-    CONFIG.data.thrustSlavePIDParameters[0] = 1.0f;  // P
-    CONFIG.data.thrustSlavePIDParameters[1] = 0.0f;  // I
-    CONFIG.data.thrustSlavePIDParameters[2] = 0.0f;  // D
-    CONFIG.data.thrustSlavePIDParameters[3] = 10.0f;  // Windup guard
-    CONFIG.data.thrustSlavePIDParameters[4] = 0.001f;  // D filter usec (150Hz)
-    CONFIG.data.thrustSlavePIDParameters[5] = 0.001f;  // setpoint filter usec (300Hz)
-    CONFIG.data.thrustSlavePIDParameters[6] = 0.3f;  // (meters/sec / full stick action)
+    pid_parameters.thrust_slave[0] = 1.0f;    // P
+    pid_parameters.thrust_slave[1] = 0.0f;    // I
+    pid_parameters.thrust_slave[2] = 0.0f;    // D
+    pid_parameters.thrust_slave[3] = 10.0f;   // Windup guard
+    pid_parameters.thrust_slave[4] = 0.001f;  // D filter usec (150Hz)
+    pid_parameters.thrust_slave[5] = 0.001f;  // setpoint filter usec (300Hz)
+    pid_parameters.thrust_slave[6] = 0.3f;  // (meters/sec / full stick action)
 
-    CONFIG.data.pitchSlavePIDParameters[0] = 20.0f;  // P
-    CONFIG.data.pitchSlavePIDParameters[1] = 8.0f;  // I
-    CONFIG.data.pitchSlavePIDParameters[2] = 0.0f;  // D
-    CONFIG.data.pitchSlavePIDParameters[3] = 30.0f;  // Windup guard
-    CONFIG.data.pitchSlavePIDParameters[4] = 0.001f;  // D filter usec (150Hz)
-    CONFIG.data.pitchSlavePIDParameters[5] = 0.001f;  // setpoint filter usec (300Hz)
-    CONFIG.data.pitchSlavePIDParameters[6] = 30.0f;  // (deg/sec / full stick action)
+    pid_parameters.pitch_slave[0] = 20.0f;   // P
+    pid_parameters.pitch_slave[1] = 8.0f;    // I
+    pid_parameters.pitch_slave[2] = 0.0f;    // D
+    pid_parameters.pitch_slave[3] = 30.0f;   // Windup guard
+    pid_parameters.pitch_slave[4] = 0.001f;  // D filter usec (150Hz)
+    pid_parameters.pitch_slave[5] = 0.001f;  // setpoint filter usec (300Hz)
+    pid_parameters.pitch_slave[6] = 30.0f;   // (deg/sec / full stick action)
 
-    CONFIG.data.rollSlavePIDParameters[0] = 20.0f;  // P
-    CONFIG.data.rollSlavePIDParameters[1] = 8.0f;  // I
-    CONFIG.data.rollSlavePIDParameters[2] = 0.0f;  // D
-    CONFIG.data.rollSlavePIDParameters[3] = 30.0f;  // Windup guard
-    CONFIG.data.rollSlavePIDParameters[4] = 0.001f;  // D filter usec (150Hz)
-    CONFIG.data.rollSlavePIDParameters[5] = 0.001f;  // setpoint filter usec (300Hz)
-    CONFIG.data.rollSlavePIDParameters[6] = 30.0f;  // (deg/sec / full stick action)
+    pid_parameters.roll_slave[0] = 20.0f;   // P
+    pid_parameters.roll_slave[1] = 8.0f;    // I
+    pid_parameters.roll_slave[2] = 0.0f;    // D
+    pid_parameters.roll_slave[3] = 30.0f;   // Windup guard
+    pid_parameters.roll_slave[4] = 0.001f;  // D filter usec (150Hz)
+    pid_parameters.roll_slave[5] = 0.001f;  // setpoint filter usec (300Hz)
+    pid_parameters.roll_slave[6] = 30.0f;   // (deg/sec / full stick action)
 
-    CONFIG.data.yawSlavePIDParameters[0] = 30.0f;  // P
-    CONFIG.data.yawSlavePIDParameters[1] = 5.0f;  // I
-    CONFIG.data.yawSlavePIDParameters[2] = 0.0f;  // D
-    CONFIG.data.yawSlavePIDParameters[3] = 20.0f;  // Windup guard
-    CONFIG.data.yawSlavePIDParameters[4] = 0.001f;  // D filter usec (150Hz)
-    CONFIG.data.yawSlavePIDParameters[5] = 0.001f;  // setpoint filter usec (300Hz)
-    CONFIG.data.yawSlavePIDParameters[6] = 240.0f;  // (deg/sec / full stick action)
+    pid_parameters.yaw_slave[0] = 30.0f;   // P
+    pid_parameters.yaw_slave[1] = 5.0f;    // I
+    pid_parameters.yaw_slave[2] = 0.0f;    // D
+    pid_parameters.yaw_slave[3] = 20.0f;   // Windup guard
+    pid_parameters.yaw_slave[4] = 0.001f;  // D filter usec (150Hz)
+    pid_parameters.yaw_slave[5] = 0.001f;  // setpoint filter usec (300Hz)
+    pid_parameters.yaw_slave[6] = 240.0f;  // (deg/sec / full stick action)
 
-    CONFIG.data.pidBypass = BYPASS_THRUST_MASTER | BYPASS_THRUST_SLAVE | BYPASS_YAW_MASTER; //AHRS/Horizon mode
+    pid_parameters.pid_bypass = BYPASS_THRUST_MASTER | BYPASS_THRUST_SLAVE |
+                                BYPASS_YAW_MASTER;  // AHRS/Horizon mode
 
-    CONFIG.data.stateEstimationParameters[0] = 1.00f;  // 2*kp or BETA
-    CONFIG.data.stateEstimationParameters[1] = 0.01f;  // 2*ki
+    state_parameters.state_estimation[0] = 1.00f;  // 2*kp or BETA
+    state_parameters.state_estimation[1] = 0.01f;  // 2*ki
 
-    CONFIG.data.enableParameters[0] = 0.001f;  // max variance
-    CONFIG.data.enableParameters[1] = 30.0f;  // max angle
+    state_parameters.enable[0] = 0.001f;  // max variance
+    state_parameters.enable[1] = 30.0f;   // max angle
+
+    led_states = LED::States{{
+        LED::StateCase(STATUS_MPU_FAIL, LED::SOLID, CRGB::Black, CRGB::Red,
+                       true),
+        LED::StateCase(STATUS_BMP_FAIL, LED::SOLID, CRGB::Red, CRGB::Black,
+                       true),
+        LED::StateCase(STATUS_BOOT, LED::SOLID, CRGB::Green),
+        LED::StateCase(STATUS_UNPAIRED, LED::FLASH, CRGB::Orange, CRGB::Orange),
+        LED::StateCase(STATUS_RX_FAIL, LED::FLASH, CRGB::Red),
+        LED::StateCase(STATUS_FAIL_STABILITY, LED::FLASH, CRGB::Black,
+                       CRGB::Blue),
+        LED::StateCase(STATUS_FAIL_ANGLE, LED::FLASH, CRGB::Blue, CRGB::Black),
+        LED::StateCase(STATUS_OVERRIDE, LED::BEACON, CRGB::Red),
+        LED::StateCase(STATUS_TEMP_WARNING, LED::FLASH, CRGB::Red),
+        LED::StateCase(STATUS_BATTERY_LOW, LED::BEACON, CRGB::Orange),
+        LED::StateCase(STATUS_ENABLING, LED::FLASH, CRGB::Blue),
+        LED::StateCase(STATUS_ENABLED, LED::BEACON, CRGB::Blue),
+        LED::StateCase(STATUS_IDLE, LED::BEACON, CRGB::Green),
+    }};
 
     // This function will only initialize data variables
     // writeEEPROM() needs to be called manually to store this data in EEPROM
 }
 
-void writeEEPROM(void) {
-    for (uint16_t i = 0; i < sizeof(struct CONFIG_struct); i++) {
+CONFIG_struct::CONFIG_struct(Systems& sys)
+    : id(sys.id),
+      mix_table(sys.airframe.mix_table),
+      mag_bias(sys.mag.mag_bias),
+      channel(sys.receiver.channel),
+      pid_parameters(sys.control.pid_parameters),
+      state_parameters(sys.state.parameters),
+      led_states(sys.led.states) {
+}
+
+void CONFIG_struct::applyTo(Systems& systems) const {
+    systems.airframe.mix_table = mix_table;
+    systems.mag.mag_bias = mag_bias;
+    systems.receiver.channel = channel;
+    systems.state.parameters = state_parameters;
+
+    systems.control.parseConfig(pid_parameters);
+    systems.led.parseConfig(led_states);
+    systems.id = id;
+}
+
+template <class T>
+bool verifyArgs(T& var) {
+    return var.verify();
+}
+
+template <class T, class... TArgs>
+bool verifyArgs(T& var, TArgs&... varArgs) {
+    bool ok{verifyArgs(var)};
+    return verifyArgs(varArgs...) && ok;
+}
+
+bool CONFIG_struct::verify() const {
+    return verifyArgs(version, pcb, mix_table, mag_bias, channel,
+                      pid_parameters, state_parameters, led_states, id);
+}
+
+void writeEEPROM(const CONFIG_union& CONFIG) {
+    for (size_t i = 0; i < sizeof(CONFIG_struct); i++) {
         if (CONFIG.raw[i] != EEPROM.read(i)) {  // Only re-write new data
             EEPROM.write(i, CONFIG.raw[i]);
         }
     }
-    if (config_handler)
-        config_handler(CONFIG.data);
 }
 
 bool isEmptyEEPROM() {
     return EEPROM.read(0) == 255;
 }
 
-void readEEPROM(void) {
+CONFIG_union readEEPROM() {
     if (isEmptyEEPROM()) {
         // No EEPROM values detected, re-initialize to default values
-        initializeEEPROM();
-        writeEEPROM();  // store the default values
+        writeEEPROM(CONFIG_union());  // store the default values
+        return readEEPROM();
     } else {
+        CONFIG_union CONFIG;
         // There "is" data in the EEPROM, read it all
         for (uint16_t i = 0; i < sizeof(struct CONFIG_struct); i++) {
             CONFIG.raw[i] = EEPROM.read(i);
         }
-        // Verify version
-        if ((CONFIG.data.version[0] != FIRMWARE_VERSION_A) ||
-            (CONFIG.data.version[1] != FIRMWARE_VERSION_B) ||
-            (CONFIG.data.version[2] != FIRMWARE_VERSION_C) ){
-            // Version doesn't match, re-initialize to default values
-            initializeEEPROM();
-            writeEEPROM();  // store the default values
+        // Verify version and general settings
+        if (!CONFIG.data.verify()) {
+            // If the stored configuration isn't legal in any way, report it
+            // via debug and reset it
+            writeEEPROM(CONFIG_union());  // store the default values
+            return readEEPROM();
         } else {
+            return CONFIG;
         }
     }
-    if (config_handler)
-        config_handler(CONFIG.data);
 }

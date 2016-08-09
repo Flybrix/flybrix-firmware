@@ -21,14 +21,33 @@ class State;
 
 class Control {
    public:
-    Control(State *state, CONFIG_struct& config);
+    struct PIDParameters;
 
-    bool verifyConfig(const CONFIG_struct& config) const;
-    void parseConfig(CONFIG_struct& config);
+    Control(State* state, const PIDParameters& config);
+    void parseConfig(const PIDParameters& config);
 
     void calculateControlVectors();
 
-    State *state;
+    State* state;
+
+    struct __attribute__((packed)) PIDParameters {
+        bool verify() const;
+
+        float thrust_master[7];  // parameters are {P,I,D,integral windup guard, D filter delay sec, setpoint filter delay sec, command scaling factor}
+        float pitch_master[7];
+        float roll_master[7];
+        float yaw_master[7];
+
+        float thrust_slave[7];
+        float pitch_slave[7];
+        float roll_slave[7];
+        float yaw_slave[7];
+
+        uint8_t pid_bypass;  // bitfield order for bypass: {thrustMaster, pitchMaster, rollMaster, yawMaster, thrustSlave, pitchSlave, rollSlave, yawSlave} (LSB-->MSB)
+    } pid_parameters;
+
+    static_assert(sizeof(PIDParameters) == 4 * 8 * 7 + 1, "Data is not packed");
+
     uint32_t lastUpdateMicros = 0;  // 1.2 hrs should be enough
 
     // unpack config.pidBypass for convenience

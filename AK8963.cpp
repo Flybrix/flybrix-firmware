@@ -13,7 +13,6 @@
 #include <stdio.h>
 #include <math.h>
 #include "state.h"
-#include "config.h"  //CONFIG variable
 
 // we have three coordinate systems here:
 // 1. REGISTER coordinates: native values as read
@@ -77,9 +76,9 @@ void AK8963::triggerCallback() {
         magCount[0] = (int16_t)((float)magCount[0] * magCalibration[0]);
         magCount[1] = (int16_t)((float)magCount[1] * magCalibration[1]);
         magCount[2] = (int16_t)((float)magCount[2] * magCalibration[2]);
-        state->mag[0] = (float)magCount[0] * mRes - CONFIG.data.magBias[0];
-        state->mag[1] = (float)magCount[1] * mRes - CONFIG.data.magBias[1];
-        state->mag[2] = (float)magCount[2] * mRes - CONFIG.data.magBias[2];
+        state->mag[0] = (float)magCount[0] * mRes - mag_bias.x;
+        state->mag[1] = (float)magCount[1] * mRes - mag_bias.y;
+        state->mag[2] = (float)magCount[2] * mRes - mag_bias.z;
         rotate(state->R, state->mag);  // rotate to FLYER coords
         state->updateStateMag();
     } else {

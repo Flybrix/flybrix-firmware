@@ -4,7 +4,10 @@
     *  License and other details available at: http://www.flybrix.com/firmware
 */
 
+#include "debug.h"
 #include "state.h"
+
+#include <Arduino.h>
 
 // DEFAULT FILTER SETTINGS
 
@@ -14,10 +17,10 @@
 #define STATE_T_SCALE 0.01f
 #define STATE_P_SCALE 0.000039063f
 
-State::State() : localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, FilterType::Madgwick, CONFIG.data.stateEstimationParameters, STATE_BARO_VARIANCE) {
+State::State() : localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, FilterType::Madgwick, parameters.state_estimation, STATE_BARO_VARIANCE) {
 }
 
-boolean State::stable(void) {
+bool State::stable(void) {
     float max_variance = 0.0f;
     for (int i = 0; i < 3; i++) {
         float variance = accel_filter_sq[i] - accel_filter[i] * accel_filter[i];
@@ -25,16 +28,22 @@ boolean State::stable(void) {
             max_variance = variance;
         }
     }
-    return (max_variance < CONFIG.data.enableParameters[0]);
+    return (max_variance < parameters.enable[0]);
 }
 
 float State::fast_cosine(float x_deg) {
     return 1.0f + x_deg * (-0.000275817445684765f - 0.00013858051199801900f * x_deg);
 }
 
-boolean State::upright(void) {
+bool State::upright(void) {
     // cos(angle) = (a dot g) / |a| / |g| = -a[2]
-    return (-accel_filter[2] > fast_cosine(CONFIG.data.enableParameters[1]));
+    // cos(angle)^2 = a[2]*a[2] / (a dot a)
+    float cos_test_angle = fast_cosine(parameters.enable[1]);
+    float a_dot_a = 0.0f;
+    for (uint8_t i = 0; i < 3; i++) {
+        a_dot_a += accel_filter[i] * accel_filter[i];
+    }
+    return (accel_filter[2]*accel_filter[2] > a_dot_a*cos_test_angle*cos_test_angle );
 }
 
 void State::processMotorEnablingIteration(void) {
@@ -93,7 +102,7 @@ void State::clear(const uint16_t status_code) {
     status &= ~(status_code);
 }
 
-boolean State::is(const uint16_t status_code) const {
+bool State::is(const uint16_t status_code) const {
     return (status & status_code);
 }
 
@@ -107,7 +116,7 @@ void State::resetState() {
     kinematicsRate[2] = 0.0f;
     kinematicsAltitude = 0.0f;  // meters
     p0 = pressure;              // reset filter to current value
-    localization = Localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, FilterType::Madgwick, CONFIG.data.stateEstimationParameters, STATE_BARO_VARIANCE);
+    localization = Localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, FilterType::Madgwick, parameters.state_estimation, STATE_BARO_VARIANCE);
 }
 
 float State::mixRadians(float w1, float a1, float a2) {
