@@ -33,6 +33,9 @@ void PilotCommand::processCommands(void) {
         bluetoothTolerance = 40;
     }
 
+    bool attempting_to_enable  = false;
+    bool attempting_to_disable = false;
+    
     if (!(state->command_source_mask & (COMMAND_READY_R415X | COMMAND_READY_BTLE))){
         // we have no command data!
         state->command_invalid_count += 2;
@@ -50,16 +53,19 @@ void PilotCommand::processCommands(void) {
             state->clear(STATUS_RX_FAIL);
         }
     }
-
-    bool attempting_to_enable  = state->command_AUX_mask & (1 << 0);  // AUX1 is low
-    bool attempting_to_disable = state->command_AUX_mask & (1 << 2);  // AUX1 is high
+    else { // use valid command data
+         attempting_to_enable  = state->command_AUX_mask & (1 << 0);  // AUX1 is low
+         attempting_to_disable = state->command_AUX_mask & (1 << 2);  // AUX1 is high
+    }
 
     if (blockEnabling && attempting_to_enable && !state->is(STATUS_OVERRIDE)) {  // user attempted to enable, but we are blocking it
         state->clear(STATUS_IDLE);
         state->set(STATUS_FAIL_STABILITY);
         state->set(STATUS_FAIL_ANGLE);  // set both flags as indication
     }
+    
     blockEnabling = false;  // we block enable on the first run!
+    
     if (!state->is(STATUS_OVERRIDE)) {
         if (attempting_to_enable && !state->is(STATUS_ENABLED | STATUS_FAIL_STABILITY | STATUS_FAIL_ANGLE)) {
             state->processMotorEnablingIteration();
