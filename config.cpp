@@ -186,16 +186,14 @@ CONFIG_struct::CONFIG_struct() {  // Default Settings
     state_parameters.enable[0] = 0.001f;  // max variance
     state_parameters.enable[1] = 30.0f;   // max angle
 
+    //fading is in 256ths : https://github.com/FastLED/FastLED/wiki/Pixel-reference
     led_states = LED::States{{
-        LED::StateCase(STATUS_MPU_FAIL, LED::SOLID, CRGB::Black, CRGB::Red,
-                       true),
-        LED::StateCase(STATUS_BMP_FAIL, LED::SOLID, CRGB::Red, CRGB::Black,
-                       true),
+        LED::StateCase(STATUS_MPU_FAIL, LED::SOLID, CRGB::Black, CRGB::Red,true),
+        LED::StateCase(STATUS_BMP_FAIL, LED::SOLID, CRGB::Red, CRGB::Black,true),
         LED::StateCase(STATUS_BOOT, LED::SOLID, CRGB::Green),
-        LED::StateCase(STATUS_UNPAIRED, LED::FLASH, CRGB::Orange, CRGB::Orange),
-        LED::StateCase(STATUS_RX_FAIL, LED::FLASH, CRGB::Red),
-        LED::StateCase(STATUS_FAIL_STABILITY, LED::FLASH, CRGB::Black,
-                       CRGB::Blue),
+        LED::StateCase(STATUS_FAIL_OTHER, LED::ALTERNATE, CRGB::Blue, CRGB::Blue),
+        LED::StateCase(STATUS_RX_FAIL, LED::FLASH, CRGB::Orange, CRGB::Orange),
+        LED::StateCase(STATUS_FAIL_STABILITY, LED::FLASH, CRGB::Black,CRGB::Blue),
         LED::StateCase(STATUS_FAIL_ANGLE, LED::FLASH, CRGB::Blue, CRGB::Black),
         LED::StateCase(STATUS_OVERRIDE, LED::BEACON, CRGB::Red),
         LED::StateCase(STATUS_TEMP_WARNING, LED::FLASH, CRGB::Red),

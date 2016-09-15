@@ -91,6 +91,7 @@ void State::disableMotors(void) {
     clear(STATUS_ENABLED);
     clear(STATUS_FAIL_STABILITY);
     clear(STATUS_FAIL_ANGLE);
+    clear(STATUS_FAIL_OTHER);
     set(STATUS_IDLE);
 }
 
