@@ -188,19 +188,19 @@ CONFIG_struct::CONFIG_struct() {  // Default Settings
 
     //fading is in 256ths : https://github.com/FastLED/FastLED/wiki/Pixel-reference
     led_states = LED::States{{
-        LED::StateCase(STATUS_MPU_FAIL, LED::SOLID, CRGB::Black, CRGB::Red,true),
-        LED::StateCase(STATUS_BMP_FAIL, LED::SOLID, CRGB::Red, CRGB::Black,true),
-        LED::StateCase(STATUS_BOOT, LED::SOLID, CRGB::Green),
-        LED::StateCase(STATUS_FAIL_OTHER, LED::ALTERNATE, CRGB::Blue, CRGB::Blue),
-        LED::StateCase(STATUS_RX_FAIL, LED::FLASH, CRGB::Orange, CRGB::Orange),
-        LED::StateCase(STATUS_FAIL_STABILITY, LED::FLASH, CRGB::Black,CRGB::Blue),
-        LED::StateCase(STATUS_FAIL_ANGLE, LED::FLASH, CRGB::Blue, CRGB::Black),
-        LED::StateCase(STATUS_OVERRIDE, LED::BEACON, CRGB::Red),
-        LED::StateCase(STATUS_TEMP_WARNING, LED::FLASH, CRGB::Red),
-        LED::StateCase(STATUS_BATTERY_LOW, LED::BEACON, CRGB::Orange),
-        LED::StateCase(STATUS_ENABLING, LED::FLASH, CRGB::Blue),
-        LED::StateCase(STATUS_ENABLED, LED::BEACON, CRGB::Blue),
-        LED::StateCase(STATUS_IDLE, LED::BEACON, CRGB::Green),
+        LED::StateCase(STATUS_MPU_FAIL,       LED::SOLID,     CRGB(CRGB::Black ).fadeLightBy(230), CRGB(CRGB::Red   ).fadeLightBy(230), true),
+        LED::StateCase(STATUS_BMP_FAIL,       LED::SOLID,     CRGB(CRGB::Red   ).fadeLightBy(230), CRGB(CRGB::Black ).fadeLightBy(230), true),
+        LED::StateCase(STATUS_BOOT,           LED::SOLID,     CRGB(CRGB::Green ).fadeLightBy(230)),
+        LED::StateCase(STATUS_RX_FAIL,        LED::FLASH,     CRGB(CRGB::Orange).fadeLightBy(230)),
+        LED::StateCase(STATUS_FAIL_OTHER,     LED::ALTERNATE, CRGB(CRGB::Blue  ).fadeLightBy(230)),        
+        LED::StateCase(STATUS_FAIL_STABILITY, LED::FLASH,     CRGB(CRGB::Black ).fadeLightBy(230), CRGB(CRGB::Blue  ).fadeLightBy(230)),
+        LED::StateCase(STATUS_FAIL_ANGLE,     LED::FLASH,     CRGB(CRGB::Blue  ).fadeLightBy(230), CRGB(CRGB::Black ).fadeLightBy(230)),
+        LED::StateCase(STATUS_OVERRIDE,       LED::BEACON,    CRGB(CRGB::Red   ).fadeLightBy(230)),
+        LED::StateCase(STATUS_TEMP_WARNING,   LED::FLASH,     CRGB(CRGB::Red   ).fadeLightBy(230)),
+        LED::StateCase(STATUS_BATTERY_LOW,    LED::BEACON,    CRGB(CRGB::Orange).fadeLightBy(230)),
+        LED::StateCase(STATUS_ENABLING,       LED::FLASH,     CRGB(CRGB::Blue  ).fadeLightBy(230)),
+        LED::StateCase(STATUS_ENABLED,        LED::BEACON,    CRGB(CRGB::Blue  ).fadeLightBy(230)),
+        LED::StateCase(STATUS_IDLE,           LED::BEACON,    CRGB(CRGB::Green ).fadeLightBy(230)),
     }};
 
     // This function will only initialize data variables
