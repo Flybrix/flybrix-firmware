@@ -45,15 +45,7 @@ bool R415X::ChannelProperties::verify() const {
 }
 
 R415X::R415X() {
-    initialize_isr();
-}
-
-void R415X::initialize_isr(void) {
     pinMode(board::RX_DAT, INPUT);  // WE ARE ASSUMING RX_DAT IS PIN 3 IN FTM1 SETUP!
-
-    for (uint8_t i = 0; i <= RC_CHANNEL_COUNT; i++) {
-        RX[i] = 1100;
-    }
 
     // FLEX Timer1 input filter configuration
     // 4+4*val clock cycles, 48MHz = 4+4*7 = 32 clock cycles = 0.75us

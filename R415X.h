@@ -78,8 +78,6 @@ class R415X {
     static_assert(sizeof(ChannelProperties) == 6 + 1 + 6 * 2 * 2, "Data is not packed");
 
    private:
-    void initialize_isr(void);
-
     PPMchannel throttle;
     PPMchannel pitch;
     PPMchannel roll;
