@@ -279,6 +279,20 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
             }
         }
     }
+    if (mask & COM_REQ_CARD_RECORDING_STATE) {
+        CobsPayload<20> payload;
+        WriteProtocolHead(SerialComm::MessageType::Command, COM_SET_CARD_RECORDING, payload);
+        uint8_t flags = 0;
+        if (sdcard::isOpen()) {
+            flags |= 1;
+        }
+        if (sdcard::isLocked()) {
+            flags |= 2;
+        }
+        payload.Append(flags);
+        WriteToOutput(payload);
+        ack_data |= COM_REQ_CARD_RECORDING_STATE;
+    }
 
     if (mask & COM_REQ_RESPONSE) {
         SendResponse(mask, ack_data);
