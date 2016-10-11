@@ -170,12 +170,16 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
         }
     }
     if (mask & COM_SET_CARD_RECORDING) {
-        bool shouldRecordToCard;
-        if (data_input.ParseInto(shouldRecordToCard)) {
+        uint8_t recording_flags;
+        if (data_input.ParseInto(recording_flags)) {
+            bool shouldRecordToCard = recording_flags & 1;
+            bool shouldLock = recording_flags & 2;
+            sdcard::setLock(false);
             if (shouldRecordToCard)
                 sdcard::openFile();
             else
                 sdcard::closeFile();
+            sdcard::setLock(shouldLock);
             ack_data |= COM_SET_CARD_RECORDING;
         }
     }

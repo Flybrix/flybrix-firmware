@@ -25,6 +25,7 @@
 namespace sdcard {
 namespace {
 SdFat sd;
+bool locked = false;
 
 bool openSDHardwarePort() {
 #ifdef SKIP_SD
@@ -171,6 +172,8 @@ void startup() {
 }
 
 void openFile() {
+    if (locked)
+        return;
     if (!openSD())
         return;
     openFile("st");
@@ -199,6 +202,8 @@ void write(const uint8_t* data, size_t length) {
 }
 
 void closeFile() {
+    if (locked)
+        return;
     if (!openSD())
         return;
     if (!binFile.isOpen())
@@ -216,5 +221,9 @@ void closeFile() {
     block_number = 0;
     binFile.close();
     DebugPrint("File closing successful");
+}
+
+void setLock(bool enable) {
+    locked = enable;
 }
 }  // namespace sdcard
