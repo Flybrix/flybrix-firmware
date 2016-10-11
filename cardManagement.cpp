@@ -226,4 +226,8 @@ void closeFile() {
 void setLock(bool enable) {
     locked = enable;
 }
+
+bool isLocked() {
+    return locked;
+}
 }  // namespace sdcard

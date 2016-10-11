@@ -29,6 +29,8 @@ void closeFile();
 
 // We can set a lock to SD opening/closing controls, which can only be overriden with serial commands
 void setLock(bool enable);
+
+bool isLocked();
 }
 
 #endif
