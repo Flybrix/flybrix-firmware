@@ -281,7 +281,8 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
     }
     if (mask & COM_REQ_CARD_RECORDING_STATE) {
         CobsPayload<20> payload;
-        WriteProtocolHead(SerialComm::MessageType::Command, COM_SET_CARD_RECORDING, payload);
+        WriteProtocolHead(SerialComm::MessageType::Command, COM_SET_SD_WRITE_DELAY | COM_SET_CARD_RECORDING, payload);
+        payload.Append(sd_card_state_delay);
         uint8_t flags = 0;
         if (sdcard::isOpen()) {
             flags |= 1;
