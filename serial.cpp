@@ -170,12 +170,16 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
         }
     }
     if (mask & COM_SET_CARD_RECORDING) {
-        bool shouldRecordToCard;
-        if (data_input.ParseInto(shouldRecordToCard)) {
+        uint8_t recording_flags;
+        if (data_input.ParseInto(recording_flags)) {
+            bool shouldRecordToCard = recording_flags & 1;
+            bool shouldLock = recording_flags & 2;
+            sdcard::setLock(false);
             if (shouldRecordToCard)
                 sdcard::openFile();
             else
                 sdcard::closeFile();
+            sdcard::setLock(shouldLock);
             ack_data |= COM_SET_CARD_RECORDING;
         }
     }
@@ -274,6 +278,21 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
                 ack_data |= COM_REQ_PARTIAL_EEPROM_DATA;
             }
         }
+    }
+    if (mask & COM_REQ_CARD_RECORDING_STATE) {
+        CobsPayload<20> payload;
+        WriteProtocolHead(SerialComm::MessageType::Command, COM_SET_SD_WRITE_DELAY | COM_SET_CARD_RECORDING, payload);
+        payload.Append(sd_card_state_delay);
+        uint8_t flags = 0;
+        if (sdcard::isOpen()) {
+            flags |= 1;
+        }
+        if (sdcard::isLocked()) {
+            flags |= 2;
+        }
+        payload.Append(flags);
+        WriteToOutput(payload);
+        ack_data |= COM_REQ_CARD_RECORDING_STATE;
     }
 
     if (mask & COM_REQ_RESPONSE) {

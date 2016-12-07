@@ -115,31 +115,9 @@ uint32_t low_battery_counter = 0;
 template <uint32_t f>
 uint32_t RunProcess(uint32_t start);
 
-template <uint32_t... Freqs>
-struct freqlist{};
-
-void RunProcessesHelper(freqlist<>) {
-}
-
-template <uint32_t F, uint32_t... Fargs>
-void RunProcessesHelper(freqlist<F, Fargs...>) {
-    RunProcess<F>(micros());
-    sys.i2c.update();
-    RunProcessesHelper(freqlist<Fargs...>());
-}
-
-template <uint32_t... Freqs>
-void RunProcesses() {
-    RunProcessesHelper(freqlist<Freqs...>());
-}
-
-template <uint32_t f>
-bool ProcessTask();
-
 bool skip_state_update = false;
 
 void loop() {
-
     sys.state.loopCount++;
 
     sys.i2c.update();  // manages a queue of requests for mpu, mag, bmp
@@ -167,11 +145,30 @@ void loop() {
         sys.motors.updateAllChannels();
     }
 
-    RunProcesses<1000, 100, 40, 35, 30, 10, 1>();
+    RunProcess<1000>(micros());
+    sys.i2c.update();
+    RunProcess<100>(micros());
+    sys.i2c.update();
+    RunProcess<40>(micros());
+    sys.i2c.update();
+    RunProcess<35>(micros());
+    sys.i2c.update();
+    RunProcess<30>(micros());
+    sys.i2c.update();
+    RunProcess<10>(micros());
+    sys.i2c.update();
+    RunProcess<1>(micros());
+    sys.i2c.update();
 }
 
+template <uint32_t f>
+class ProcessTask {
+   public:
+    static bool Run();
+};
+
 template <>
-bool ProcessTask<1000>() {
+bool ProcessTask<1000>::Run() {
     static uint16_t counterSerial{0};
     static uint16_t counterSdCard{0};
     if (++counterSerial > sys.conf.GetSendStateDelay() - 1) {
@@ -190,13 +187,13 @@ bool ProcessTask<1000>() {
 }
 
 template <>
-bool ProcessTask<30>() {
+bool ProcessTask<30>::Run() {
     sys.led.update();  // update quickly to support color dithering
     return true;
 }
 
 template <>
-bool ProcessTask<100>() {
+bool ProcessTask<100>::Run() {
     if (sys.bmp.ready) {
         sys.state.updateStatePT(micros());
         sys.bmp.startMeasurement();
@@ -219,13 +216,13 @@ bool ProcessTask<100>() {
 }
 
 template <>
-bool ProcessTask<35>() {
+bool ProcessTask<35>::Run() {
     flushSerial();
     return true;
 }
 
 template <>
-bool ProcessTask<40>() {
+bool ProcessTask<40>::Run() {
     sys.pilot.processCommands();
 
     sys.pwr.measureRawLevels();  // read all ADCs
@@ -258,7 +255,7 @@ bool ProcessTask<40>() {
 }
 
 template <>
-bool ProcessTask<10>() {
+bool ProcessTask<10>::Run() {
     if (sys.mag.ready) {
         sys.mag.startMeasurement();
     } else {
@@ -269,7 +266,7 @@ bool ProcessTask<10>() {
 }
 
 template <>
-bool ProcessTask<1>() {
+bool ProcessTask<1>::Run() {
     return true;
 }
 
@@ -279,11 +276,11 @@ uint32_t RunProcess(uint32_t start) {
     static uint32_t iterations{0};
 
     while (start - previous_time > 1000000 / f) {
-        if (ProcessTask<f>()) {
+        if (ProcessTask<f>::Run()) {
             previous_time += 1000000 / f;
             ++iterations;
         } else {
-          break;
+            break;
         }
     }
 

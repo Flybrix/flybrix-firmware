@@ -57,6 +57,7 @@ class SerialComm {
         COM_SET_PARTIAL_EEPROM_DATA = 1 << 20,
         COM_REINIT_PARTIAL_EEPROM_DATA = 1 << 21,
         COM_REQ_PARTIAL_EEPROM_DATA = 1 << 22,
+        COM_REQ_CARD_RECORDING_STATE = 1 << 23,
     };
 
     enum StateFields : uint32_t {
