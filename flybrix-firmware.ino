@@ -60,7 +60,7 @@ void setup() {
     setBluetoothUart();
 
     // load stored settings (this will reinitialize if there is no data in the EEPROM!
-    readEEPROM().data.applyTo(sys);
+    readEEPROM().applyTo(sys);
     sys.state.resetState();
 
     sys.state.set(STATUS_BMP_FAIL);

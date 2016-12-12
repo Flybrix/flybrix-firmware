@@ -89,17 +89,8 @@ static_assert(sizeof(CONFIG_struct) ==
 
 static_assert(sizeof(CONFIG_struct) == 619, "Data does not have expected size");
 
-union CONFIG_union {
-    CONFIG_union() : data{CONFIG_struct()} {
-    }
-    explicit CONFIG_union(Systems& systems) : data{CONFIG_struct(systems)} {
-    }
-    struct CONFIG_struct data;
-    uint8_t raw[sizeof(CONFIG_struct)];
-};
-
-void writeEEPROM(const CONFIG_union& CONFIG);
-CONFIG_union readEEPROM();
+void writeEEPROM(const CONFIG_struct& CONFIG);
+CONFIG_struct readEEPROM();
 bool isEmptyEEPROM();
 
 #endif

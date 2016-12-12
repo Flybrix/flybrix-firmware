@@ -7,6 +7,7 @@
 #include "config.h"
 
 #include "systems.h"
+#include "eepromcursor.h"
 
 PcbTransform::PcbTransform()          // Default settings
     : orientation{0.0f, 0.0f, 0.0f},  // pitch, roll, yaw; applied in that order
@@ -59,37 +60,31 @@ bool CONFIG_struct::verify() const {
     return verifyArgs(version, pcb, mix_table, mag_bias, channel, pid_parameters, state_parameters, led_states, id);
 }
 
-void writeEEPROM(const CONFIG_union& CONFIG) {
-    for (size_t i = 0; i < sizeof(CONFIG_struct); i++) {
-        if (CONFIG.raw[i] != EEPROM.read(i)) {  // Only re-write new data
-            EEPROM.write(i, CONFIG.raw[i]);
-        }
-    }
+void writeEEPROM(const CONFIG_struct& CONFIG) {
+    EEPROMCursor cursor;
+    cursor.Append(CONFIG);
 }
 
 bool isEmptyEEPROM() {
     return EEPROM.read(0) == 255;
 }
 
-CONFIG_union readEEPROM() {
+CONFIG_struct readEEPROM() {
+    CONFIG_struct CONFIG;
     if (isEmptyEEPROM()) {
         // No EEPROM values detected, re-initialize to default values
-        writeEEPROM(CONFIG_union());  // store the default values
-        return readEEPROM();
+        writeEEPROM(CONFIG_struct());  // store the default values
+        CONFIG = readEEPROM();
     } else {
-        CONFIG_union CONFIG;
-        // There "is" data in the EEPROM, read it all
-        for (uint16_t i = 0; i < sizeof(struct CONFIG_struct); i++) {
-            CONFIG.raw[i] = EEPROM.read(i);
-        }
+        EEPROMCursor cursor;
+        cursor.ParseInto(CONFIG);
         // Verify version and general settings
-        if (!CONFIG.data.verify()) {
+        if (!CONFIG.verify()) {
             // If the stored configuration isn't legal in any way, report it
             // via debug and reset it
-            writeEEPROM(CONFIG_union());  // store the default values
-            return readEEPROM();
-        } else {
-            return CONFIG;
+            writeEEPROM(CONFIG_struct());  // store the default values
+            CONFIG = readEEPROM();
         }
     }
+    return CONFIG;
 }
