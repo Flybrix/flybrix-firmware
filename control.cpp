@@ -8,6 +8,48 @@
 #include "debug.h"
 #include "state.h"
 
+#define BYPASS_THRUST_MASTER 1 << 0
+#define BYPASS_PITCH_MASTER 1 << 1
+#define BYPASS_ROLL_MASTER 1 << 2
+#define BYPASS_YAW_MASTER 1 << 3
+#define BYPASS_THRUST_SLAVE 1 << 4
+#define BYPASS_PITCH_SLAVE 1 << 5
+#define BYPASS_ROLL_SLAVE 1 << 6
+#define BYPASS_YAW_SLAVE 1 << 7
+
+// PID parameters:
+
+// MASTER:
+// P
+// I
+// D
+// Windup guard
+// D filter usec (15Hz)
+// setpoint filter usec (30Hz)
+// (meters / full stick action)
+
+// SLAVE:
+// P
+// I
+// D
+// Windup guard
+// D filter usec (150Hz)
+// setpoint filter usec (300Hz)
+// (deg/sec / full stick action)
+
+Control::PIDParameters::PIDParameters()
+    : thrust_master{1.0, 0.0, 0.0, 0.0, 0.005, 0.005, 1.0},
+      pitch_master{5.0, 1.0, 0.0, 10.0, 0.005, 0.005, 10.0},
+      roll_master{5.0, 1.0, 0.0, 10.0, 0.005, 0.005, 10.0},
+      yaw_master{5.0, 1.0, 0.0, 10.0, 0.005, 0.005, 180.0},
+      thrust_slave{1.0, 0.0, 0.0, 10.0, 0.001, 0.001, 0.3},
+      pitch_slave{20.0, 8.0, 0.0, 30.0, 0.001, 0.001, 30.0},
+      roll_slave{20.0, 8.0, 0.0, 30.0, 0.001, 0.001, 30.0},
+      yaw_slave{30.0, 5.0, 0.0, 20.0, 0.001, 0.001, 240.0},
+      pid_bypass{BYPASS_THRUST_MASTER | BYPASS_THRUST_SLAVE | BYPASS_YAW_MASTER}  // AHRS/Horizon mode
+{
+}
+
 namespace {
 enum PID_ID {
     THRUST_MASTER = 0,
@@ -65,7 +107,7 @@ void Control::parseConfig(const PIDParameters& config) {
 
 void Control::calculateControlVectors() {
     thrust_pid.setMasterInput(state->kinematicsAltitude);
-    thrust_pid.setSlaveInput(0.0f); //state->kinematicsClimbRate
+    thrust_pid.setSlaveInput(0.0f);  // state->kinematicsClimbRate
     pitch_pid.setMasterInput(state->kinematicsAngle[0] * 57.2957795f);
     pitch_pid.setSlaveInput(state->kinematicsRate[0] * 57.2957795f);
     roll_pid.setMasterInput(state->kinematicsAngle[1] * 57.2957795f);
@@ -73,10 +115,10 @@ void Control::calculateControlVectors() {
     yaw_pid.setMasterInput(state->kinematicsAngle[2] * 57.2957795f);
     yaw_pid.setSlaveInput(state->kinematicsRate[2] * 57.2957795f);
 
-    thrust_pid.setSetpoint(state->command_throttle * (1.0f/4095.0f) * thrust_pid.getScalingFactor(pidEnabled[THRUST_MASTER], pidEnabled[THRUST_SLAVE], 4095.0f));
-    pitch_pid.setSetpoint(state->command_pitch * (1.0f/2047.0f) * pitch_pid.getScalingFactor(pidEnabled[PITCH_MASTER], pidEnabled[PITCH_SLAVE], 2047.0f));
-    roll_pid.setSetpoint(state->command_roll * (1.0f/2047.0f) * roll_pid.getScalingFactor(pidEnabled[ROLL_MASTER], pidEnabled[ROLL_SLAVE], 2047.0f));
-    yaw_pid.setSetpoint(state->command_yaw * (1.0f/2047.0f) * yaw_pid.getScalingFactor(pidEnabled[YAW_MASTER], pidEnabled[YAW_SLAVE], 2047.0f));
+    thrust_pid.setSetpoint(state->command_throttle * (1.0f / 4095.0f) * thrust_pid.getScalingFactor(pidEnabled[THRUST_MASTER], pidEnabled[THRUST_SLAVE], 4095.0f));
+    pitch_pid.setSetpoint(state->command_pitch * (1.0f / 2047.0f) * pitch_pid.getScalingFactor(pidEnabled[PITCH_MASTER], pidEnabled[PITCH_SLAVE], 2047.0f));
+    roll_pid.setSetpoint(state->command_roll * (1.0f / 2047.0f) * roll_pid.getScalingFactor(pidEnabled[ROLL_MASTER], pidEnabled[ROLL_SLAVE], 2047.0f));
+    yaw_pid.setSetpoint(state->command_yaw * (1.0f / 2047.0f) * yaw_pid.getScalingFactor(pidEnabled[YAW_MASTER], pidEnabled[YAW_SLAVE], 2047.0f));
 
     // compute new output levels for state
     uint32_t now = micros();

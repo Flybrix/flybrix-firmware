@@ -17,6 +17,9 @@
 #define STATE_T_SCALE 0.01f
 #define STATE_P_SCALE 0.000039063f
 
+State::Parameters::Parameters() : state_estimation{1.0, 0.01}, enable{0.001, 30.0} {
+}
+
 State::State() : localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, FilterType::Madgwick, parameters.state_estimation, STATE_BARO_VARIANCE) {
 }
 
@@ -43,7 +46,7 @@ bool State::upright(void) {
     for (uint8_t i = 0; i < 3; i++) {
         a_dot_a += accel_filter[i] * accel_filter[i];
     }
-    return (accel_filter[2]*accel_filter[2] > a_dot_a*cos_test_angle*cos_test_angle );
+    return (accel_filter[2] * accel_filter[2] > a_dot_a * cos_test_angle * cos_test_angle);
 }
 
 void State::processMotorEnablingIteration(void) {

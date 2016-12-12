@@ -7,6 +7,29 @@
 #include "led.h"
 #include "state.h"
 
+CRGB fade(CRGB color) {
+    return color.fadeLightBy(230);
+}
+
+// fading is in 256ths : https://github.com/FastLED/FastLED/wiki/Pixel-reference
+LED::States::States()
+    : states{
+          LED::StateCase(STATUS_MPU_FAIL, LED::SOLID, fade(CRGB::Black), fade(CRGB::Red), true),
+          LED::StateCase(STATUS_BMP_FAIL, LED::SOLID, fade(CRGB::Red), fade(CRGB::Black), true),
+          LED::StateCase(STATUS_BOOT, LED::SOLID, fade(CRGB::Green)),
+          LED::StateCase(STATUS_RX_FAIL, LED::FLASH, fade(CRGB::Orange)),
+          LED::StateCase(STATUS_FAIL_OTHER, LED::ALTERNATE, fade(CRGB::Blue)),
+          LED::StateCase(STATUS_FAIL_STABILITY, LED::FLASH, fade(CRGB::Black), fade(CRGB::Blue)),
+          LED::StateCase(STATUS_FAIL_ANGLE, LED::FLASH, fade(CRGB::Blue), fade(CRGB::Black)),
+          LED::StateCase(STATUS_OVERRIDE, LED::BEACON, fade(CRGB::Red)),
+          LED::StateCase(STATUS_TEMP_WARNING, LED::FLASH, fade(CRGB::Red)),
+          LED::StateCase(STATUS_BATTERY_LOW, LED::BEACON, fade(CRGB::Orange)),
+          LED::StateCase(STATUS_ENABLING, LED::FLASH, fade(CRGB::Blue)),
+          LED::StateCase(STATUS_ENABLED, LED::BEACON, fade(CRGB::Blue)),
+          LED::StateCase(STATUS_IDLE, LED::BEACON, fade(CRGB::Green)),
+      } {
+}
+
 void (*LEDFastUpdate)(){nullptr};
 
 namespace {

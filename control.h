@@ -31,6 +31,7 @@ class Control {
     State* state;
 
     struct __attribute__((packed)) PIDParameters {
+        PIDParameters();
         bool verify() const;
 
         float thrust_master[7];  // parameters are {P,I,D,integral windup guard, D filter delay sec, setpoint filter delay sec, command scaling factor}

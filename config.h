@@ -30,8 +30,7 @@
 struct Systems;
 
 struct __attribute__((packed)) ConfigID {
-    ConfigID() : ConfigID{0} {
-    }
+    ConfigID();
     explicit ConfigID(uint32_t id) : id{id} {
     }
     bool verify() const {
@@ -43,9 +42,7 @@ struct __attribute__((packed)) ConfigID {
 static_assert(sizeof(ConfigID) == 4, "Data is not packed");
 
 struct __attribute__((packed)) PcbTransform {
-    PcbTransform()
-        : orientation{0.0f, 0.0f, 0.0f}, translation{0.0f, 0.0f, 0.0f} {
-    }
+    PcbTransform();
     bool verify() const {
         return true;
     }
@@ -86,10 +83,7 @@ struct __attribute__((packed)) CONFIG_struct {
 };
 
 static_assert(sizeof(CONFIG_struct) ==
-                  sizeof(Version) + sizeof(ConfigID) + sizeof(PcbTransform) +
-                      sizeof(Airframe::MixTable) + sizeof(AK8963::MagBias) +
-                      sizeof(R415X::ChannelProperties) +
-                      sizeof(State::Parameters) +
+                  sizeof(Version) + sizeof(ConfigID) + sizeof(PcbTransform) + sizeof(Airframe::MixTable) + sizeof(AK8963::MagBias) + sizeof(R415X::ChannelProperties) + sizeof(State::Parameters) +
                       sizeof(Control::PIDParameters) + sizeof(LED::States),
               "Data is not packed");
 
