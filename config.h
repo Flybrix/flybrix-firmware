@@ -71,6 +71,23 @@ struct __attribute__((packed)) CONFIG_struct {
     void applyTo(Systems& systems) const;
     bool verify() const;
 
+    void resetPartial(uint16_t submask, uint16_t led_mask);
+
+    template <class Cursor>
+    void writeTo(Cursor&& cursor) const;
+
+    template <class Cursor>
+    void writePartialTo(Cursor&& cursor, uint16_t submask, uint16_t led_mask) const;
+
+    template <class Cursor>
+    bool readFrom(Cursor&& cursor);
+
+    template <class Cursor>
+    bool readPartialFrom(Cursor&& cursor);
+
+    template <class Cursor>
+    static bool readMasks(Cursor&& cursor, uint16_t& submask, uint16_t& led_mask);
+
     Version version;
     ConfigID id;
     PcbTransform pcb;
@@ -89,8 +106,9 @@ static_assert(sizeof(CONFIG_struct) ==
 
 static_assert(sizeof(CONFIG_struct) == 619, "Data does not have expected size");
 
-void writeEEPROM(const CONFIG_struct& CONFIG);
 CONFIG_struct readEEPROM();
 bool isEmptyEEPROM();
+
+#include "config_impl.h"
 
 #endif

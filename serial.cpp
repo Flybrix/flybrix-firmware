@@ -15,6 +15,7 @@
 #include "control.h"
 #include "led.h"
 #include "systems.h"
+#include "eepromcursor.h"
 
 namespace {
 using CobsPayloadGeneric = CobsPayload<1000>;  // impacts memory use only; packet size should be <= client packet size
@@ -66,18 +67,18 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
 
     if (mask & COM_SET_EEPROM_DATA) {
         CONFIG_struct tmp_config;
-        if (data_input.ParseInto(tmp_config)) {
+        if (tmp_config.readFrom(data_input)) {
             if (tmp_config.verify()) {
                 tmp_config.applyTo(*systems);
-                writeEEPROM(tmp_config);  // TODO: deal with side effect code
+                tmp_config.writeTo(EEPROMCursor());
                 ack_data |= COM_SET_EEPROM_DATA;
             }
         }
     }
     if (mask & COM_REINIT_EEPROM_DATA) {
-        CONFIG_struct tmp_config;
+        const CONFIG_struct tmp_config;
         tmp_config.applyTo(*systems);
-        writeEEPROM(tmp_config);  // TODO: deal with side effect code
+        tmp_config.writeTo(EEPROMCursor());
         ack_data |= COM_REINIT_EEPROM_DATA;
     }
     if (mask & COM_REQ_EEPROM_DATA) {
@@ -184,99 +185,32 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
         }
     }
     if (mask & COM_SET_PARTIAL_EEPROM_DATA) {
-        uint16_t submask;
-        if (data_input.ParseInto(submask)) {
-            CONFIG_struct tmp_config(*systems);
-            bool success{true};
-            if (success && (submask & CONFIG_struct::VERSION)) {
-                success = data_input.ParseInto(tmp_config.version);
-            }
-            if (success && (submask & CONFIG_struct::PCB)) {
-                success = data_input.ParseInto(tmp_config.pcb);
-            }
-            if (success && (submask & CONFIG_struct::MIX_TABLE)) {
-                success = data_input.ParseInto(tmp_config.mix_table);
-            }
-            if (success && (submask & CONFIG_struct::MAG_BIAS)) {
-                success = data_input.ParseInto(tmp_config.mag_bias);
-            }
-            if (success && (submask & CONFIG_struct::CHANNEL)) {
-                success = data_input.ParseInto(tmp_config.channel);
-            }
-            if (success && (submask & CONFIG_struct::PID_PARAMETERS)) {
-                success = data_input.ParseInto(tmp_config.pid_parameters);
-            }
-            if (success && (submask & CONFIG_struct::STATE_PARAMETERS)) {
-                success = data_input.ParseInto(tmp_config.state_parameters);
-            }
-            if (success && (submask & CONFIG_struct::LED_STATES)) {
-                // split up LED states further, since the variable is giant
-                uint16_t led_mask;
-                success = data_input.ParseInto(led_mask);
-                for (size_t led_code = 0; success && (led_code < 16); ++led_code) {
-                    if (led_mask & (1 << led_code)) {
-                        success = data_input.ParseInto(tmp_config.led_states.states[led_code]);
-                    }
-                }
-            }
-            if (success && tmp_config.verify()) {
+        CONFIG_struct tmp_config(*systems);
+        if (tmp_config.readPartialFrom(data_input)) {
+            if (tmp_config.verify()) {
                 tmp_config.applyTo(*systems);
-                writeEEPROM(tmp_config);  // TODO: deal with side effect code
+                tmp_config.writeTo(EEPROMCursor());
                 ack_data |= COM_SET_PARTIAL_EEPROM_DATA;
             }
         }
     }
     if (mask & COM_REINIT_PARTIAL_EEPROM_DATA) {
-        uint16_t submask;
-        if (data_input.ParseInto(submask)) {
+        uint16_t submask, led_mask;
+        if (CONFIG_struct::readMasks(data_input, submask, led_mask)) {
             CONFIG_struct tmp_config(*systems);
-            CONFIG_struct default_config;
-            bool success{true};
-            if (submask & CONFIG_struct::VERSION) {
-                tmp_config.version = default_config.version;
-            }
-            if (submask & CONFIG_struct::PCB) {
-                tmp_config.pcb = default_config.pcb;
-            }
-            if (submask & CONFIG_struct::MIX_TABLE) {
-                tmp_config.mix_table = default_config.mix_table;
-            }
-            if (submask & CONFIG_struct::MAG_BIAS) {
-                tmp_config.mag_bias = default_config.mag_bias;
-            }
-            if (submask & CONFIG_struct::CHANNEL) {
-                tmp_config.channel = default_config.channel;
-            }
-            if (submask & CONFIG_struct::PID_PARAMETERS) {
-                tmp_config.pid_parameters = default_config.pid_parameters;
-            }
-            if (submask & CONFIG_struct::STATE_PARAMETERS) {
-                tmp_config.state_parameters = default_config.state_parameters;
-            }
-            if (submask & CONFIG_struct::LED_STATES) {
-                uint16_t led_mask;
-                success = data_input.ParseInto(led_mask);
-                for (size_t led_code = 0; success && (led_code < 16); ++led_code) {
-                    if (led_mask & (1 << led_code)) {
-                        tmp_config.led_states.states[led_code] = default_config.led_states.states[led_code];
-                    }
-                }
-            }
-            if (success && tmp_config.verify()) {
+            tmp_config.resetPartial(submask, led_mask);
+            if (tmp_config.verify()) {
                 tmp_config.applyTo(*systems);
-                writeEEPROM(tmp_config);  // TODO: deal with side effect code
+                tmp_config.writeTo(EEPROMCursor());
                 ack_data |= COM_REINIT_PARTIAL_EEPROM_DATA;
             }
         }
     }
     if (mask & COM_REQ_PARTIAL_EEPROM_DATA) {
-        uint16_t submask;
-        if (data_input.ParseInto(submask)) {
-            uint16_t led_mask{0};
-            if (!(submask & CONFIG_struct::LED_STATES) || data_input.ParseInto(led_mask)) {
-                SendPartialConfiguration(submask, led_mask);
-                ack_data |= COM_REQ_PARTIAL_EEPROM_DATA;
-            }
+        uint16_t submask, led_mask;
+        if (CONFIG_struct::readMasks(data_input, submask, led_mask)) {
+            SendPartialConfiguration(submask, led_mask);
+            ack_data |= COM_REQ_PARTIAL_EEPROM_DATA;
         }
     }
     if (mask & COM_REQ_CARD_RECORDING_STATE) {
@@ -303,46 +237,14 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
 void SerialComm::SendConfiguration() const {
     CobsPayloadGeneric payload;
     WriteProtocolHead(SerialComm::MessageType::Command, COM_SET_EEPROM_DATA, payload);
-    payload.Append(CONFIG_struct(*systems));
+    CONFIG_struct(*systems).writeTo(payload);
     WriteToOutput(payload);
 }
 
 void SerialComm::SendPartialConfiguration(uint16_t submask, uint16_t led_mask) const {
     CobsPayloadGeneric payload;
     WriteProtocolHead(SerialComm::MessageType::Command, COM_SET_PARTIAL_EEPROM_DATA, payload);
-
-    CONFIG_struct tmp_config(*systems);
-    payload.Append(submask);
-    if (submask & CONFIG_struct::VERSION) {
-        payload.Append(tmp_config.version);
-    }
-    if (submask & CONFIG_struct::PCB) {
-        payload.Append(tmp_config.pcb);
-    }
-    if (submask & CONFIG_struct::MIX_TABLE) {
-        payload.Append(tmp_config.mix_table);
-    }
-    if (submask & CONFIG_struct::MAG_BIAS) {
-        payload.Append(tmp_config.mag_bias);
-    }
-    if (submask & CONFIG_struct::CHANNEL) {
-        payload.Append(tmp_config.channel);
-    }
-    if (submask & CONFIG_struct::PID_PARAMETERS) {
-        payload.Append(tmp_config.pid_parameters);
-    }
-    if (submask & CONFIG_struct::STATE_PARAMETERS) {
-        payload.Append(tmp_config.state_parameters);
-    }
-    if (submask & CONFIG_struct::LED_STATES) {
-        payload.Append(led_mask);
-        for (size_t led_code = 0; led_code < 16; ++led_code) {
-            if (led_mask & (1 << led_code)) {
-                payload.Append(tmp_config.led_states.states[led_code]);
-            }
-        }
-    }
-
+    CONFIG_struct(*systems).writePartialTo(payload, submask, led_mask);
     WriteToOutput(payload);
 }
 

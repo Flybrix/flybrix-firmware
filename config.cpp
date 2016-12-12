@@ -21,7 +21,7 @@ ConfigID::ConfigID() : ConfigID{0} {
 
 CONFIG_struct::CONFIG_struct() {  // Default Settings
     // This function will only initialize data variables
-    // writeEEPROM() needs to be called manually to store this data in EEPROM
+    // data needs to be written manually to the EEPROM
 }
 
 CONFIG_struct::CONFIG_struct(Systems& sys)
@@ -32,6 +32,41 @@ CONFIG_struct::CONFIG_struct(Systems& sys)
       pid_parameters(sys.control.pid_parameters),
       state_parameters(sys.state.parameters),
       led_states(sys.led.states) {
+}
+
+void CONFIG_struct::resetPartial(uint16_t submask, uint16_t led_mask) {
+    if (submask & CONFIG_struct::VERSION) {
+        version = Version();
+    }
+    if (submask & CONFIG_struct::ID) {
+        id = ConfigID();
+    }
+    if (submask & CONFIG_struct::PCB) {
+        pcb = PcbTransform();
+    }
+    if (submask & CONFIG_struct::MIX_TABLE) {
+        mix_table = Airframe::MixTable();
+    }
+    if (submask & CONFIG_struct::MAG_BIAS) {
+        mag_bias = AK8963::MagBias();
+    }
+    if (submask & CONFIG_struct::CHANNEL) {
+        channel = R415X::ChannelProperties();
+    }
+    if (submask & CONFIG_struct::PID_PARAMETERS) {
+        pid_parameters = Control::PIDParameters();
+    }
+    if (submask & CONFIG_struct::STATE_PARAMETERS) {
+        state_parameters = State::Parameters();
+    }
+    if (submask & CONFIG_struct::LED_STATES) {
+        LED::States default_states;
+        for (size_t led_code = 0; led_code < 16; ++led_code) {
+            if (led_mask & (1 << led_code)) {
+                led_states.states[led_code] = default_states.states[led_code];
+            }
+        }
+    }
 }
 
 void CONFIG_struct::applyTo(Systems& systems) const {
@@ -57,12 +92,7 @@ bool verifyArgs(T& var, TArgs&... varArgs) {
 }
 
 bool CONFIG_struct::verify() const {
-    return verifyArgs(version, pcb, mix_table, mag_bias, channel, pid_parameters, state_parameters, led_states, id);
-}
-
-void writeEEPROM(const CONFIG_struct& CONFIG) {
-    EEPROMCursor cursor;
-    cursor.Append(CONFIG);
+    return verifyArgs(version, id, pcb, mix_table, mag_bias, channel, pid_parameters, state_parameters, led_states);
 }
 
 bool isEmptyEEPROM() {
@@ -73,7 +103,7 @@ CONFIG_struct readEEPROM() {
     CONFIG_struct CONFIG;
     if (isEmptyEEPROM()) {
         // No EEPROM values detected, re-initialize to default values
-        writeEEPROM(CONFIG_struct());  // store the default values
+        CONFIG_struct().writeTo(EEPROMCursor());  // store the default values
         CONFIG = readEEPROM();
     } else {
         EEPROMCursor cursor;
@@ -82,7 +112,7 @@ CONFIG_struct readEEPROM() {
         if (!CONFIG.verify()) {
             // If the stored configuration isn't legal in any way, report it
             // via debug and reset it
-            writeEEPROM(CONFIG_struct());  // store the default values
+            CONFIG_struct().writeTo(EEPROMCursor());  // store the default values
             CONFIG = readEEPROM();
         }
     }

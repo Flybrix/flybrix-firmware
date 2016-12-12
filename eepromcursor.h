@@ -30,18 +30,20 @@ class EEPROMCursor final {
     }
 
     template <class T>
-    void ParseInto(T& data) {
+    bool ParseInto(T& data) {
         uint8_t* v_begin{(uint8_t*)&data};
         uint8_t* v_end{v_begin + sizeof(T)};
         while (v_begin < v_end) {
             *v_begin++ = EEPROM.read(l++);
         }
+        return true;
     }
 
     template <class T, class... Targs>
-    void ParseInto(T& data, Targs&... data_args) {
+    bool ParseInto(T& data, Targs&... data_args) {
         ParseInto(data);
         ParseInto(data_args...);
+        return true;
     }
 
    private:
