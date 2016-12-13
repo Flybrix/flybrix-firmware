@@ -27,7 +27,7 @@ Systems::Systems()
       // listen for configuration inputs
       conf{&state, RX, &control, this, &led, &pilot},
       id{0} {
-    CONFIG_struct().applyTo(*this);
+    Config().applyTo(*this);
 }
 
 void Systems::parseConfig() {

@@ -66,7 +66,7 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
     uint32_t ack_data{0};
 
     if (mask & COM_SET_EEPROM_DATA) {
-        CONFIG_struct tmp_config;
+        Config tmp_config;
         if (tmp_config.readFrom(data_input)) {
             if (tmp_config.verify()) {
                 tmp_config.applyTo(*systems);
@@ -76,7 +76,7 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
         }
     }
     if (mask & COM_REINIT_EEPROM_DATA) {
-        const CONFIG_struct tmp_config;
+        const Config tmp_config;
         tmp_config.applyTo(*systems);
         tmp_config.writeTo(EEPROMCursor());
         ack_data |= COM_REINIT_EEPROM_DATA;
@@ -185,7 +185,7 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
         }
     }
     if (mask & COM_SET_PARTIAL_EEPROM_DATA) {
-        CONFIG_struct tmp_config(*systems);
+        Config tmp_config(*systems);
         if (tmp_config.readPartialFrom(data_input)) {
             if (tmp_config.verify()) {
                 tmp_config.applyTo(*systems);
@@ -196,8 +196,8 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
     }
     if (mask & COM_REINIT_PARTIAL_EEPROM_DATA) {
         uint16_t submask, led_mask;
-        if (CONFIG_struct::readMasks(data_input, submask, led_mask)) {
-            CONFIG_struct tmp_config(*systems);
+        if (Config::readMasks(data_input, submask, led_mask)) {
+            Config tmp_config(*systems);
             tmp_config.resetPartial(submask, led_mask);
             if (tmp_config.verify()) {
                 tmp_config.applyTo(*systems);
@@ -208,7 +208,7 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
     }
     if (mask & COM_REQ_PARTIAL_EEPROM_DATA) {
         uint16_t submask, led_mask;
-        if (CONFIG_struct::readMasks(data_input, submask, led_mask)) {
+        if (Config::readMasks(data_input, submask, led_mask)) {
             SendPartialConfiguration(submask, led_mask);
             ack_data |= COM_REQ_PARTIAL_EEPROM_DATA;
         }
@@ -237,14 +237,14 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
 void SerialComm::SendConfiguration() const {
     CobsPayloadGeneric payload;
     WriteProtocolHead(SerialComm::MessageType::Command, COM_SET_EEPROM_DATA, payload);
-    CONFIG_struct(*systems).writeTo(payload);
+    Config(*systems).writeTo(payload);
     WriteToOutput(payload);
 }
 
 void SerialComm::SendPartialConfiguration(uint16_t submask, uint16_t led_mask) const {
     CobsPayloadGeneric payload;
     WriteProtocolHead(SerialComm::MessageType::Command, COM_SET_PARTIAL_EEPROM_DATA, payload);
-    CONFIG_struct(*systems).writePartialTo(payload, submask, led_mask);
+    Config(*systems).writePartialTo(payload, submask, led_mask);
     WriteToOutput(payload);
 }
 

@@ -19,7 +19,7 @@ PcbTransform::PcbTransform()          // Default settings
 ConfigID::ConfigID() : ConfigID{0} {
 }
 
-CONFIG_struct::CONFIG_struct() {  // Default Settings
+Config::Config() {  // Default Settings
     // This function will only initialize data variables
     // data needs to be written manually to the EEPROM
 }
@@ -28,54 +28,54 @@ Version version;
 PcbTransform pcb_transform;
 
 template <std::size_t field>
-inline decltype(std::get<field>(CONFIG_struct::Data())) & systemMapping(Systems& sys);
+inline decltype(std::get<field>(Config::Data())) & systemMapping(Systems& sys);
 
 template <>
-inline Version& systemMapping<CONFIG_struct::VERSION>(Systems& sys) {
+inline Version& systemMapping<Config::VERSION>(Systems& sys) {
     // TODO: add this to the systems
     version = Version();
     return version;
 }
 
 template <>
-inline ConfigID& systemMapping<CONFIG_struct::ID>(Systems& sys) {
+inline ConfigID& systemMapping<Config::ID>(Systems& sys) {
     return sys.id;
 }
 
 template <>
-inline PcbTransform& systemMapping<CONFIG_struct::PCB>(Systems& sys) {
+inline PcbTransform& systemMapping<Config::PCB>(Systems& sys) {
     // TODO: add this to the systems
     pcb_transform = PcbTransform();
     return pcb_transform;
 }
 
 template <>
-inline Airframe::MixTable& systemMapping<CONFIG_struct::MIX_TABLE>(Systems& sys) {
+inline Airframe::MixTable& systemMapping<Config::MIX_TABLE>(Systems& sys) {
     return sys.airframe.mix_table;
 }
 
 template <>
-inline AK8963::MagBias& systemMapping<CONFIG_struct::MAG_BIAS>(Systems& sys) {
+inline AK8963::MagBias& systemMapping<Config::MAG_BIAS>(Systems& sys) {
     return sys.mag.mag_bias;
 }
 
 template <>
-inline R415X::ChannelProperties& systemMapping<CONFIG_struct::CHANNEL>(Systems& sys) {
+inline R415X::ChannelProperties& systemMapping<Config::CHANNEL>(Systems& sys) {
     return sys.receiver.channel;
 }
 
 template <>
-inline Control::PIDParameters& systemMapping<CONFIG_struct::PID_PARAMETERS>(Systems& sys) {
+inline Control::PIDParameters& systemMapping<Config::PID_PARAMETERS>(Systems& sys) {
     return sys.control.pid_parameters;
 }
 
 template <>
-inline State::Parameters& systemMapping<CONFIG_struct::STATE_PARAMETERS>(Systems& sys) {
+inline State::Parameters& systemMapping<Config::STATE_PARAMETERS>(Systems& sys) {
     return sys.state.parameters;
 }
 
 template <>
-inline LED::States& systemMapping<CONFIG_struct::LED_STATES>(Systems& sys) {
+inline LED::States& systemMapping<Config::LED_STATES>(Systems& sys) {
     return sys.led.states;
 }
 
@@ -83,11 +83,11 @@ bool isEmptyEEPROM() {
     return EEPROM.read(0) == 255;
 }
 
-CONFIG_struct readEEPROM() {
-    CONFIG_struct CONFIG;
+Config readEEPROM() {
+    Config CONFIG;
     if (isEmptyEEPROM()) {
         // No EEPROM values detected, re-initialize to default values
-        CONFIG_struct().writeTo(EEPROMCursor());  // store the default values
+        Config().writeTo(EEPROMCursor());  // store the default values
         CONFIG = readEEPROM();
     } else {
         CONFIG.readFrom(EEPROMCursor());
@@ -95,7 +95,7 @@ CONFIG_struct readEEPROM() {
         if (!CONFIG.verify()) {
             // If the stored configuration isn't legal in any way, report it
             // via debug and reset it
-            CONFIG_struct().writeTo(EEPROMCursor());  // store the default values
+            Config().writeTo(EEPROMCursor());  // store the default values
             CONFIG = readEEPROM();
         }
     }
@@ -125,15 +125,15 @@ template <std::size_t I = 0, typename... Tp>
     setFieldsFrom<I + 1, Tp...>(t, systems);
 }
 
-CONFIG_struct::CONFIG_struct(Systems& sys) {
+Config::Config(Systems& sys) {
     setFieldsFrom(data, sys);
 }
 
-void CONFIG_struct::resetPartial(uint16_t submask, uint16_t led_mask) {
+void Config::resetPartial(uint16_t submask, uint16_t led_mask) {
     resetFields(data, submask, led_mask);
 }
 
-void CONFIG_struct::applyTo(Systems& systems) const {
+void Config::applyTo(Systems& systems) const {
     applyFieldsTo(data, systems);
 }
 
@@ -153,6 +153,6 @@ template <std::size_t I = 0, typename... Tp>
     return verifyArgs<I + 1, Tp...>(t) && ok;
 }
 
-bool CONFIG_struct::verify() const {
+bool Config::verify() const {
     return verifyArgs(data);
 }

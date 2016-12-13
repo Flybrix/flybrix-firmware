@@ -55,23 +55,23 @@ struct __attribute__((packed)) PcbTransform {
 
 static_assert(sizeof(PcbTransform) == 3 * 2 * 4, "Data is not packed");
 
-struct CONFIG_struct {
+struct Config {
     enum Field : uint16_t {
-        VERSION = 0,
-        ID = 1,
-        PCB = 2,
-        MIX_TABLE = 3,
-        MAG_BIAS = 4,
-        CHANNEL = 5,
-        PID_PARAMETERS = 6,
-        STATE_PARAMETERS = 7,
-        LED_STATES = 8,
+        VERSION,
+        ID,
+        PCB,
+        MIX_TABLE,
+        MAG_BIAS,
+        CHANNEL,
+        PID_PARAMETERS,
+        STATE_PARAMETERS,
+        LED_STATES,
     };
 
     using Data = std::tuple<Version, ConfigID, PcbTransform, Airframe::MixTable, AK8963::MagBias, R415X::ChannelProperties, Control::PIDParameters, State::Parameters, LED::States>;
 
-    CONFIG_struct();
-    explicit CONFIG_struct(Systems& sys);
+    Config();
+    explicit Config(Systems& sys);
     void applyTo(Systems& systems) const;
     bool verify() const;
 
@@ -95,14 +95,14 @@ struct CONFIG_struct {
     Data data;
 };
 
-static_assert(sizeof(CONFIG_struct) ==
+static_assert(sizeof(Config) ==
                   sizeof(Version) + sizeof(ConfigID) + sizeof(PcbTransform) + sizeof(Airframe::MixTable) + sizeof(AK8963::MagBias) + sizeof(R415X::ChannelProperties) + sizeof(State::Parameters) +
                       sizeof(Control::PIDParameters) + sizeof(LED::States),
               "Data is not packed");
 
-static_assert(sizeof(CONFIG_struct) == 619, "Data does not have expected size");
+static_assert(sizeof(Config) == 619, "Data does not have expected size");
 
-CONFIG_struct readEEPROM();
+Config readEEPROM();
 bool isEmptyEEPROM();
 
 #include "config_impl.h"

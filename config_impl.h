@@ -5,7 +5,7 @@ constexpr uint16_t fieldToMask(std::size_t field) {
     return 1 << field;
 }
 
-static_assert(4 == fieldToMask(CONFIG_struct::PCB), "Mask generation isn't static");
+static_assert(4 == fieldToMask(Config::PCB), "Mask generation isn't static");
 
 template <class T, std::size_t field>
 struct FieldFunctor {
@@ -40,8 +40,8 @@ struct FieldFunctor {
 };
 
 template <class T>
-struct FieldFunctor<T, CONFIG_struct::LED_STATES> {
-    static constexpr std::size_t FIELD = CONFIG_struct::LED_STATES;
+struct FieldFunctor<T, Config::LED_STATES> {
+    static constexpr std::size_t FIELD = Config::LED_STATES;
 
     static void Reset(T& data, uint16_t submask, uint16_t led_mask) {
         if (!(submask & fieldToMask(FIELD))) {
@@ -153,7 +153,7 @@ template <std::size_t I = 0, class Cursor, typename... Tp>
 }
 
 template <class Cursor>
-bool CONFIG_struct::readPartialFrom(Cursor&& cursor) {
+bool Config::readPartialFrom(Cursor&& cursor) {
     uint16_t submask;
     if (!cursor.ParseInto(submask)) {
         return false;
@@ -162,13 +162,13 @@ bool CONFIG_struct::readPartialFrom(Cursor&& cursor) {
 }
 
 template <class Cursor>
-void CONFIG_struct::writePartialTo(Cursor&& cursor, uint16_t submask, uint16_t led_mask) const {
+void Config::writePartialTo(Cursor&& cursor, uint16_t submask, uint16_t led_mask) const {
     cursor.Append(submask);
     writeFieldsTo(data, cursor, submask, led_mask);
 }
 
 template <class Cursor>
-bool CONFIG_struct::readMasks(Cursor&& cursor, uint16_t& submask, uint16_t& led_mask) {
+bool Config::readMasks(Cursor&& cursor, uint16_t& submask, uint16_t& led_mask) {
     if (!cursor.ParseInto(submask)) {
         return false;
     }
@@ -179,12 +179,12 @@ bool CONFIG_struct::readMasks(Cursor&& cursor, uint16_t& submask, uint16_t& led_
 }
 
 template <class Cursor>
-void CONFIG_struct::writeTo(Cursor&& cursor) const {
+void Config::writeTo(Cursor&& cursor) const {
     writeAllFieldsTo(data, cursor);
 }
 
 template <class Cursor>
-bool CONFIG_struct::readFrom(Cursor&& cursor) {
+bool Config::readFrom(Cursor&& cursor) {
     return readAllFieldsFrom(data, cursor);
 }
 
