@@ -31,51 +31,51 @@ template <std::size_t field>
 inline decltype(std::get<field>(CONFIG_struct::Data())) & systemMapping(Systems& sys);
 
 template <>
-inline decltype(std::get<CONFIG_struct::VERSION>(CONFIG_struct::Data())) & systemMapping<CONFIG_struct::VERSION>(Systems& sys) {
+inline Version& systemMapping<CONFIG_struct::VERSION>(Systems& sys) {
     // TODO: add this to the systems
     version = Version();
     return version;
 }
 
 template <>
-inline decltype(std::get<CONFIG_struct::ID>(CONFIG_struct::Data())) & systemMapping<CONFIG_struct::ID>(Systems& sys) {
+inline ConfigID& systemMapping<CONFIG_struct::ID>(Systems& sys) {
     return sys.id;
 }
 
 template <>
-inline decltype(std::get<CONFIG_struct::PCB>(CONFIG_struct::Data())) & systemMapping<CONFIG_struct::PCB>(Systems& sys) {
+inline PcbTransform& systemMapping<CONFIG_struct::PCB>(Systems& sys) {
     // TODO: add this to the systems
     pcb_transform = PcbTransform();
     return pcb_transform;
 }
 
 template <>
-inline decltype(std::get<CONFIG_struct::MIX_TABLE>(CONFIG_struct::Data())) & systemMapping<CONFIG_struct::MIX_TABLE>(Systems& sys) {
+inline Airframe::MixTable& systemMapping<CONFIG_struct::MIX_TABLE>(Systems& sys) {
     return sys.airframe.mix_table;
 }
 
 template <>
-inline decltype(std::get<CONFIG_struct::MAG_BIAS>(CONFIG_struct::Data())) & systemMapping<CONFIG_struct::MAG_BIAS>(Systems& sys) {
+inline AK8963::MagBias& systemMapping<CONFIG_struct::MAG_BIAS>(Systems& sys) {
     return sys.mag.mag_bias;
 }
 
 template <>
-inline decltype(std::get<CONFIG_struct::CHANNEL>(CONFIG_struct::Data())) & systemMapping<CONFIG_struct::CHANNEL>(Systems& sys) {
+inline R415X::ChannelProperties& systemMapping<CONFIG_struct::CHANNEL>(Systems& sys) {
     return sys.receiver.channel;
 }
 
 template <>
-inline decltype(std::get<CONFIG_struct::PID_PARAMETERS>(CONFIG_struct::Data())) & systemMapping<CONFIG_struct::PID_PARAMETERS>(Systems& sys) {
+inline Control::PIDParameters& systemMapping<CONFIG_struct::PID_PARAMETERS>(Systems& sys) {
     return sys.control.pid_parameters;
 }
 
 template <>
-inline decltype(std::get<CONFIG_struct::STATE_PARAMETERS>(CONFIG_struct::Data())) & systemMapping<CONFIG_struct::STATE_PARAMETERS>(Systems& sys) {
+inline State::Parameters& systemMapping<CONFIG_struct::STATE_PARAMETERS>(Systems& sys) {
     return sys.state.parameters;
 }
 
 template <>
-inline decltype(std::get<CONFIG_struct::LED_STATES>(CONFIG_struct::Data())) & systemMapping<CONFIG_struct::LED_STATES>(Systems& sys) {
+inline LED::States& systemMapping<CONFIG_struct::LED_STATES>(Systems& sys) {
     return sys.led.states;
 }
 
