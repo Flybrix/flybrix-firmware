@@ -70,7 +70,7 @@ Control::Control(State* __state, const PIDParameters& config)
       pitch_pid{config.pitch_master, config.pitch_slave},
       roll_pid{config.roll_master, config.roll_slave},
       yaw_pid{config.yaw_master, config.yaw_slave} {
-    parseConfig(pid_parameters);
+    parseConfig();
 }
 
 bool Control::PIDParameters::verify() const {
@@ -83,9 +83,7 @@ bool Control::PIDParameters::verify() const {
     return retval;
 }
 
-void Control::parseConfig(const PIDParameters& config) {
-    pid_parameters = config;
-
+void Control::parseConfig() {
     thrust_pid = {pid_parameters.thrust_master, pid_parameters.thrust_slave};
     pitch_pid = {pid_parameters.pitch_master, pid_parameters.pitch_slave};
     roll_pid = {pid_parameters.roll_master, pid_parameters.roll_slave};

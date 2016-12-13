@@ -29,3 +29,8 @@ Systems::Systems()
       id{0} {
     CONFIG_struct().applyTo(*this);
 }
+
+void Systems::parseConfig() {
+    led.parseConfig();
+    control.parseConfig();
+}

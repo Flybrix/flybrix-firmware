@@ -1,14 +1,155 @@
 #ifndef CONFIG_IMPL_H
 #define CONFIG_IMPL_H
 
-template <class Cursor>
-void CONFIG_struct::writeTo(Cursor&& cursor) const {
-    cursor.Append(*this);
+constexpr uint16_t fieldToMask(std::size_t field) {
+    return 1 << field;
 }
 
-template <class Cursor>
-bool CONFIG_struct::readFrom(Cursor&& cursor) {
-    return cursor.ParseInto(*this);
+static_assert(4 == fieldToMask(CONFIG_struct::PCB), "Mask generation isn't static");
+
+template <class T, std::size_t field>
+struct FieldFunctor {
+    static void Reset(T& data, uint16_t submask, uint16_t led_mask) {
+        using FieldType = typename std::tuple_element<field, T>::type;
+        if (submask & fieldToMask(field)) {
+            std::get<field>(data) = FieldType();
+        }
+    }
+
+    template <class Cursor>
+    static bool ReadAll(T& data, Cursor&& cursor) {
+        return cursor.ParseInto(std::get<field>(data));
+    }
+
+    template <class Cursor>
+    static bool Read(T& data, Cursor&& cursor, uint16_t submask) {
+        return (!(submask & fieldToMask(field))) || cursor.ParseInto(std::get<field>(data));
+    }
+
+    template <class Cursor>
+    static void WriteAll(const T& data, Cursor&& cursor) {
+        cursor.Append(std::get<field>(data));
+    }
+
+    template <class Cursor>
+    static void Write(const T& data, Cursor&& cursor, uint16_t submask, uint16_t led_mask) {
+        if (submask & fieldToMask(field)) {
+            cursor.Append(std::get<field>(data));
+        }
+    }
+};
+
+template <class T>
+struct FieldFunctor<T, CONFIG_struct::LED_STATES> {
+    static constexpr std::size_t FIELD = CONFIG_struct::LED_STATES;
+
+    static void Reset(T& data, uint16_t submask, uint16_t led_mask) {
+        if (!(submask & fieldToMask(FIELD))) {
+            return;
+        }
+        LED::States default_states;
+        for (size_t led_code = 0; led_code < 16; ++led_code) {
+            if (led_mask & (1 << led_code)) {
+                std::get<FIELD>(data).states[led_code] = default_states.states[led_code];
+            }
+        }
+    }
+
+    template <class Cursor>
+    static bool ReadAll(T& data, Cursor&& cursor) {
+        return cursor.ParseInto(std::get<FIELD>(data));
+    }
+
+    template <class Cursor>
+    static bool Read(T& data, Cursor&& cursor, uint16_t submask) {
+        if (!(submask & fieldToMask(FIELD))) {
+            return false;
+        }
+        // split up LED states further, since the variable is giant
+        uint16_t led_mask;
+        if (!cursor.ParseInto(led_mask)) {
+            return false;
+        }
+        for (size_t led_code = 0; led_code < 16; ++led_code) {
+            if ((led_mask & (1 << led_code)) && !cursor.ParseInto(std::get<FIELD>(data).states[led_code])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    template <class Cursor>
+    static void WriteAll(const T& data, Cursor&& cursor) {
+        cursor.Append(std::get<FIELD>(data));
+    }
+
+    template <class Cursor>
+    static void Write(const T& data, Cursor&& cursor, uint16_t submask, uint16_t led_mask) {
+        if (submask & fieldToMask(FIELD)) {
+            cursor.Append(led_mask);
+            for (size_t led_code = 0; led_code < 16; ++led_code) {
+                if (led_mask & (1 << led_code)) {
+                    cursor.Append(std::get<FIELD>(data).states[led_code]);
+                }
+            }
+        }
+    }
+};
+
+template <std::size_t I = 0, typename... Tp>
+inline typename std::enable_if<I == sizeof...(Tp), void>::type resetFields(std::tuple<Tp...>& t, uint16_t submask, uint16_t led_mask) {
+}
+
+template <std::size_t I = 0, typename... Tp>
+    inline typename std::enable_if < I<sizeof...(Tp), void>::type resetFields(std::tuple<Tp...>& t, uint16_t submask, uint16_t led_mask) {
+    FieldFunctor<std::tuple<Tp...>, I>::Reset(t, submask, led_mask);
+    resetFields<I + 1, Tp...>(t, submask, led_mask);
+}
+
+template <std::size_t I = 0, class Cursor, typename... Tp>
+inline typename std::enable_if<I == sizeof...(Tp), bool>::type readFieldsFrom(std::tuple<Tp...>& t, Cursor&& cursor, uint16_t submask) {
+    return true;
+}
+
+template <std::size_t I = 0, class Cursor, typename... Tp>
+    inline typename std::enable_if < I<sizeof...(Tp), bool>::type readFieldsFrom(std::tuple<Tp...>& t, Cursor&& cursor, uint16_t submask) {
+    if (!FieldFunctor<std::tuple<Tp...>, I>::Read(t, cursor, submask)) {
+        return false;
+    }
+    return readFieldsFrom<I + 1, Cursor, Tp...>(t, cursor, submask);
+}
+
+template <std::size_t I = 0, class Cursor, typename... Tp>
+inline typename std::enable_if<I == sizeof...(Tp), bool>::type readAllFieldsFrom(std::tuple<Tp...>& t, Cursor&& cursor) {
+    return true;
+}
+
+template <std::size_t I = 0, class Cursor, typename... Tp>
+    inline typename std::enable_if < I<sizeof...(Tp), bool>::type readAllFieldsFrom(std::tuple<Tp...>& t, Cursor&& cursor) {
+    if (!FieldFunctor<std::tuple<Tp...>, I>::ReadAll(t, cursor)) {
+        return false;
+    }
+    return readAllFieldsFrom<I + 1, Cursor, Tp...>(t, cursor);
+}
+
+template <std::size_t I = 0, class Cursor, typename... Tp>
+inline typename std::enable_if<I == sizeof...(Tp), void>::type writeFieldsTo(const std::tuple<Tp...>& t, Cursor&& cursor, uint16_t submask, uint16_t led_mask) {
+}
+
+template <std::size_t I = 0, class Cursor, typename... Tp>
+    inline typename std::enable_if < I<sizeof...(Tp), void>::type writeFieldsTo(const std::tuple<Tp...>& t, Cursor&& cursor, uint16_t submask, uint16_t led_mask) {
+    FieldFunctor<std::tuple<Tp...>, I>::Write(t, cursor, submask, led_mask);
+    writeFieldsTo<I + 1, Cursor, Tp...>(t, cursor, submask, led_mask);
+}
+
+template <std::size_t I = 0, class Cursor, typename... Tp>
+inline typename std::enable_if<I == sizeof...(Tp), void>::type writeAllFieldsTo(const std::tuple<Tp...>& t, Cursor&& cursor) {
+}
+
+template <std::size_t I = 0, class Cursor, typename... Tp>
+    inline typename std::enable_if < I<sizeof...(Tp), void>::type writeAllFieldsTo(const std::tuple<Tp...>& t, Cursor&& cursor) {
+    FieldFunctor<std::tuple<Tp...>, I>::WriteAll(t, cursor);
+    writeAllFieldsTo<I + 1, Cursor, Tp...>(t, cursor);
 }
 
 template <class Cursor>
@@ -17,78 +158,13 @@ bool CONFIG_struct::readPartialFrom(Cursor&& cursor) {
     if (!cursor.ParseInto(submask)) {
         return false;
     }
-    if ((submask & CONFIG_struct::VERSION) && !cursor.ParseInto(version)) {
-        return false;
-    }
-    if ((submask & CONFIG_struct::ID) && !cursor.ParseInto(id)) {
-        return false;
-    }
-    if ((submask & CONFIG_struct::PCB) && !cursor.ParseInto(pcb)) {
-        return false;
-    }
-    if ((submask & CONFIG_struct::MIX_TABLE) && !cursor.ParseInto(mix_table)) {
-        return false;
-    }
-    if ((submask & CONFIG_struct::MAG_BIAS) && !cursor.ParseInto(mag_bias)) {
-        return false;
-    }
-    if ((submask & CONFIG_struct::CHANNEL) && !cursor.ParseInto(channel)) {
-        return false;
-    }
-    if ((submask & CONFIG_struct::PID_PARAMETERS) && !cursor.ParseInto(pid_parameters)) {
-        return false;
-    }
-    if ((submask & CONFIG_struct::STATE_PARAMETERS) && !cursor.ParseInto(state_parameters)) {
-        return false;
-    }
-    if (submask & CONFIG_struct::LED_STATES) {
-        // split up LED states further, since the variable is giant
-        uint16_t led_mask;
-        if (!cursor.ParseInto(led_mask)) {
-            return false;
-        }
-        for (size_t led_code = 0; led_code < 16; ++led_code) {
-            if ((led_mask & (1 << led_code)) && !cursor.ParseInto(led_states.states[led_code])) {
-                return false;
-            }
-        }
-    }
-
-    return true;
+    return readFieldsFrom(data, cursor, submask);
 }
 
 template <class Cursor>
 void CONFIG_struct::writePartialTo(Cursor&& cursor, uint16_t submask, uint16_t led_mask) const {
     cursor.Append(submask);
-    if (submask & CONFIG_struct::VERSION) {
-        cursor.Append(version);
-    }
-    if (submask & CONFIG_struct::PCB) {
-        cursor.Append(pcb);
-    }
-    if (submask & CONFIG_struct::MIX_TABLE) {
-        cursor.Append(mix_table);
-    }
-    if (submask & CONFIG_struct::MAG_BIAS) {
-        cursor.Append(mag_bias);
-    }
-    if (submask & CONFIG_struct::CHANNEL) {
-        cursor.Append(channel);
-    }
-    if (submask & CONFIG_struct::PID_PARAMETERS) {
-        cursor.Append(pid_parameters);
-    }
-    if (submask & CONFIG_struct::STATE_PARAMETERS) {
-        cursor.Append(state_parameters);
-    }
-    if (submask & CONFIG_struct::LED_STATES) {
-        cursor.Append(led_mask);
-        for (size_t led_code = 0; led_code < 16; ++led_code) {
-            if (led_mask & (1 << led_code)) {
-                cursor.Append(led_states.states[led_code]);
-            }
-        }
-    }
+    writeFieldsTo(data, cursor, submask, led_mask);
 }
 
 template <class Cursor>
@@ -96,10 +172,20 @@ bool CONFIG_struct::readMasks(Cursor&& cursor, uint16_t& submask, uint16_t& led_
     if (!cursor.ParseInto(submask)) {
         return false;
     }
-    if (!(submask & CONFIG_struct::LED_STATES)) {
+    if (!(submask & fieldToMask(LED_STATES))) {
         return true;
     }
     return cursor.ParseInto(led_mask);
+}
+
+template <class Cursor>
+void CONFIG_struct::writeTo(Cursor&& cursor) const {
+    writeAllFieldsTo(data, cursor);
+}
+
+template <class Cursor>
+bool CONFIG_struct::readFrom(Cursor&& cursor) {
+    return readAllFieldsFrom(data, cursor);
 }
 
 #endif /* CONFIG_IMPL_H */

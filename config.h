@@ -27,6 +27,8 @@
 #include "state.h"
 #include "version.h"
 
+#include <tuple>
+
 struct Systems;
 
 struct __attribute__((packed)) ConfigID {
@@ -53,18 +55,20 @@ struct __attribute__((packed)) PcbTransform {
 
 static_assert(sizeof(PcbTransform) == 3 * 2 * 4, "Data is not packed");
 
-struct __attribute__((packed)) CONFIG_struct {
+struct CONFIG_struct {
     enum Field : uint16_t {
-        VERSION = 1 << 0,
-        ID = 1 << 1,
-        PCB = 1 << 2,
-        MIX_TABLE = 1 << 3,
-        MAG_BIAS = 1 << 4,
-        CHANNEL = 1 << 5,
-        PID_PARAMETERS = 1 << 6,
-        STATE_PARAMETERS = 1 << 7,
-        LED_STATES = 1 << 8,
+        VERSION = 0,
+        ID = 1,
+        PCB = 2,
+        MIX_TABLE = 3,
+        MAG_BIAS = 4,
+        CHANNEL = 5,
+        PID_PARAMETERS = 6,
+        STATE_PARAMETERS = 7,
+        LED_STATES = 8,
     };
+
+    using Data = std::tuple<Version, ConfigID, PcbTransform, Airframe::MixTable, AK8963::MagBias, R415X::ChannelProperties, Control::PIDParameters, State::Parameters, LED::States>;
 
     CONFIG_struct();
     explicit CONFIG_struct(Systems& sys);
@@ -88,15 +92,7 @@ struct __attribute__((packed)) CONFIG_struct {
     template <class Cursor>
     static bool readMasks(Cursor&& cursor, uint16_t& submask, uint16_t& led_mask);
 
-    Version version;
-    ConfigID id;
-    PcbTransform pcb;
-    Airframe::MixTable mix_table;
-    AK8963::MagBias mag_bias;
-    R415X::ChannelProperties channel;
-    Control::PIDParameters pid_parameters;
-    State::Parameters state_parameters;
-    LED::States led_states;
+    Data data;
 };
 
 static_assert(sizeof(CONFIG_struct) ==

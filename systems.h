@@ -47,6 +47,8 @@ struct Systems {
     SerialComm conf;
 
     ConfigID id;
+
+    void parseConfig();
 };
 
 #endif /* end of include guard: SYSTEMS_H */
