@@ -20,6 +20,12 @@ class LED;
 class State;
 struct Systems;
 
+using CobsPayloadGeneric = CobsPayload<1000>;  // impacts memory use only; packet size should be <= client packet size
+
+static constexpr uint32_t FLAG(uint8_t field) {
+    return uint32_t{1} << field;
+}
+
 class SerialComm {
    public:
     enum class MessageType : uint8_t {
@@ -31,65 +37,63 @@ class SerialComm {
         HistoryData = 4,
     };
 
-    enum CommandFields : uint32_t {
-        COM_REQ_RESPONSE = 1 << 0,
-        COM_SET_EEPROM_DATA = 1 << 1,
-        COM_REINIT_EEPROM_DATA = 1 << 2,
-        COM_REQ_EEPROM_DATA = 1 << 3,
-        COM_REQ_ENABLE_ITERATION = 1 << 4,
-        COM_MOTOR_OVERRIDE_SPEED_0 = 1 << 5,
-        COM_MOTOR_OVERRIDE_SPEED_1 = 1 << 6,
-        COM_MOTOR_OVERRIDE_SPEED_2 = 1 << 7,
-        COM_MOTOR_OVERRIDE_SPEED_3 = 1 << 8,
-        COM_MOTOR_OVERRIDE_SPEED_4 = 1 << 9,
-        COM_MOTOR_OVERRIDE_SPEED_5 = 1 << 10,
-        COM_MOTOR_OVERRIDE_SPEED_6 = 1 << 11,
-        COM_MOTOR_OVERRIDE_SPEED_7 = 1 << 12,
-        COM_MOTOR_OVERRIDE_SPEED_ALL = COM_MOTOR_OVERRIDE_SPEED_0 | COM_MOTOR_OVERRIDE_SPEED_1 | COM_MOTOR_OVERRIDE_SPEED_2 | COM_MOTOR_OVERRIDE_SPEED_3 | COM_MOTOR_OVERRIDE_SPEED_4 |
-                                       COM_MOTOR_OVERRIDE_SPEED_5 | COM_MOTOR_OVERRIDE_SPEED_6 | COM_MOTOR_OVERRIDE_SPEED_7,
-        COM_SET_COMMAND_OVERRIDE = 1 << 13,
-        COM_SET_STATE_MASK = 1 << 14,
-        COM_SET_STATE_DELAY = 1 << 15,
-        COM_SET_SD_WRITE_DELAY = 1 << 16,
-        COM_SET_LED = 1 << 17,
-        COM_SET_SERIAL_RC = 1 << 18,
-        COM_SET_CARD_RECORDING = 1 << 19,
-        COM_SET_PARTIAL_EEPROM_DATA = 1 << 20,
-        COM_REINIT_PARTIAL_EEPROM_DATA = 1 << 21,
-        COM_REQ_PARTIAL_EEPROM_DATA = 1 << 22,
-        COM_REQ_CARD_RECORDING_STATE = 1 << 23,
+    enum Command : uint8_t {
+        REQ_RESPONSE,
+        SET_EEPROM_DATA,
+        REINIT_EEPROM_DATA,
+        REQ_EEPROM_DATA,
+        REQ_ENABLE_ITERATION,
+        MOTOR_OVERRIDE_SPEED_0,
+        MOTOR_OVERRIDE_SPEED_1,
+        MOTOR_OVERRIDE_SPEED_2,
+        MOTOR_OVERRIDE_SPEED_3,
+        MOTOR_OVERRIDE_SPEED_4,
+        MOTOR_OVERRIDE_SPEED_5,
+        MOTOR_OVERRIDE_SPEED_6,
+        MOTOR_OVERRIDE_SPEED_7,
+        SET_COMMAND_OVERRIDE,
+        SET_STATE_MASK,
+        SET_STATE_DELAY,
+        SET_SD_WRITE_DELAY,
+        SET_LED,
+        SET_SERIAL_RC,
+        SET_CARD_RECORDING,
+        SET_PARTIAL_EEPROM_DATA,
+        REINIT_PARTIAL_EEPROM_DATA,
+        REQ_PARTIAL_EEPROM_DATA,
+        REQ_CARD_RECORDING_STATE,
+        END_OF_COMMANDS,
     };
 
-    enum StateFields : uint32_t {
-        STATE_ALL = 0xFFFFFFFF,
-        STATE_NONE = 0,
-        STATE_MICROS = 1 << 0,
-        STATE_STATUS = 1 << 1,
-        STATE_V0 = 1 << 2,
-        STATE_I0 = 1 << 3,
-        STATE_I1 = 1 << 4,
-        STATE_ACCEL = 1 << 5,
-        STATE_GYRO = 1 << 6,
-        STATE_MAG = 1 << 7,
-        STATE_TEMPERATURE = 1 << 8,
-        STATE_PRESSURE = 1 << 9,
-        STATE_RX_PPM = 1 << 10,
-        STATE_AUX_CHAN_MASK = 1 << 11,
-        STATE_COMMANDS = 1 << 12,
-        STATE_F_AND_T = 1 << 13,
-        STATE_PID_FZ_MASTER = 1 << 15,
-        STATE_PID_TX_MASTER = 1 << 16,
-        STATE_PID_TY_MASTER = 1 << 17,
-        STATE_PID_TZ_MASTER = 1 << 18,
-        STATE_PID_FZ_SLAVE = 1 << 19,
-        STATE_PID_TX_SLAVE = 1 << 20,
-        STATE_PID_TY_SLAVE = 1 << 21,
-        STATE_PID_TZ_SLAVE = 1 << 22,
-        STATE_MOTOR_OUT = 1 << 23,
-        STATE_KINE_ANGLE = 1 << 24,
-        STATE_KINE_RATE = 1 << 25,
-        STATE_KINE_ALTITUDE = 1 << 26,
-        STATE_LOOP_COUNT = 1 << 27,
+    enum States : uint8_t {
+        MICROS,
+        STATUS,
+        V0,
+        I0,
+        I1,
+        ACCEL,
+        GYRO,
+        MAG,
+        TEMPERATURE,
+        PRESSURE,
+        RX_PPM,
+        AUX_CHAN_MASK,
+        COMMANDS,
+        F_AND_T,
+        PID_FZ_MASTER,
+        PID_TX_MASTER,
+        PID_TY_MASTER,
+        PID_TZ_MASTER,
+        PID_FZ_SLAVE,
+        PID_TX_SLAVE,
+        PID_TY_SLAVE,
+        PID_TZ_SLAVE,
+        MOTOR_OUT,
+        KINE_ANGLE,
+        KINE_RATE,
+        KINE_ALTITUDE,
+        LOOP_COUNT,
+        END_OF_STATES,
     };
 
     explicit SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, Systems* systems, LED* led, PilotCommand* command);
@@ -99,7 +103,7 @@ class SerialComm {
     void SendConfiguration() const;
     void SendPartialConfiguration(uint16_t submask, uint16_t led_mask) const;
     void SendDebugString(const String& string, MessageType type = MessageType::DebugString) const;
-    void SendState(uint32_t timestamp_us, uint32_t mask = 0, bool redirect_to_sd_card = false) const;
+    void SendState(uint32_t mask = 0, bool redirect_to_sd_card = false) const;
     void SendResponse(uint32_t mask, uint32_t response) const;
 
     uint16_t GetSendStateDelay() const;
@@ -107,6 +111,11 @@ class SerialComm {
     void SetStateMsg(uint32_t values);
     void AddToStateMsg(uint32_t values);
     void RemoveFromStateMsg(uint32_t values);
+
+    template <uint8_t I>
+    inline bool doSubcommand(CobsReaderBuffer& input);
+    template <uint8_t I>
+    inline void readSubstate(CobsPayloadGeneric& payload) const;
 
    private:
     void ProcessData(CobsReaderBuffer& data_input);
@@ -123,5 +132,7 @@ class SerialComm {
     uint16_t sd_card_state_delay{2};  // write to SD at the highest rate by default
     uint32_t state_mask{0x7fffff};
 };
+
+#include "serial_impl.h"
 
 #endif
