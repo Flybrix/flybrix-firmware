@@ -3,13 +3,16 @@
 
 #include "serial_impl.h"
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::REQ_RESPONSE>(CobsReaderBuffer& input) {
+// Assigns a subcommand to a flag, whereby the input is named "input"
+#define DO_SUBCOMMAND(name) \
+    template <>             \
+    inline bool SerialComm::doSubcommand<SerialComm::name>(CobsReaderBuffer & input)
+
+DO_SUBCOMMAND(REQ_RESPONSE) {
     return false;
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::SET_EEPROM_DATA>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(SET_EEPROM_DATA) {
     Config tmp_config;
     if (!tmp_config.readFrom(input)) {
         return false;
@@ -22,22 +25,19 @@ inline bool SerialComm::doSubcommand<SerialComm::SET_EEPROM_DATA>(CobsReaderBuff
     return true;
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::REINIT_EEPROM_DATA>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(REINIT_EEPROM_DATA) {
     const Config tmp_config;
     tmp_config.applyTo(*systems);
     tmp_config.writeTo(EEPROMCursor());
     return true;
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::REQ_EEPROM_DATA>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(REQ_EEPROM_DATA) {
     SendConfiguration();
     return true;
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::REQ_ENABLE_ITERATION>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(REQ_ENABLE_ITERATION) {
     uint8_t flag;
     if (!input.ParseInto(flag)) {
         return false;
@@ -50,48 +50,39 @@ inline bool SerialComm::doSubcommand<SerialComm::REQ_ENABLE_ITERATION>(CobsReade
     return true;
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::MOTOR_OVERRIDE_SPEED_0>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_0) {
     return input.ParseInto(state->MotorOut[0]);
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::MOTOR_OVERRIDE_SPEED_1>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_1) {
     return input.ParseInto(state->MotorOut[1]);
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::MOTOR_OVERRIDE_SPEED_2>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_2) {
     return input.ParseInto(state->MotorOut[2]);
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::MOTOR_OVERRIDE_SPEED_3>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_3) {
     return input.ParseInto(state->MotorOut[3]);
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::MOTOR_OVERRIDE_SPEED_4>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_4) {
     return input.ParseInto(state->MotorOut[4]);
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::MOTOR_OVERRIDE_SPEED_5>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_5) {
     return input.ParseInto(state->MotorOut[5]);
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::MOTOR_OVERRIDE_SPEED_6>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_6) {
     return input.ParseInto(state->MotorOut[6]);
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::MOTOR_OVERRIDE_SPEED_7>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_7) {
     return input.ParseInto(state->MotorOut[7]);
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::SET_COMMAND_OVERRIDE>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(SET_COMMAND_OVERRIDE) {
     uint8_t flag;
     if (!input.ParseInto(flag)) {
         return false;
@@ -104,8 +95,7 @@ inline bool SerialComm::doSubcommand<SerialComm::SET_COMMAND_OVERRIDE>(CobsReade
     return true;
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::SET_STATE_MASK>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(SET_STATE_MASK) {
     uint32_t new_state_mask;
     if (!input.ParseInto(new_state_mask)) {
         return false;
@@ -114,8 +104,7 @@ inline bool SerialComm::doSubcommand<SerialComm::SET_STATE_MASK>(CobsReaderBuffe
     return true;
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::SET_STATE_DELAY>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(SET_STATE_DELAY) {
     uint16_t new_state_delay;
     if (!input.ParseInto(new_state_delay)) {
         return false;
@@ -124,8 +113,7 @@ inline bool SerialComm::doSubcommand<SerialComm::SET_STATE_DELAY>(CobsReaderBuff
     return true;
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::SET_SD_WRITE_DELAY>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(SET_SD_WRITE_DELAY) {
     uint16_t new_state_delay;
     if (!input.ParseInto(new_state_delay)) {
         return false;
@@ -134,8 +122,7 @@ inline bool SerialComm::doSubcommand<SerialComm::SET_SD_WRITE_DELAY>(CobsReaderB
     return true;
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::SET_LED>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(SET_LED) {
     uint8_t mode, r1, g1, b1, r2, g2, b2, ind_r, ind_g;
     if (!input.ParseInto(mode, r1, g1, b1, r2, g2, b2, ind_r, ind_g)) {
         return false;
@@ -144,8 +131,7 @@ inline bool SerialComm::doSubcommand<SerialComm::SET_LED>(CobsReaderBuffer& inpu
     return true;
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::SET_SERIAL_RC>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(SET_SERIAL_RC) {
     uint8_t enabled;
     int16_t throttle, pitch, roll, yaw;
     uint8_t auxmask;
@@ -165,8 +151,7 @@ inline bool SerialComm::doSubcommand<SerialComm::SET_SERIAL_RC>(CobsReaderBuffer
     return true;
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::SET_CARD_RECORDING>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(SET_CARD_RECORDING) {
     uint8_t recording_flags;
     if (!input.ParseInto(recording_flags)) {
         return false;
@@ -183,8 +168,7 @@ inline bool SerialComm::doSubcommand<SerialComm::SET_CARD_RECORDING>(CobsReaderB
     return true;
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::SET_PARTIAL_EEPROM_DATA>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(SET_PARTIAL_EEPROM_DATA) {
     Config tmp_config(*systems);
     if (!tmp_config.readPartialFrom(input)) {
         return false;
@@ -197,8 +181,7 @@ inline bool SerialComm::doSubcommand<SerialComm::SET_PARTIAL_EEPROM_DATA>(CobsRe
     return true;
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::REINIT_PARTIAL_EEPROM_DATA>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(REINIT_PARTIAL_EEPROM_DATA) {
     uint16_t submask, led_mask;
     if (!Config::readMasks(input, submask, led_mask)) {
         return false;
@@ -213,8 +196,7 @@ inline bool SerialComm::doSubcommand<SerialComm::REINIT_PARTIAL_EEPROM_DATA>(Cob
     return true;
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::REQ_PARTIAL_EEPROM_DATA>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(REQ_PARTIAL_EEPROM_DATA) {
     uint16_t submask, led_mask;
     if (!Config::readMasks(input, submask, led_mask)) {
         return false;
@@ -223,8 +205,7 @@ inline bool SerialComm::doSubcommand<SerialComm::REQ_PARTIAL_EEPROM_DATA>(CobsRe
     return true;
 }
 
-template <>
-inline bool SerialComm::doSubcommand<SerialComm::REQ_CARD_RECORDING_STATE>(CobsReaderBuffer& input) {
+DO_SUBCOMMAND(REQ_CARD_RECORDING_STATE) {
     CobsPayload<20> payload;
     WriteProtocolHead(SerialComm::MessageType::Command, FLAG(SET_SD_WRITE_DELAY) | FLAG(SET_CARD_RECORDING), payload);
     payload.Append(sd_card_state_delay);
@@ -239,5 +220,7 @@ inline bool SerialComm::doSubcommand<SerialComm::REQ_CARD_RECORDING_STATE>(CobsR
     WriteToOutput(payload);
     return true;
 }
+
+#undef DO_SUBCOMMAND
 
 #endif /* SERIAL_SUBCOMMANDS_H */

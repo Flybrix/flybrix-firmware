@@ -30,6 +30,13 @@ PcbTransform pcb_transform;
 template <std::size_t field>
 inline decltype(std::get<field>(Config::Data())) & systemMapping(Systems& sys);
 
+// Maps a subsystem configuration to a flag, whereby we state the subsystem we're mapping to
+#define MAP_SYSTEM(name, type, variable)                      \
+    template <>                                               \
+    inline type& systemMapping<Config::name>(Systems & sys) { \
+        return sys.variable;                                  \
+    }
+
 template <>
 inline Version& systemMapping<Config::VERSION>(Systems& sys) {
     // TODO: add this to the systems
@@ -37,10 +44,7 @@ inline Version& systemMapping<Config::VERSION>(Systems& sys) {
     return version;
 }
 
-template <>
-inline ConfigID& systemMapping<Config::ID>(Systems& sys) {
-    return sys.id;
-}
+MAP_SYSTEM(ID, ConfigID, id);
 
 template <>
 inline PcbTransform& systemMapping<Config::PCB>(Systems& sys) {
@@ -49,35 +53,14 @@ inline PcbTransform& systemMapping<Config::PCB>(Systems& sys) {
     return pcb_transform;
 }
 
-template <>
-inline Airframe::MixTable& systemMapping<Config::MIX_TABLE>(Systems& sys) {
-    return sys.airframe.mix_table;
-}
+MAP_SYSTEM(MIX_TABLE, Airframe::MixTable, airframe.mix_table)
+MAP_SYSTEM(MAG_BIAS, AK8963::MagBias, mag.mag_bias)
+MAP_SYSTEM(CHANNEL, R415X::ChannelProperties, receiver.channel)
+MAP_SYSTEM(PID_PARAMETERS, Control::PIDParameters, control.pid_parameters)
+MAP_SYSTEM(STATE_PARAMETERS, State::Parameters, state.parameters)
+MAP_SYSTEM(LED_STATES, LED::States, led.states)
 
-template <>
-inline AK8963::MagBias& systemMapping<Config::MAG_BIAS>(Systems& sys) {
-    return sys.mag.mag_bias;
-}
-
-template <>
-inline R415X::ChannelProperties& systemMapping<Config::CHANNEL>(Systems& sys) {
-    return sys.receiver.channel;
-}
-
-template <>
-inline Control::PIDParameters& systemMapping<Config::PID_PARAMETERS>(Systems& sys) {
-    return sys.control.pid_parameters;
-}
-
-template <>
-inline State::Parameters& systemMapping<Config::STATE_PARAMETERS>(Systems& sys) {
-    return sys.state.parameters;
-}
-
-template <>
-inline LED::States& systemMapping<Config::LED_STATES>(Systems& sys) {
-    return sys.led.states;
-}
+#undef MAP_SYSTEM
 
 bool isEmptyEEPROM() {
     return EEPROM.read(0) == 255;
