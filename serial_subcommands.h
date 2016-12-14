@@ -3,10 +3,38 @@
 
 #include "serial_impl.h"
 
+enum SerialComm::Commands : uint8_t {
+    REQ_RESPONSE,
+    SET_EEPROM_DATA,
+    REINIT_EEPROM_DATA,
+    REQ_EEPROM_DATA,
+    REQ_ENABLE_ITERATION,
+    MOTOR_OVERRIDE_SPEED_0,
+    MOTOR_OVERRIDE_SPEED_1,
+    MOTOR_OVERRIDE_SPEED_2,
+    MOTOR_OVERRIDE_SPEED_3,
+    MOTOR_OVERRIDE_SPEED_4,
+    MOTOR_OVERRIDE_SPEED_5,
+    MOTOR_OVERRIDE_SPEED_6,
+    MOTOR_OVERRIDE_SPEED_7,
+    SET_COMMAND_OVERRIDE,
+    SET_STATE_MASK,
+    SET_STATE_DELAY,
+    SET_SD_WRITE_DELAY,
+    SET_LED,
+    SET_SERIAL_RC,
+    SET_CARD_RECORDING,
+    SET_PARTIAL_EEPROM_DATA,
+    REINIT_PARTIAL_EEPROM_DATA,
+    REQ_PARTIAL_EEPROM_DATA,
+    REQ_CARD_RECORDING_STATE,
+    END_OF_COMMANDS,
+};
+
 // Assigns a subcommand to a flag, whereby the input is named "input"
 #define DO_SUBCOMMAND(name) \
     template <>             \
-    inline bool SerialComm::doSubcommand<SerialComm::name>(CobsReaderBuffer & input)
+    inline bool SerialComm::doSubcommand<SerialComm::Commands::name>(CobsReaderBuffer & input)
 
 DO_SUBCOMMAND(REQ_RESPONSE) {
     return false;

@@ -37,64 +37,8 @@ class SerialComm {
         HistoryData = 4,
     };
 
-    enum Command : uint8_t {
-        REQ_RESPONSE,
-        SET_EEPROM_DATA,
-        REINIT_EEPROM_DATA,
-        REQ_EEPROM_DATA,
-        REQ_ENABLE_ITERATION,
-        MOTOR_OVERRIDE_SPEED_0,
-        MOTOR_OVERRIDE_SPEED_1,
-        MOTOR_OVERRIDE_SPEED_2,
-        MOTOR_OVERRIDE_SPEED_3,
-        MOTOR_OVERRIDE_SPEED_4,
-        MOTOR_OVERRIDE_SPEED_5,
-        MOTOR_OVERRIDE_SPEED_6,
-        MOTOR_OVERRIDE_SPEED_7,
-        SET_COMMAND_OVERRIDE,
-        SET_STATE_MASK,
-        SET_STATE_DELAY,
-        SET_SD_WRITE_DELAY,
-        SET_LED,
-        SET_SERIAL_RC,
-        SET_CARD_RECORDING,
-        SET_PARTIAL_EEPROM_DATA,
-        REINIT_PARTIAL_EEPROM_DATA,
-        REQ_PARTIAL_EEPROM_DATA,
-        REQ_CARD_RECORDING_STATE,
-        END_OF_COMMANDS,
-    };
-
-    enum States : uint8_t {
-        MICROS,
-        STATUS,
-        V0,
-        I0,
-        I1,
-        ACCEL,
-        GYRO,
-        MAG,
-        TEMPERATURE,
-        PRESSURE,
-        RX_PPM,
-        AUX_CHAN_MASK,
-        COMMANDS,
-        F_AND_T,
-        PID_FZ_MASTER,
-        PID_TX_MASTER,
-        PID_TY_MASTER,
-        PID_TZ_MASTER,
-        PID_FZ_SLAVE,
-        PID_TX_SLAVE,
-        PID_TY_SLAVE,
-        PID_TZ_SLAVE,
-        MOTOR_OUT,
-        KINE_ANGLE,
-        KINE_RATE,
-        KINE_ALTITUDE,
-        LOOP_COUNT,
-        END_OF_STATES,
-    };
+    enum Commands : uint8_t;
+    enum States : uint8_t;
 
     explicit SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, Systems* systems, LED* led, PilotCommand* command);
 

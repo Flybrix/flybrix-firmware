@@ -1,10 +1,43 @@
 #ifndef SERIAL_SUBSTATES_H
 #define SERIAL_SUBSTATES_H
 
+#include "serial_impl.h"
+
+enum SerialComm::States : uint8_t {
+    MICROS,
+    STATUS,
+    V0,
+    I0,
+    I1,
+    ACCEL,
+    GYRO,
+    MAG,
+    TEMPERATURE,
+    PRESSURE,
+    RX_PPM,
+    AUX_CHAN_MASK,
+    COMMANDS,
+    F_AND_T,
+    PID_FZ_MASTER,
+    PID_TX_MASTER,
+    PID_TY_MASTER,
+    PID_TZ_MASTER,
+    PID_FZ_SLAVE,
+    PID_TX_SLAVE,
+    PID_TY_SLAVE,
+    PID_TZ_SLAVE,
+    MOTOR_OUT,
+    KINE_ANGLE,
+    KINE_RATE,
+    KINE_ALTITUDE,
+    LOOP_COUNT,
+    END_OF_STATES,
+};
+
 // Reads part of the state into a COBS payload, named "payload"
 #define READ_SUBSTATE(name) \
     template <>             \
-    inline void SerialComm::readSubstate<SerialComm::name>(CobsPayloadGeneric & payload) const
+    inline void SerialComm::readSubstate<SerialComm::States::name>(CobsPayloadGeneric & payload) const
 
 // A shorthand for a common case where all we do is append some data to a payload
 #define READ_SUBSTATE_PAYLOAD(name, ...) \

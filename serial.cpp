@@ -24,11 +24,11 @@ inline void doSubcommandWrap(SerialComm& serial, CobsReaderBuffer& input, uint32
 }
 
 template <uint8_t I = 0>
-inline typename std::enable_if<I == SerialComm::END_OF_COMMANDS, void>::type doSubcommands(SerialComm& serial, CobsReaderBuffer& input, uint32_t mask, uint32_t& ack) {
+inline typename std::enable_if<I == SerialComm::Commands::END_OF_COMMANDS, void>::type doSubcommands(SerialComm& serial, CobsReaderBuffer& input, uint32_t mask, uint32_t& ack) {
 }
 
 template <uint8_t I = 0>
-    inline typename std::enable_if < I<SerialComm::END_OF_COMMANDS, void>::type doSubcommands(SerialComm& serial, CobsReaderBuffer& input, uint32_t mask, uint32_t& ack) {
+    inline typename std::enable_if < I<SerialComm::Commands::END_OF_COMMANDS, void>::type doSubcommands(SerialComm& serial, CobsReaderBuffer& input, uint32_t mask, uint32_t& ack) {
     doSubcommandWrap<I>(serial, input, mask, ack);
     doSubcommands<I + 1>(serial, input, mask, ack);
 }
@@ -41,11 +41,11 @@ inline void readSubstateWrap(const SerialComm& serial, CobsPayloadGeneric& paylo
 }
 
 template <uint8_t I = 0>
-inline typename std::enable_if<I == SerialComm::END_OF_STATES, void>::type readSubstates(const SerialComm& serial, CobsPayloadGeneric& payload, uint32_t mask) {
+inline typename std::enable_if<I == SerialComm::States::END_OF_STATES, void>::type readSubstates(const SerialComm& serial, CobsPayloadGeneric& payload, uint32_t mask) {
 }
 
 template <uint8_t I = 0>
-    inline typename std::enable_if < I<SerialComm::END_OF_STATES, void>::type readSubstates(const SerialComm& serial, CobsPayloadGeneric& payload, uint32_t mask) {
+    inline typename std::enable_if < I<SerialComm::States::END_OF_STATES, void>::type readSubstates(const SerialComm& serial, CobsPayloadGeneric& payload, uint32_t mask) {
     readSubstateWrap<I>(serial, payload, mask);
     readSubstates<I + 1>(serial, payload, mask);
 }
