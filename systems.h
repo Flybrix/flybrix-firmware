@@ -25,6 +25,7 @@
 #include "serial.h"
 #include "state.h"
 #include "version.h"
+#include "devicename.h"
 
 struct Systems {
     Systems();
@@ -47,6 +48,8 @@ struct Systems {
     SerialComm conf;
 
     ConfigID id;
+
+    DeviceName name;
 
     void parseConfig();
 };

@@ -26,6 +26,7 @@
 #include "led.h"
 #include "state.h"
 #include "version.h"
+#include "devicename.h"
 
 #include <tuple>
 
@@ -66,9 +67,10 @@ struct Config {
         PID_PARAMETERS,
         STATE_PARAMETERS,
         LED_STATES,
+        DEVICE_NAME,
     };
 
-    using Data = std::tuple<Version, ConfigID, PcbTransform, Airframe::MixTable, AK8963::MagBias, R415X::ChannelProperties, Control::PIDParameters, State::Parameters, LED::States>;
+    using Data = std::tuple<Version, ConfigID, PcbTransform, Airframe::MixTable, AK8963::MagBias, R415X::ChannelProperties, Control::PIDParameters, State::Parameters, LED::States, DeviceName>;
 
     Config();
     explicit Config(Systems& sys);
@@ -97,10 +99,10 @@ struct Config {
 
 static_assert(sizeof(Config) ==
                   sizeof(Version) + sizeof(ConfigID) + sizeof(PcbTransform) + sizeof(Airframe::MixTable) + sizeof(AK8963::MagBias) + sizeof(R415X::ChannelProperties) + sizeof(State::Parameters) +
-                      sizeof(Control::PIDParameters) + sizeof(LED::States),
+                      sizeof(Control::PIDParameters) + sizeof(LED::States) + sizeof(DeviceName),
               "Data is not packed");
 
-static_assert(sizeof(Config) == 619, "Data does not have expected size");
+static_assert(sizeof(Config) == 628, "Data does not have expected size");
 
 Config readEEPROM();
 bool isEmptyEEPROM();

@@ -59,6 +59,7 @@ MAP_SYSTEM(CHANNEL, R415X::ChannelProperties, receiver.channel)
 MAP_SYSTEM(PID_PARAMETERS, Control::PIDParameters, control.pid_parameters)
 MAP_SYSTEM(STATE_PARAMETERS, State::Parameters, state.parameters)
 MAP_SYSTEM(LED_STATES, LED::States, led.states)
+MAP_SYSTEM(DEVICE_NAME, DeviceName, name)
 
 #undef MAP_SYSTEM
 
