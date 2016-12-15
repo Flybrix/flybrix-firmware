@@ -26,6 +26,7 @@
 #include "state.h"
 #include "version.h"
 #include "devicename.h"
+#include "config.h"
 
 struct Systems {
     Systems();
@@ -50,6 +51,9 @@ struct Systems {
     ConfigID id;
 
     DeviceName name;
+
+    Version version;
+    PcbTransform pcb_transform;
 
     void parseConfig();
 };

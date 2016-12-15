@@ -24,9 +24,6 @@ Config::Config() {  // Default Settings
     // data needs to be written manually to the EEPROM
 }
 
-Version version;
-PcbTransform pcb_transform;
-
 template <std::size_t field>
 inline decltype(std::get<field>(Config::Data())) & systemMapping(Systems& sys);
 
@@ -37,22 +34,9 @@ inline decltype(std::get<field>(Config::Data())) & systemMapping(Systems& sys);
         return sys.variable;                                  \
     }
 
-template <>
-inline Version& systemMapping<Config::VERSION>(Systems& sys) {
-    // TODO: add this to the systems
-    version = Version();
-    return version;
-}
-
+MAP_SYSTEM(VERSION, Version, version);
 MAP_SYSTEM(ID, ConfigID, id);
-
-template <>
-inline PcbTransform& systemMapping<Config::PCB>(Systems& sys) {
-    // TODO: add this to the systems
-    pcb_transform = PcbTransform();
-    return pcb_transform;
-}
-
+MAP_SYSTEM(PCB, PcbTransform, pcb_transform);
 MAP_SYSTEM(MIX_TABLE, Airframe::MixTable, airframe.mix_table)
 MAP_SYSTEM(MAG_BIAS, AK8963::MagBias, mag.mag_bias)
 MAP_SYSTEM(CHANNEL, R415X::ChannelProperties, receiver.channel)
