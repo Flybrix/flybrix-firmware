@@ -11,17 +11,16 @@
 #ifndef debug_h
 #define debug_h
 
-#include <string.h>
+#include "Arduino.h"
 
-#include "serial.h"
-
+class SerialComm;
 extern SerialComm* debug_serial_comm;
+
+void DebugSendString(const String& string);
 
 template <class... T>
 void DebugPrint(T... args) {
-    if (!debug_serial_comm)
-        return;
-    debug_serial_comm->SendDebugString(String(args...));
+    DebugSendString(String(args...));
 }
 
 template <class... T>

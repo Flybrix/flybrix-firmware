@@ -10,11 +10,23 @@
 #include "state.h"
 #include "debug.h"
 
-volatile uint16_t RX[RC_CHANNEL_COUNT];  // filled by the interrupt with valid data
-volatile uint16_t RX_errors = 0;  // count dropped frames
-volatile uint16_t startPulse = 0;  // keeps track of the last received pulse position
+// RX -- PKZ3341 sends: RHS left/right, RHS up/down, LHS up/down, LHS
+// left/right, RHS click (latch), LHS button(momentary)
+// map throttle to LHS up/down
+// map pitch to RHS up/down
+// map roll to RHS left/righ
+// map yaw to LHS up/down
+// map AUX1 to RHS click
+// map AUX2 to LHS click
+
+R415X::ChannelProperties::ChannelProperties() : assignment{2, 1, 0, 3, 4, 5}, inversion{6}, midpoint{1515, 1515, 1500, 1520, 1500, 1500}, deadzone{20, 20, 20, 40, 20, 20} {
+}
+
+volatile uint16_t RX[RC_CHANNEL_COUNT];         // filled by the interrupt with valid data
+volatile uint16_t RX_errors = 0;                // count dropped frames
+volatile uint16_t startPulse = 0;               // keeps track of the last received pulse position
 volatile uint16_t RX_buffer[RC_CHANNEL_COUNT];  // buffer data in anticipation of a valid frame
-volatile uint8_t RX_channel = 0;  // we are collecting data for this channel
+volatile uint8_t RX_channel = 0;                // we are collecting data for this channel
 
 bool R415X::ChannelProperties::verify() const {
     bool ok{true};
@@ -95,7 +107,6 @@ extern "C" void ftm1_isr(void) {
 }
 
 void R415X::getCommandData(State* state) {
-
     cli();  // disable interrupts
 
     // if R415X is working, we should never see anything less than 900!
@@ -103,8 +114,8 @@ void R415X::getCommandData(State* state) {
         if (RX[i] < 900) {
             // tell state that R415X is not ready and return
             state->command_source_mask &= ~COMMAND_READY_R415X;
-            sei();  // enable interrupts
-            return; // don't load bad data into state
+            sei();   // enable interrupts
+            return;  // don't load bad data into state
         }
     }
 
@@ -157,13 +168,13 @@ void R415X::getCommandData(State* state) {
     // in some cases it is impossible to get a ppm channel to be close enought to the midpoint (~1500 usec) because the controller trim is too coarse to correct a small error
     // we get around this by creating a small dead zone around the midpoint of signed channel, specified in usec units
     pitch.val = pitch.applyDeadzone();
-     roll.val =  roll.applyDeadzone();
-      yaw.val =   yaw.applyDeadzone();
+    roll.val = roll.applyDeadzone();
+    yaw.val = yaw.applyDeadzone();
 
-    uint16_t throttle_threshold = ((throttle.max - throttle.min) / 10) + throttle.min; // keep bottom 10% of throttle stick to mean 'off'
+    uint16_t throttle_threshold = ((throttle.max - throttle.min) / 10) + throttle.min;  // keep bottom 10% of throttle stick to mean 'off'
 
     state->command_throttle = constrain((throttle.val - throttle_threshold) * 4095 / (throttle.max - throttle_threshold), 0, 4095);
-    state->command_pitch =    constrain((1-2*((channel.inversion >> 1) & 1)) * (pitch.val - pitch.mid) * 4095 / (pitch.max - pitch.min), -2047, 2047);
-    state->command_roll =     constrain((1-2*((channel.inversion >> 2) & 1)) * ( roll.val -  roll.mid) * 4095 / ( roll.max -  roll.min), -2047, 2047);
-    state->command_yaw =      constrain((1-2*((channel.inversion >> 3) & 1)) * (  yaw.val -   yaw.mid) * 4095 / (  yaw.max -   yaw.min), -2047, 2047);
+    state->command_pitch = constrain((1 - 2 * ((channel.inversion >> 1) & 1)) * (pitch.val - pitch.mid) * 4095 / (pitch.max - pitch.min), -2047, 2047);
+    state->command_roll = constrain((1 - 2 * ((channel.inversion >> 2) & 1)) * (roll.val - roll.mid) * 4095 / (roll.max - roll.min), -2047, 2047);
+    state->command_yaw = constrain((1 - 2 * ((channel.inversion >> 3) & 1)) * (yaw.val - yaw.mid) * 4095 / (yaw.max - yaw.min), -2047, 2047);
 }

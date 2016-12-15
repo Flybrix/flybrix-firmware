@@ -33,7 +33,7 @@ class LED {
         SOLID = 5,
     };
 
-    explicit LED(State *state);
+    explicit LED(State* state);
 
     void update();
 
@@ -62,7 +62,7 @@ class LED {
 
     struct __attribute__((packed)) StateCase {
         StateCase(uint16_t status, Pattern pattern, CRGB color_right_front, CRGB color_right_back, CRGB color_left_front, CRGB color_left_back, bool indicator_red = false,
-                   bool indicator_green = false)
+                  bool indicator_green = false)
             : status{status},
               pattern{pattern},
               color_right_front{color_right_front},
@@ -95,6 +95,7 @@ class LED {
     static_assert(sizeof(StateCase) == 2 + 1 + 4 * sizeof(Color) + 2, "Data is not packed");
 
     struct __attribute__((packed)) States {
+        States();
         bool verify() const {
             return true;
         }
@@ -103,7 +104,7 @@ class LED {
 
     static_assert(sizeof(States) == 16 * sizeof(StateCase), "Data is not packed");
 
-    void parseConfig(const States& states);
+    void parseConfig();
 
    private:
     void use(Pattern pattern, CRGB color_right_front, CRGB color_right_back, CRGB color_left_front, CRGB color_left_back, bool red_indicator, bool green_indicator);
@@ -114,7 +115,7 @@ class LED {
     void indicatorRedOff();
     void indicatorGreenOff();
 
-    State *state;
+    State* state;
     uint16_t oldStatus{0};
     bool override{false};
 

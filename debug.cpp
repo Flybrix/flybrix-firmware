@@ -10,4 +10,12 @@
 
 #include "debug.h"
 
+#include "serial.h"
+
 SerialComm* debug_serial_comm{nullptr};
+
+void DebugSendString(const String& string) {
+    if (!debug_serial_comm)
+        return;
+    debug_serial_comm->SendDebugString(string);
+}

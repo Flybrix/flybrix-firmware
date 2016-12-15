@@ -31,17 +31,18 @@ class AK8963 : public CallbackProcessor {
     bool ready;
 
     bool startMeasurement();  // writes values to state (when data is ready)
-    void triggerCallback();  // handles return for getAccelGryo()
+    void triggerCallback();   // handles return for getAccelGryo()
 
     uint8_t getID();
 
     struct __attribute__((packed)) MagBias {
+        MagBias();
         bool verify() const {
             return true;
         }
-        float x;
-        float y;
-        float z;
+        float x;  // Bx (milligauss)
+        float y;  // By (milligauss)
+        float z;  // Bz (milligauss)
     } mag_bias;
 
     static_assert(sizeof(MagBias) == 3 * 4, "Data is not packed");

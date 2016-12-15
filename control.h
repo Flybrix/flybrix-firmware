@@ -16,7 +16,6 @@
 #include "cascadedPID.h"
 
 class PID;
-class CONFIG_struct;
 class State;
 
 class Control {
@@ -24,13 +23,14 @@ class Control {
     struct PIDParameters;
 
     Control(State* state, const PIDParameters& config);
-    void parseConfig(const PIDParameters& config);
+    void parseConfig();
 
     void calculateControlVectors();
 
     State* state;
 
     struct __attribute__((packed)) PIDParameters {
+        PIDParameters();
         bool verify() const;
 
         float thrust_master[7];  // parameters are {P,I,D,integral windup guard, D filter delay sec, setpoint filter delay sec, command scaling factor}

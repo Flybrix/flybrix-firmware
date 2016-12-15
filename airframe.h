@@ -21,6 +21,7 @@ class Airframe {
     void updateMotorsMix();
 
     struct __attribute__((packed)) MixTable {
+        MixTable();
         bool verify() const {
             return true;
         }

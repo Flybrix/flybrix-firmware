@@ -60,7 +60,7 @@ void setup() {
     setBluetoothUart();
 
     // load stored settings (this will reinitialize if there is no data in the EEPROM!
-    readEEPROM().data.applyTo(sys);
+    readEEPROM().applyTo(sys);
     sys.state.resetState();
 
     sys.state.set(STATUS_BMP_FAIL);
@@ -69,10 +69,10 @@ void setup() {
     if (sys.bmp.getID() == 0x58) {
         sys.state.clear(STATUS_BMP_FAIL);
         // state is unhappy without an initial pressure
-        sys.bmp.startMeasurement();  // important; otherwise we'll never set ready!
-        sys.i2c.update();  // write data
-        delay(2);  // wait for data to arrive
-        sys.i2c.update();  // read data
+        sys.bmp.startMeasurement();         // important; otherwise we'll never set ready!
+        sys.i2c.update();                   // write data
+        delay(2);                           // wait for data to arrive
+        sys.i2c.update();                   // read data
         sys.state.p0 = sys.state.pressure;  // initialize reference pressure
     } else {
         sys.led.update();
@@ -173,11 +173,11 @@ bool ProcessTask<1000>::Run() {
     static uint16_t counterSdCard{0};
     if (++counterSerial > sys.conf.GetSendStateDelay() - 1) {
         counterSerial = 0;
-        sys.conf.SendState(micros());
+        sys.conf.SendState();
     }
     if (++counterSdCard > sys.conf.GetSdCardStateDelay() - 1) {
         counterSdCard = 0;
-        sys.conf.SendState(micros(), 0xFFFFFFFF, true);
+        sys.conf.SendState(0xFFFFFFFF, true);
     }
     counterSerial %= 1000;
     counterSdCard %= 1000;
@@ -228,25 +228,22 @@ bool ProcessTask<40>::Run() {
     sys.pwr.measureRawLevels();  // read all ADCs
 
     // check for low voltage condition
-    if ( ((1/50)/0.003*1.2/65536 * sys.state.I1_raw ) > 1.0f ){ //if total battery current > 1A
-        if ( ((20.5+226)/20.5*1.2/65536 * sys.state.V0_raw) < 2.8f ) {
+    if (((1 / 50) / 0.003 * 1.2 / 65536 * sys.state.I1_raw) > 1.0f) {  // if total battery current > 1A
+        if (((20.5 + 226) / 20.5 * 1.2 / 65536 * sys.state.V0_raw) < 2.8f) {
             low_battery_counter++;
-            if ( low_battery_counter > 40 ){
+            if (low_battery_counter > 40) {
                 sys.state.set(STATUS_BATTERY_LOW);
             }
-        }
-        else {
+        } else {
             low_battery_counter = 0;
         }
-    }
-    else {
-        if ( ((20.5+226)/20.5*1.2/65536 * sys.state.V0_raw) < 3.63f ) {
+    } else {
+        if (((20.5 + 226) / 20.5 * 1.2 / 65536 * sys.state.V0_raw) < 3.63f) {
             low_battery_counter++;
-            if ( low_battery_counter > 40 ){
+            if (low_battery_counter > 40) {
                 sys.state.set(STATUS_BATTERY_LOW);
             }
-        }
-        else {
+        } else {
             low_battery_counter = 0;
         }
     }
