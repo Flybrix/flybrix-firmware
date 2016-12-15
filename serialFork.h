@@ -14,8 +14,10 @@
 #include <cstdint>
 #include "cobs.h"
 
+class DeviceName;
+
 CobsReaderBuffer* readSerial();
 void writeSerial(uint8_t* data, size_t length);
 void flushSerial();
-void setBluetoothUart();
+void setBluetoothUart(const DeviceName& name);
 #endif
