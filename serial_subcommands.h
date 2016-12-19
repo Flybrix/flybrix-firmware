@@ -201,7 +201,7 @@ DO_SUBCOMMAND(SET_PARTIAL_EEPROM_DATA) {
     if (!tmp_config.readPartialFrom(input)) {
         return false;
     }
-    if (tmp_config.verify()) {
+    if (!tmp_config.verify()) {
         return false;
     }
     tmp_config.applyTo(*systems);

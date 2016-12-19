@@ -63,7 +63,7 @@ struct FieldFunctor<T, Config::LED_STATES> {
     template <class Cursor>
     static bool Read(T& data, Cursor&& cursor, uint16_t submask) {
         if (!(submask & fieldToMask(FIELD))) {
-            return false;
+            return true;
         }
         // split up LED states further, since the variable is giant
         uint16_t led_mask;
