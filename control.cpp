@@ -39,12 +39,12 @@
 
 Control::PIDParameters::PIDParameters()
     : thrust_master{1.0, 0.0, 0.0, 0.0, 0.005, 0.005, 1.0},
-      pitch_master{5.0, 1.0, 0.0, 10.0, 0.005, 0.005, 10.0},
-      roll_master{5.0, 1.0, 0.0, 10.0, 0.005, 0.005, 10.0},
+      pitch_master{10.0, 1.0, 0.0, 10.0, 0.005, 0.005, 10.0},
+      roll_master{10.0, 1.0, 0.0, 10.0, 0.005, 0.005, 10.0},
       yaw_master{5.0, 1.0, 0.0, 10.0, 0.005, 0.005, 180.0},
       thrust_slave{1.0, 0.0, 0.0, 10.0, 0.001, 0.001, 0.3},
-      pitch_slave{20.0, 8.0, 0.0, 30.0, 0.001, 0.001, 30.0},
-      roll_slave{20.0, 8.0, 0.0, 30.0, 0.001, 0.001, 30.0},
+      pitch_slave{10.0, 4.0, 0.0, 30.0, 0.001, 0.001, 30.0},
+      roll_slave{10.0, 4.0, 0.0, 30.0, 0.001, 0.001, 30.0},
       yaw_slave{30.0, 5.0, 0.0, 20.0, 0.001, 0.001, 240.0},
       pid_bypass{BYPASS_THRUST_MASTER | BYPASS_THRUST_SLAVE | BYPASS_YAW_MASTER}  // AHRS/Horizon mode
 {
