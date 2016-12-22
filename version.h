@@ -15,7 +15,7 @@
 #include "debug.h"
 
 #define FIRMWARE_VERSION_A 1
-#define FIRMWARE_VERSION_B 3
+#define FIRMWARE_VERSION_B 4
 #define FIRMWARE_VERSION_C 0
 
 struct __attribute__((packed)) Version {

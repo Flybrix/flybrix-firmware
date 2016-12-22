@@ -11,6 +11,7 @@
 #include "serialFork.h"
 #include <Arduino.h>
 #include "board.h"
+#include "devicename.h"
 
 namespace {
 struct USBComm {
@@ -49,7 +50,7 @@ struct Bluetooth {
         Serial1.begin(57600);
     }
 
-    void setBluetoothUart();
+    void setBluetoothUart(const DeviceName& name);
 
     bool read() {
         while (Serial1.available()) {
@@ -139,7 +140,7 @@ void flushATmodeResponse() {
     }
 }
 
-void Bluetooth::setBluetoothUart() {
+void Bluetooth::setBluetoothUart(const DeviceName& name) {
     // PIN 12 of teensy is BMD (P0.13)
     // PIN 30 of teensy is BMD (PO.14) AT Mode
     // PIN 28 of teensy is BMD RST
@@ -153,39 +154,14 @@ void Bluetooth::setBluetoothUart() {
     digitalWriteFast(board::bluetooth::RESET, LOW);  // reset BMD
     delay(100);
     digitalWriteFast(board::bluetooth::RESET, HIGH);  // reset BMD complete, now in AT mode
-    delay(2500); // time needed initialization of AT mode
-    uint8_t data[18];
+    delay(2500);                                      // time needed initialization of AT mode
 
-    data[0] = 'a';
-    data[1] = 't';
-    data[2] = '$';
-
-    data[3] = 'u';
-    data[4] = 'e';
-    data[5] = 'n';
-    data[6] = ' ';
-    data[7] = '0';
-    data[8] = '1';
-    data[9] = '\n';
-    Serial1.write(data, 10);
-
+    Serial1.print("at$uen 01\n");
     flushATmodeResponse();
 
-    data[3] = 'n';
-    data[4] = 'a';
-    data[5] = 'm';
-    data[6] = 'e';
-    data[7] = ' ';
-    data[8] = 'F';
-    data[9] = 'L';
-    data[10] = 'Y';
-    data[11] = 'B';
-    data[12] = 'R';
-    data[13] = 'I';
-    data[14] = 'X';
-    data[15] = '\n';
-    Serial1.write(data, 16);
-
+    Serial1.print("at$name ");
+    Serial1.print(name.value);
+    Serial1.print("\n");
     flushATmodeResponse();
 
     digitalWriteFast(board::bluetooth::MODE, HIGH);
@@ -197,9 +173,9 @@ void Bluetooth::setBluetoothUart() {
 #endif
 }
 
-void setBluetoothUart() {
+void setBluetoothUart(const DeviceName& name) {
 #ifndef ALPHA
-    bluetooth.setBluetoothUart();
+    bluetooth.setBluetoothUart(name);
 #endif
 }
 

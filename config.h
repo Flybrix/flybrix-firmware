@@ -26,12 +26,14 @@
 #include "led.h"
 #include "state.h"
 #include "version.h"
+#include "devicename.h"
+
+#include <tuple>
 
 struct Systems;
 
 struct __attribute__((packed)) ConfigID {
-    ConfigID() : ConfigID{0} {
-    }
+    ConfigID();
     explicit ConfigID(uint32_t id) : id{id} {
     }
     bool verify() const {
@@ -43,9 +45,7 @@ struct __attribute__((packed)) ConfigID {
 static_assert(sizeof(ConfigID) == 4, "Data is not packed");
 
 struct __attribute__((packed)) PcbTransform {
-    PcbTransform()
-        : orientation{0.0f, 0.0f, 0.0f}, translation{0.0f, 0.0f, 0.0f} {
-    }
+    PcbTransform();
     bool verify() const {
         return true;
     }
@@ -56,56 +56,57 @@ struct __attribute__((packed)) PcbTransform {
 
 static_assert(sizeof(PcbTransform) == 3 * 2 * 4, "Data is not packed");
 
-struct __attribute__((packed)) CONFIG_struct {
+struct Config {
     enum Field : uint16_t {
-        VERSION = 1 << 0,
-        ID = 1 << 1,
-        PCB = 1 << 2,
-        MIX_TABLE = 1 << 3,
-        MAG_BIAS = 1 << 4,
-        CHANNEL = 1 << 5,
-        PID_PARAMETERS = 1 << 6,
-        STATE_PARAMETERS = 1 << 7,
-        LED_STATES = 1 << 8,
+        VERSION,
+        ID,
+        PCB,
+        MIX_TABLE,
+        MAG_BIAS,
+        CHANNEL,
+        PID_PARAMETERS,
+        STATE_PARAMETERS,
+        LED_STATES,
+        DEVICE_NAME,
     };
 
-    CONFIG_struct();
-    explicit CONFIG_struct(Systems& sys);
+    using Data = std::tuple<Version, ConfigID, PcbTransform, Airframe::MixTable, AK8963::MagBias, R415X::ChannelProperties, Control::PIDParameters, State::Parameters, LED::States, DeviceName>;
+
+    Config();
+    explicit Config(Systems& sys);
     void applyTo(Systems& systems) const;
     bool verify() const;
 
-    Version version;
-    ConfigID id;
-    PcbTransform pcb;
-    Airframe::MixTable mix_table;
-    AK8963::MagBias mag_bias;
-    R415X::ChannelProperties channel;
-    Control::PIDParameters pid_parameters;
-    State::Parameters state_parameters;
-    LED::States led_states;
+    void resetPartial(uint16_t submask, uint16_t led_mask);
+
+    template <class Cursor>
+    void writeTo(Cursor&& cursor) const;
+
+    template <class Cursor>
+    void writePartialTo(Cursor&& cursor, uint16_t submask, uint16_t led_mask) const;
+
+    template <class Cursor>
+    bool readFrom(Cursor&& cursor);
+
+    template <class Cursor>
+    bool readPartialFrom(Cursor&& cursor);
+
+    template <class Cursor>
+    static bool readMasks(Cursor&& cursor, uint16_t& submask, uint16_t& led_mask);
+
+    Data data;
 };
 
-static_assert(sizeof(CONFIG_struct) ==
-                  sizeof(Version) + sizeof(ConfigID) + sizeof(PcbTransform) +
-                      sizeof(Airframe::MixTable) + sizeof(AK8963::MagBias) +
-                      sizeof(R415X::ChannelProperties) +
-                      sizeof(State::Parameters) +
-                      sizeof(Control::PIDParameters) + sizeof(LED::States),
+static_assert(sizeof(Config) ==
+                  sizeof(Version) + sizeof(ConfigID) + sizeof(PcbTransform) + sizeof(Airframe::MixTable) + sizeof(AK8963::MagBias) + sizeof(R415X::ChannelProperties) + sizeof(State::Parameters) +
+                      sizeof(Control::PIDParameters) + sizeof(LED::States) + sizeof(DeviceName),
               "Data is not packed");
 
-static_assert(sizeof(CONFIG_struct) == 619, "Data does not have expected size");
+static_assert(sizeof(Config) == 628, "Data does not have expected size");
 
-union CONFIG_union {
-    CONFIG_union() : data{CONFIG_struct()} {
-    }
-    explicit CONFIG_union(Systems& systems) : data{CONFIG_struct(systems)} {
-    }
-    struct CONFIG_struct data;
-    uint8_t raw[sizeof(CONFIG_struct)];
-};
-
-void writeEEPROM(const CONFIG_union& CONFIG);
-CONFIG_union readEEPROM();
+Config readEEPROM();
 bool isEmptyEEPROM();
+
+#include "config_impl.h"
 
 #endif

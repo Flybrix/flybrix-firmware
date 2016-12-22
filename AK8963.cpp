@@ -14,6 +14,8 @@
 #include <math.h>
 #include "state.h"
 
+AK8963::MagBias::MagBias() : x{0.0}, y{0.0}, z{0.0} {}
+
 // we have three coordinate systems here:
 // 1. REGISTER coordinates: native values as read
 // 2. IC/PCB coordinates: matches FLYER system if the pcb is in standard orientation

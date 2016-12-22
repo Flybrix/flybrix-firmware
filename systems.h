@@ -25,6 +25,8 @@
 #include "serial.h"
 #include "state.h"
 #include "version.h"
+#include "devicename.h"
+#include "config.h"
 
 struct Systems {
     Systems();
@@ -47,6 +49,13 @@ struct Systems {
     SerialComm conf;
 
     ConfigID id;
+
+    DeviceName name;
+
+    Version version;
+    PcbTransform pcb_transform;
+
+    void parseConfig();
 };
 
 #endif /* end of include guard: SYSTEMS_H */

@@ -68,6 +68,7 @@ class R415X {
     void getCommandData(State* state);
 
     struct __attribute__((packed)) ChannelProperties {
+        ChannelProperties();
         bool verify() const;
         uint8_t assignment[6];
         uint8_t inversion;     // bitfield order is {throttle_channel, pitch_channel, roll_channel, yaw_channel, x, x, x, x} (LSB-->MSB)
@@ -78,8 +79,6 @@ class R415X {
     static_assert(sizeof(ChannelProperties) == 6 + 1 + 6 * 2 * 2, "Data is not packed");
 
    private:
-    void initialize_isr(void);
-
     PPMchannel throttle;
     PPMchannel pitch;
     PPMchannel roll;

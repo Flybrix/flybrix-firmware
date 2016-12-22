@@ -75,11 +75,12 @@ class State {
     float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
 
     struct __attribute__((packed)) Parameters {
+        Parameters();
         bool verify() const {
             return true;
         }
         // state estimation parameters for tuning
-        float state_estimation[2];  // Madwick 2Kp, 2Ki
+        float state_estimation[2];  // Madwick 2Kp, 2Ki, Mahony Beta
 
         // limits for enabling motors
         float enable[2];  // variance and gravity angle
@@ -119,13 +120,14 @@ class State {
 
 #define STATUS_FAIL_STABILITY 0x0100
 #define STATUS_FAIL_ANGLE 0x0200
+#define STATUS_FAIL_OTHER 0x4000  // flag other arming failures
 
 #define STATUS_ENABLED 0x0400
-#define STATUS_BATTERY_LOW 0x0800
 
+#define STATUS_BATTERY_LOW 0x0800
 #define STATUS_TEMP_WARNING 0x1000
 #define STATUS_LOG_FULL 0x2000
-#define STATUS_UNPAIRED 0x4000
+
 #define STATUS_OVERRIDE 0x8000
 
 #endif

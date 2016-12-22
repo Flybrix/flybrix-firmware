@@ -26,6 +26,11 @@ void write(const uint8_t* data, size_t length);
 
 // File closing (saving and truncating the file) takes a long time to perform
 void closeFile();
+
+// We can set a lock to SD opening/closing controls, which can only be overriden with serial commands
+void setLock(bool enable);
+
+bool isLocked();
 }
 
 #endif

@@ -57,11 +57,11 @@ void setup() {
 
     bool go_to_test_mode{isEmptyEEPROM()};
 
-    setBluetoothUart();
-
     // load stored settings (this will reinitialize if there is no data in the EEPROM!
-    readEEPROM().data.applyTo(sys);
+    readEEPROM().applyTo(sys);
     sys.state.resetState();
+
+    setBluetoothUart(sys.name);
 
     sys.state.set(STATUS_BMP_FAIL);
     sys.led.update();
@@ -69,10 +69,10 @@ void setup() {
     if (sys.bmp.getID() == 0x58) {
         sys.state.clear(STATUS_BMP_FAIL);
         // state is unhappy without an initial pressure
-        sys.bmp.startMeasurement();  // important; otherwise we'll never set ready!
-        sys.i2c.update();  // write data
-        delay(2);  // wait for data to arrive
-        sys.i2c.update();  // read data
+        sys.bmp.startMeasurement();         // important; otherwise we'll never set ready!
+        sys.i2c.update();                   // write data
+        delay(2);                           // wait for data to arrive
+        sys.i2c.update();                   // read data
         sys.state.p0 = sys.state.pressure;  // initialize reference pressure
     } else {
         sys.led.update();
@@ -115,31 +115,9 @@ uint32_t low_battery_counter = 0;
 template <uint32_t f>
 uint32_t RunProcess(uint32_t start);
 
-template <uint32_t... Freqs>
-struct freqlist{};
-
-void RunProcessesHelper(freqlist<>) {
-}
-
-template <uint32_t F, uint32_t... Fargs>
-void RunProcessesHelper(freqlist<F, Fargs...>) {
-    RunProcess<F>(micros());
-    sys.i2c.update();
-    RunProcessesHelper(freqlist<Fargs...>());
-}
-
-template <uint32_t... Freqs>
-void RunProcesses() {
-    RunProcessesHelper(freqlist<Freqs...>());
-}
-
-template <uint32_t f>
-bool ProcessTask();
-
 bool skip_state_update = false;
 
 void loop() {
-
     sys.state.loopCount++;
 
     sys.i2c.update();  // manages a queue of requests for mpu, mag, bmp
@@ -167,20 +145,39 @@ void loop() {
         sys.motors.updateAllChannels();
     }
 
-    RunProcesses<1000, 100, 40, 35, 30, 10, 1>();
+    RunProcess<1000>(micros());
+    sys.i2c.update();
+    RunProcess<100>(micros());
+    sys.i2c.update();
+    RunProcess<40>(micros());
+    sys.i2c.update();
+    RunProcess<35>(micros());
+    sys.i2c.update();
+    RunProcess<30>(micros());
+    sys.i2c.update();
+    RunProcess<10>(micros());
+    sys.i2c.update();
+    RunProcess<1>(micros());
+    sys.i2c.update();
 }
 
+template <uint32_t f>
+class ProcessTask {
+   public:
+    static bool Run();
+};
+
 template <>
-bool ProcessTask<1000>() {
+bool ProcessTask<1000>::Run() {
     static uint16_t counterSerial{0};
     static uint16_t counterSdCard{0};
     if (++counterSerial > sys.conf.GetSendStateDelay() - 1) {
         counterSerial = 0;
-        sys.conf.SendState(micros());
+        sys.conf.SendState();
     }
     if (++counterSdCard > sys.conf.GetSdCardStateDelay() - 1) {
         counterSdCard = 0;
-        sys.conf.SendState(micros(), 0xFFFFFFFF, true);
+        sys.conf.SendState(0xFFFFFFFF, true);
     }
     counterSerial %= 1000;
     counterSdCard %= 1000;
@@ -190,13 +187,13 @@ bool ProcessTask<1000>() {
 }
 
 template <>
-bool ProcessTask<30>() {
+bool ProcessTask<30>::Run() {
     sys.led.update();  // update quickly to support color dithering
     return true;
 }
 
 template <>
-bool ProcessTask<100>() {
+bool ProcessTask<100>::Run() {
     if (sys.bmp.ready) {
         sys.state.updateStatePT(micros());
         sys.bmp.startMeasurement();
@@ -219,37 +216,34 @@ bool ProcessTask<100>() {
 }
 
 template <>
-bool ProcessTask<35>() {
+bool ProcessTask<35>::Run() {
     flushSerial();
     return true;
 }
 
 template <>
-bool ProcessTask<40>() {
+bool ProcessTask<40>::Run() {
     sys.pilot.processCommands();
 
     sys.pwr.measureRawLevels();  // read all ADCs
 
     // check for low voltage condition
-    if ( ((1/50)/0.003*1.2/65536 * sys.state.I1_raw ) > 1.0f ){ //if total battery current > 1A
-        if ( ((20.5+226)/20.5*1.2/65536 * sys.state.V0_raw) < 2.8f ) {
+    if (((1 / 50) / 0.003 * 1.2 / 65536 * sys.state.I1_raw) > 1.0f) {  // if total battery current > 1A
+        if (((20.5 + 226) / 20.5 * 1.2 / 65536 * sys.state.V0_raw) < 2.8f) {
             low_battery_counter++;
-            if ( low_battery_counter > 40 ){
+            if (low_battery_counter > 40) {
                 sys.state.set(STATUS_BATTERY_LOW);
             }
-        }
-        else {
+        } else {
             low_battery_counter = 0;
         }
-    }
-    else {
-        if ( ((20.5+226)/20.5*1.2/65536 * sys.state.V0_raw) < 3.63f ) {
+    } else {
+        if (((20.5 + 226) / 20.5 * 1.2 / 65536 * sys.state.V0_raw) < 3.63f) {
             low_battery_counter++;
-            if ( low_battery_counter > 40 ){
+            if (low_battery_counter > 40) {
                 sys.state.set(STATUS_BATTERY_LOW);
             }
-        }
-        else {
+        } else {
             low_battery_counter = 0;
         }
     }
@@ -258,7 +252,7 @@ bool ProcessTask<40>() {
 }
 
 template <>
-bool ProcessTask<10>() {
+bool ProcessTask<10>::Run() {
     if (sys.mag.ready) {
         sys.mag.startMeasurement();
     } else {
@@ -269,7 +263,7 @@ bool ProcessTask<10>() {
 }
 
 template <>
-bool ProcessTask<1>() {
+bool ProcessTask<1>::Run() {
     return true;
 }
 
@@ -279,11 +273,11 @@ uint32_t RunProcess(uint32_t start) {
     static uint32_t iterations{0};
 
     while (start - previous_time > 1000000 / f) {
-        if (ProcessTask<f>()) {
+        if (ProcessTask<f>::Run()) {
             previous_time += 1000000 / f;
             ++iterations;
         } else {
-          break;
+            break;
         }
     }
 
