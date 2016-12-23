@@ -1,13 +1,13 @@
 # flybrix-firmware
 
-Flybrix is in beta and still changing from time to time.
+Flybrix is at version 1.4.0 and getting better all the time!
 
 Dependencies:
 
-* arduino 1.6.7 from https://www.arduino.cc/en/Main/Software
-* teensyduino libraries from https://www.pjrc.com/teensy/teensyduino.html
+* arduino 1.6.13 from https://www.arduino.cc/en/Main/OldSoftwareReleases#previous
+* teensyduino 1.33 from https://www.pjrc.com/teensy/td_download.html
 * teensy loader from https://www.pjrc.com/teensy/loader.html
-* SDFat library from https://github.com/greiman/SdFat must be patched to use nonstandard pins (see 'SdSpiTeensy3.cpp.diff')
+* SDFat library from https://github.com/greiman/SdFat  -- (IMPORTANT) must be patched to use nonstandard pins (see 'SdSpiTeensy3.cpp.diff')
 
 
 Tips:
