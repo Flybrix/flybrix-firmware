@@ -46,6 +46,10 @@ Control::PIDParameters::PIDParameters()
       pitch_slave{10.0, 4.0, 0.0, 30.0, 0.001, 0.001, 30.0},
       roll_slave{10.0, 4.0, 0.0, 30.0, 0.001, 0.001, 30.0},
       yaw_slave{30.0, 5.0, 0.0, 20.0, 0.001, 0.001, 240.0},
+      thrust_gain{4095.0},
+      pitch_gain{2047.0},
+      roll_gain{2047.0},
+      yaw_gain{2047.0},
       pid_bypass{BYPASS_THRUST_MASTER | BYPASS_THRUST_SLAVE | BYPASS_YAW_MASTER}  // AHRS/Horizon mode
 {
 }
@@ -113,10 +117,10 @@ void Control::calculateControlVectors() {
     yaw_pid.setMasterInput(state->kinematicsAngle[2] * 57.2957795f);
     yaw_pid.setSlaveInput(state->kinematicsRate[2] * 57.2957795f);
 
-    thrust_pid.setSetpoint(state->command_throttle * (1.0f / 4095.0f) * thrust_pid.getScalingFactor(pidEnabled[THRUST_MASTER], pidEnabled[THRUST_SLAVE], 4095.0f));
-    pitch_pid.setSetpoint(state->command_pitch * (1.0f / 2047.0f) * pitch_pid.getScalingFactor(pidEnabled[PITCH_MASTER], pidEnabled[PITCH_SLAVE], 2047.0f));
-    roll_pid.setSetpoint(state->command_roll * (1.0f / 2047.0f) * roll_pid.getScalingFactor(pidEnabled[ROLL_MASTER], pidEnabled[ROLL_SLAVE], 2047.0f));
-    yaw_pid.setSetpoint(state->command_yaw * (1.0f / 2047.0f) * yaw_pid.getScalingFactor(pidEnabled[YAW_MASTER], pidEnabled[YAW_SLAVE], 2047.0f));
+    thrust_pid.setSetpoint(state->command_throttle * (1.0f / 4095.0f) * thrust_pid.getScalingFactor(pidEnabled[THRUST_MASTER], pidEnabled[THRUST_SLAVE], pid_parameters.thrust_gain));
+    pitch_pid.setSetpoint(state->command_pitch * (1.0f / 2047.0f) * pitch_pid.getScalingFactor(pidEnabled[PITCH_MASTER], pidEnabled[PITCH_SLAVE], pid_parameters.pitch_gain));
+    roll_pid.setSetpoint(state->command_roll * (1.0f / 2047.0f) * roll_pid.getScalingFactor(pidEnabled[ROLL_MASTER], pidEnabled[ROLL_SLAVE], pid_parameters.roll_gain));
+    yaw_pid.setSetpoint(state->command_yaw * (1.0f / 2047.0f) * yaw_pid.getScalingFactor(pidEnabled[YAW_MASTER], pidEnabled[YAW_SLAVE], pid_parameters.yaw_gain));
 
     // compute new output levels for state
     uint32_t now = micros();

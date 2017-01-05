@@ -43,10 +43,15 @@ class Control {
         float roll_slave[7];
         float yaw_slave[7];
 
+        float thrust_gain;
+        float pitch_gain;
+        float roll_gain;
+        float yaw_gain;
+
         uint8_t pid_bypass;  // bitfield order for bypass: {thrustMaster, pitchMaster, rollMaster, yawMaster, thrustSlave, pitchSlave, rollSlave, yawSlave} (LSB-->MSB)
     } pid_parameters;
 
-    static_assert(sizeof(PIDParameters) == 4 * 8 * 7 + 1, "Data is not packed");
+    static_assert(sizeof(PIDParameters) == 4 * 8 * 7 + 4 * 4 + 1, "Data is not packed");
 
     uint32_t lastUpdateMicros = 0;  // 1.2 hrs should be enough
 

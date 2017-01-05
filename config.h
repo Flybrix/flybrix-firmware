@@ -102,7 +102,7 @@ static_assert(sizeof(Config) ==
                       sizeof(Control::PIDParameters) + sizeof(LED::States) + sizeof(DeviceName),
               "Data is not packed");
 
-static_assert(sizeof(Config) == 628, "Data does not have expected size");
+static_assert(sizeof(Config) == 644, "Data does not have expected size");
 
 Config readEEPROM();
 bool isEmptyEEPROM();
