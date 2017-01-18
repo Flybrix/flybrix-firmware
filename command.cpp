@@ -19,6 +19,10 @@ void PilotCommand::processCommands(void) {
     bool attempting_to_enable = false;
     bool attempting_to_disable = false;
 
+    if (state->is(STATUS_RX_FAIL)) {
+        state->command_throttle *= 0.99;
+    }
+
     if (!(state->command_source_mask & COMMAND_READY_BTLE)) {
         if (bluetoothTolerance) {
             // we allow bluetooth a generous 1s before we give up
