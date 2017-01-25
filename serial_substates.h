@@ -18,6 +18,7 @@ enum SerialComm::States : uint8_t {
     AUX_CHAN_MASK,
     COMMANDS,
     F_AND_T,
+    UNUSED,
     PID_FZ_MASTER,
     PID_TX_MASTER,
     PID_TY_MASTER,
@@ -69,6 +70,9 @@ READ_SUBSTATE(RX_PPM) {
 READ_SUBSTATE_PAYLOAD(AUX_CHAN_MASK, state->command_AUX_mask)
 READ_SUBSTATE_PAYLOAD(COMMANDS, state->command_throttle, state->command_pitch, state->command_roll, state->command_yaw)
 READ_SUBSTATE_PAYLOAD(F_AND_T, state->Fz, state->Tx, state->Ty, state->Tz)
+
+READ_SUBSTATE(UNUSED) {
+}
 
 READ_SUBSTATE(PID_FZ_MASTER) {
     WritePIDData(payload, control->thrust_pid.master());
