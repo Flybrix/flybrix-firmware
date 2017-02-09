@@ -15,12 +15,15 @@
 #include "debug.h"
 
 #define FIRMWARE_VERSION_A 1
-#define FIRMWARE_VERSION_B 4
+#define FIRMWARE_VERSION_B 5
 #define FIRMWARE_VERSION_C 0
+
+class LED;
 
 struct __attribute__((packed)) Version {
     Version() : major(FIRMWARE_VERSION_A), minor(FIRMWARE_VERSION_B), patch(FIRMWARE_VERSION_C) {
     }
+    void display(LED& led) const;
     bool verify() const;
     uint8_t major;
     uint8_t minor;

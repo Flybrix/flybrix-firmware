@@ -34,6 +34,8 @@ enum SerialComm::States : uint8_t {
     END_OF_STATES,
 };
 
+static_assert(SerialComm::States::END_OF_STATES == 27, "Added/removed states not acknowledged");
+
 // Reads part of the state into a COBS payload, named "payload"
 #define READ_SUBSTATE(name) \
     template <>             \

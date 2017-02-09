@@ -61,6 +61,8 @@ void setup() {
     readEEPROM().applyTo(sys);
     sys.state.resetState();
 
+    sys.version.display(sys.led);
+
     setBluetoothUart(sys.name);
 
     sys.state.set(STATUS_BMP_FAIL);

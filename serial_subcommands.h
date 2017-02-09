@@ -28,6 +28,7 @@ enum SerialComm::Commands : uint8_t {
     REINIT_PARTIAL_EEPROM_DATA,
     REQ_PARTIAL_EEPROM_DATA,
     REQ_CARD_RECORDING_STATE,
+    SET_PARTIAL_TEMPORARY_CONFIG,
     END_OF_COMMANDS,
 };
 
@@ -246,6 +247,18 @@ DO_SUBCOMMAND(REQ_CARD_RECORDING_STATE) {
     }
     payload.Append(flags);
     WriteToOutput(payload);
+    return true;
+}
+
+DO_SUBCOMMAND(SET_PARTIAL_TEMPORARY_CONFIG) {
+    Config tmp_config(*systems);
+    if (!tmp_config.readPartialFrom(input)) {
+        return false;
+    }
+    if (!tmp_config.verify()) {
+        return false;
+    }
+    tmp_config.applyTo(*systems);
     return true;
 }
 
