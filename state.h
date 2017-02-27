@@ -15,9 +15,11 @@
 #include <cstdint>
 #include "localization.h"
 
+struct Systems;
+
 class State {
    public:
-    State();
+    explicit State(Systems* sys);
 
     // timing
     uint32_t loopCount = 0;
@@ -38,11 +40,6 @@ class State {
     float mag[3] = {0.0, 0.0, 0.0};                                                 // milligauss -- (x,y,z)
     float accel_filter[3] = {0.0, 0.0, 0.0}, accel_filter_sq[3] = {0.0, 0.0, 0.0};  // for stability variance calculation
     float gyro_filter[3] = {0.0, 0.0, 0.0};                                         // for gyro drift correction
-
-    // BMP280
-    uint16_t temperature = 0;
-    uint32_t pressure = 0;
-    uint32_t p0 = 25600000;  // initial pressure, set to 1 bar by default
 
     // Command
     int16_t command_invalid_count = 0;
@@ -97,7 +94,7 @@ class State {
     uint32_t lastUpdateMicros = 0;  // 1.2 hrs should be enough
 
     Localization localization;
-
+    Systems* sys_;
 };  // end of class State
 
 #define DEG2RAD 0.01745329251f

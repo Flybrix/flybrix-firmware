@@ -9,11 +9,9 @@
 #include "BMP280.h"
 #include <math.h>
 #include <i2c_t3.h>
-#include "state.h"
 #include <stdint.h>
 
-BMP280::BMP280(State *__state, I2CManager *__i2c) {
-    state = __state;
+BMP280::BMP280(I2CManager *__i2c) {
     i2c = __i2c;
     ready = false;
 }
@@ -83,8 +81,8 @@ void BMP280::triggerCallback() {
     int32_t rawP, rawT;
     rawP = (((int32_t)data_to_read[0]) << 12) + (((int32_t)data_to_read[1]) << 4) + (((int32_t)data_to_read[2]) >> 4);
     rawT = (((int32_t)data_to_read[3]) << 12) + (((int32_t)data_to_read[4]) << 4) + (((int32_t)data_to_read[5]) >> 4);
-    state->temperature = compensate_T_int32(rawT);  // calculate temp first to update t_fine
-    state->pressure = compensate_P_int64(rawP);
+    temperature = compensate_T_int32(rawT);  // calculate temp first to update t_fine
+    pressure = compensate_P_int64(rawP);
     ready = true;
 }
 

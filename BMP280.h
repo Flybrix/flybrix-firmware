@@ -15,8 +15,6 @@
 #include "Arduino.h"
 #include "i2cManager.h"
 
-class State;
-
 struct __attribute__((packed)) BMP_calibration {
     uint16_t dig_T1;    // 0x88 / 0x89 dig_T1 unsigned short
     int16_t dig_T2;     // 0x8A / 0x8B dig_T2 signed short
@@ -40,7 +38,7 @@ union BMP_calibration_union {
 
 class BMP280 : public CallbackProcessor {
    public:
-    BMP280(State *state, I2CManager *i2c);  // base type
+    explicit BMP280(I2CManager *i2c);  // base type
 
     void restart();
 
@@ -51,8 +49,11 @@ class BMP280 : public CallbackProcessor {
     bool startMeasurement();
     void triggerCallback();  // handles return for getPT()
 
+    uint16_t temperature = 0;
+    uint32_t pressure = 0;
+    uint32_t p0 = 25600000;  // initial pressure, set to 1 bar by default
+
    private:
-    State *state;
     I2CManager *i2c;
 
     uint8_t getStatusByte();

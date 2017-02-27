@@ -71,11 +71,11 @@ void setup() {
     if (sys.bmp.getID() == 0x58) {
         sys.state.clear(STATUS_BMP_FAIL);
         // state is unhappy without an initial pressure
-        sys.bmp.startMeasurement();         // important; otherwise we'll never set ready!
-        sys.i2c.update();                   // write data
-        delay(2);                           // wait for data to arrive
-        sys.i2c.update();                   // read data
-        sys.state.p0 = sys.state.pressure;  // initialize reference pressure
+        sys.bmp.startMeasurement();     // important; otherwise we'll never set ready!
+        sys.i2c.update();               // write data
+        delay(2);                       // wait for data to arrive
+        sys.i2c.update();               // read data
+        sys.bmp.p0 = sys.bmp.pressure;  // initialize reference pressure
     } else {
         sys.led.update();
         while (1)

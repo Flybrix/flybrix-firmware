@@ -3,6 +3,8 @@
 
 #include "serial_impl.h"
 
+#include "systems.h"
+
 enum SerialComm::States : uint8_t {
     MICROS,
     STATUS,
@@ -59,8 +61,8 @@ READ_SUBSTATE_PAYLOAD(I1, state->I1_raw)
 READ_SUBSTATE_PAYLOAD(ACCEL, state->accel)
 READ_SUBSTATE_PAYLOAD(GYRO, state->gyro)
 READ_SUBSTATE_PAYLOAD(MAG, state->mag)
-READ_SUBSTATE_PAYLOAD(TEMPERATURE, state->temperature)
-READ_SUBSTATE_PAYLOAD(PRESSURE, state->pressure)
+READ_SUBSTATE_PAYLOAD(TEMPERATURE, bmp->temperature)
+READ_SUBSTATE_PAYLOAD(PRESSURE, bmp->pressure)
 
 READ_SUBSTATE(RX_PPM) {
     for (std::size_t i = 0; i < 6; ++i) {

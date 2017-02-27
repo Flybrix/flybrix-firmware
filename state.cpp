@@ -9,6 +9,8 @@
 
 #include <Arduino.h>
 
+#include "systems.h"
+
 // DEFAULT FILTER SETTINGS
 
 #define STATE_EXPECTED_TIME_STEP 0.002f  // 500Hz
@@ -20,7 +22,7 @@
 State::Parameters::Parameters() : state_estimation{1.0, 0.01}, enable{0.001, 30.0} {
 }
 
-State::State() : localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, FilterType::Madgwick, parameters.state_estimation, STATE_BARO_VARIANCE) {
+State::State(Systems* sys) : localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, FilterType::Madgwick, parameters.state_estimation, STATE_BARO_VARIANCE), sys_{sys} {
 }
 
 bool State::stable(void) {
@@ -118,8 +120,8 @@ void State::resetState() {
     kinematicsRate[0] = 0.0f;  // radians -- pitch/roll/yaw (x,y,z)
     kinematicsRate[1] = 0.0f;
     kinematicsRate[2] = 0.0f;
-    kinematicsAltitude = 0.0f;  // meters
-    p0 = pressure;              // reset filter to current value
+    kinematicsAltitude = 0.0f;          // meters
+    sys_->bmp.p0 = sys_->bmp.pressure;  // reset filter to current value
     localization = Localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, FilterType::Madgwick, parameters.state_estimation, STATE_BARO_VARIANCE);
 }
 
@@ -157,7 +159,7 @@ void State::updateStateIMU(uint32_t currentTime) {
 }
 
 void State::updateStatePT(uint32_t currentTime) {
-    localization.ProcessMeasurementPT(currentTime, STATE_P_SCALE * p0, STATE_P_SCALE * pressure, STATE_T_SCALE * temperature);
+    localization.ProcessMeasurementPT(currentTime, STATE_P_SCALE * sys_->bmp.p0, STATE_P_SCALE * sys_->bmp.pressure, STATE_T_SCALE * sys_->bmp.temperature);
     kinematicsAltitude = localization.getElevation();
 }
 
