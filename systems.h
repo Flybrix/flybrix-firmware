@@ -20,7 +20,6 @@
 #include "control.h"
 #include "i2cManager.h"
 #include "led.h"
-#include "motors.h"
 #include "power.h"
 #include "serial.h"
 #include "state.h"
@@ -42,7 +41,6 @@ struct Systems {
     MPU9250 mpu;
     AK8963 mag;
     PowerMonitor pwr;
-    Motors motors;
     Airframe airframe;
     PilotCommand pilot;
     Control control;

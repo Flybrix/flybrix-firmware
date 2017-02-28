@@ -51,8 +51,8 @@ template <uint8_t I = 0>
 }
 }
 
-SerialComm::SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, Systems* systems, LED* led, PilotCommand* command, BMP280* bmp)
-    : state{state}, ppm{ppm}, control{control}, systems{systems}, led{led}, command{command}, bmp{bmp} {
+SerialComm::SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, Systems* systems, LED* led, PilotCommand* command, BMP280* bmp, Airframe* airframe)
+    : state{state}, ppm{ppm}, control{control}, systems{systems}, led{led}, command{command}, bmp{bmp}, airframe{airframe} {
 }
 
 void SerialComm::Read() {

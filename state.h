@@ -50,9 +50,6 @@ class State {
     // Control
     float Fz = 0, Tx = 0, Ty = 0, Tz = 0;  // control vectors (forces/torques)
 
-    // Airframe
-    uint16_t MotorOut[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-
     // Kinematics
     float kinematicsAngle[3] = {0.0f, 0.0f, 0.0f};  // radians -- pitch/roll/yaw (x,y,z)
     float kinematicsRate[3] = {0.0f, 0.0f, 0.0f};   // radians/sec -- pitch/roll/yaw (x,y,z) rates
@@ -67,6 +64,7 @@ class State {
     void updateStateIMU(uint32_t currentTime);
     void updateStatePT(uint32_t currentTime);
     void updateStateMag();
+    bool motorsEnabled();
 
     // const float* q; //quaternion storage for logging
     float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};

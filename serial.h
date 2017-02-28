@@ -12,6 +12,7 @@
 #define serial_h
 
 #include <Arduino.h>
+#include "airframe.h"
 #include "BMP280.h"
 #include "cobs.h"
 
@@ -41,7 +42,7 @@ class SerialComm {
     enum Commands : uint8_t;
     enum States : uint8_t;
 
-    SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, Systems* systems, LED* led, PilotCommand* command, BMP280* bmp);
+    SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, Systems* systems, LED* led, PilotCommand* command, BMP280* bmp, Airframe* airframe);
 
     void Read();
 
@@ -75,6 +76,7 @@ class SerialComm {
     PilotCommand* command;
 
     BMP280* bmp;
+    Airframe* airframe;
 
     uint16_t send_state_delay{1001};  // anything over 1000 turns off state messages
     uint16_t sd_card_state_delay{2};  // write to SD at the highest rate by default

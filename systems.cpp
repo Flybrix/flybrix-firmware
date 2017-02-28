@@ -20,12 +20,11 @@ Systems::Systems()
       mpu{&state, &i2c},  // inertial sensor object
       mag{&state, &i2c},  // magnetometer
       pwr{&state},        // onboard power monitoring object
-      motors{&state},     // eight PWM channels
       airframe{&state},
       pilot{&state, &receiver},
       control{&state, Control::PIDParameters()},
       // listen for configuration inputs
-      conf{&state, RX, &control, this, &led, &pilot, &this->bmp},
+      conf{&state, RX, &control, this, &led, &pilot, &bmp, &airframe},
       id{0} {
     Config().applyTo(*this);
 }

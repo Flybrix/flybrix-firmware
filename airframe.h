@@ -12,6 +12,7 @@
 #define airframe_h
 
 #include <cstdint>
+#include "motors.h"
 
 class State;
 
@@ -32,6 +33,8 @@ class Airframe {
     } mix_table;
 
     static_assert(sizeof(MixTable) == 4 * 8, "Data is not packed");
+
+    Motors motors;
 
    private:
     uint16_t mix(int32_t mFz, int32_t mTx, int32_t mTy, int32_t mTz);

@@ -80,35 +80,75 @@ DO_SUBCOMMAND(REQ_ENABLE_ITERATION) {
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_0) {
-    return input.ParseInto(state->MotorOut[0]);
+    uint16_t buffer;
+    if (!input.ParseInto(buffer)) {
+        return false;
+    }
+    airframe->motors.set(0, buffer);
+    return true;
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_1) {
-    return input.ParseInto(state->MotorOut[1]);
+    uint16_t buffer;
+    if (!input.ParseInto(buffer)) {
+        return false;
+    }
+    airframe->motors.set(1, buffer);
+    return true;
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_2) {
-    return input.ParseInto(state->MotorOut[2]);
+    uint16_t buffer;
+    if (!input.ParseInto(buffer)) {
+        return false;
+    }
+    airframe->motors.set(2, buffer);
+    return true;
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_3) {
-    return input.ParseInto(state->MotorOut[3]);
+    uint16_t buffer;
+    if (!input.ParseInto(buffer)) {
+        return false;
+    }
+    airframe->motors.set(3, buffer);
+    return true;
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_4) {
-    return input.ParseInto(state->MotorOut[4]);
+    uint16_t buffer;
+    if (!input.ParseInto(buffer)) {
+        return false;
+    }
+    airframe->motors.set(4, buffer);
+    return true;
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_5) {
-    return input.ParseInto(state->MotorOut[5]);
+    uint16_t buffer;
+    if (!input.ParseInto(buffer)) {
+        return false;
+    }
+    airframe->motors.set(5, buffer);
+    return true;
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_6) {
-    return input.ParseInto(state->MotorOut[6]);
+    uint16_t buffer;
+    if (!input.ParseInto(buffer)) {
+        return false;
+    }
+    airframe->motors.set(6, buffer);
+    return true;
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_7) {
-    return input.ParseInto(state->MotorOut[7]);
+    uint16_t buffer;
+    if (!input.ParseInto(buffer)) {
+        return false;
+    }
+    airframe->motors.set(7, buffer);
+    return true;
 }
 
 DO_SUBCOMMAND(SET_COMMAND_OVERRIDE) {

@@ -18,7 +18,7 @@ uint16_t Airframe::mix(int32_t mFz, int32_t mTx, int32_t mTy, int32_t mTz) {
 
 void Airframe::updateMotorsMix() {
     for (size_t i = 0; i < 8; ++i)
-        state->MotorOut[i] = mix(mix_table.fz[i], mix_table.tx[i], mix_table.ty[i], mix_table.tz[i]);
+        motors.set(i, mix(mix_table.fz[i], mix_table.tx[i], mix_table.ty[i], mix_table.tz[i]));
 }
 
 // default configuration is the flat8 octocopter:

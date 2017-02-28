@@ -6,9 +6,8 @@
 
 #include "motors.h"
 #include "board.h"
-#include "state.h"
 
-Motors::Motors(State* state) : state(state) {
+Motors::Motors() {
     // REFERENCE: https://www.pjrc.com/teensy/td_pulse.html
     analogWriteResolution(12);  // actual resolution depends on frequency
 
@@ -19,12 +18,10 @@ Motors::Motors(State* state) : state(state) {
         analogWriteFrequency(ftm, 11718);
 }
 
-void Motors::updateAllChannels() {
-    bool motors_enabled{state->is(STATUS_ENABLED) || state->is(STATUS_OVERRIDE)};
-
+void Motors::updateAllChannels(bool enabled) {
     for (uint8_t motor = 0; motor < 8; motor++) {
         // 12 bit output
-        state->MotorOut[motor] = constrain(state->MotorOut[motor], 0, 4095);
-        analogWrite(board::PWM[motor], motors_enabled ? state->MotorOut[motor] : 0);
+        output_[motor] = constrain(output_[motor], 0, 4095);
+        analogWrite(board::PWM[motor], enabled ? output_[motor] : 0);
     }
 }

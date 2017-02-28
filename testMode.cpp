@@ -15,11 +15,11 @@
 #include "state.h"
 
 void runTestRoutine(State& state, LED& led, Motors& motors, size_t led_id, size_t motor_id) {
-    for (auto& motorOut : state.MotorOut) {
-        motorOut = 0;
+    for (std::size_t id{0}; id < 8; ++id) {
+        motors.set(id, 0);
     }
-    state.MotorOut[motor_id] = 4095;
-    motors.updateAllChannels();
+    motors.set(motor_id, 4095);
+    motors.updateAllChannels(true);
     led.setWhite(board::led::POSITION[led_id], board::led::POSITION[led_id], led_id % 2 == 0, led_id % 2 == 1);
     led.update();
 }

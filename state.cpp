@@ -112,6 +112,10 @@ bool State::is(const uint16_t status_code) const {
     return (status & status_code);
 }
 
+bool State::motorsEnabled() {
+    return is(STATUS_ENABLED || STATUS_OVERRIDE);
+}
+
 void State::resetState() {
     localization.setTime(0.0f);
     kinematicsAngle[0] = 0.0f;  // radians -- pitch/roll/yaw (x,y,z)
