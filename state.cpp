@@ -102,13 +102,7 @@ void State::disableMotors(void) {
 
 void State::resetState() {
     localization.setTime(0.0f);
-    kinematicsAngle[0] = 0.0f;  // radians -- pitch/roll/yaw (x,y,z)
-    kinematicsAngle[1] = 0.0f;
-    kinematicsAngle[2] = 0.0f;
-    kinematicsRate[0] = 0.0f;  // radians -- pitch/roll/yaw (x,y,z)
-    kinematicsRate[1] = 0.0f;
-    kinematicsRate[2] = 0.0f;
-    kinematicsAltitude = 0.0f;          // meters
+    sys_->kinematics = Kinematics();
     sys_->bmp.p0 = sys_->bmp.pressure;  // reset filter to current value
     localization = Localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, FilterType::Madgwick, parameters.state_estimation, STATE_BARO_VARIANCE);
 }
@@ -130,10 +124,13 @@ void State::updateStateIMU(uint32_t currentTime) {
         accel_filter_sq[i] = 0.1 * accel[i] * accel[i] + 0.9 * accel_filter_sq[i];
     }
 
-    for (int i = 0; i < 3; i++) {
-        kinematicsRate[i] = gyro[i] * DEG2RAD;
-    }
-    localization.ProcessMeasurementIMU(currentTime, kinematicsRate, accel);
+    const float rate_scaled[3] = {gyro[0] * DEG2RAD, gyro[1] * DEG2RAD, gyro[2] * DEG2RAD};
+
+    sys_->kinematics.rate.pitch = rate_scaled[0];
+    sys_->kinematics.rate.roll = rate_scaled[1];
+    sys_->kinematics.rate.yaw = rate_scaled[2];
+
+    localization.ProcessMeasurementIMU(currentTime, rate_scaled, accel);
 
     const float* q = localization.getAhrsQuaternion();
     float r11 = 2.0f * (q[2] * q[3] + q[1] * q[0]);
@@ -141,14 +138,14 @@ void State::updateStateIMU(uint32_t currentTime) {
     float r21 = -2.0f * (q[2] * q[0] - q[1] * q[3]);
     float r31 = 2.0f * (q[3] * q[0] + q[1] * q[2]);
     float r32 = q[1] * q[1] - q[2] * q[2] - q[3] * q[3] + q[0] * q[0];
-    kinematicsAngle[0] = -atan2(r11, r12);
-    kinematicsAngle[1] = asin(r21);
-    kinematicsAngle[2] = -atan2(r31, r32);
+    sys_->kinematics.angle.pitch = -atan2(r11, r12);
+    sys_->kinematics.angle.roll = asin(r21);
+    sys_->kinematics.angle.yaw = -atan2(r31, r32);
 }
 
 void State::updateStatePT(uint32_t currentTime) {
     localization.ProcessMeasurementPT(currentTime, STATE_P_SCALE * sys_->bmp.p0, STATE_P_SCALE * sys_->bmp.pressure, STATE_T_SCALE * sys_->bmp.temperature);
-    kinematicsAltitude = localization.getElevation();
+    sys_->kinematics.altitude = localization.getElevation();
 }
 
 void State::updateStateMag() {

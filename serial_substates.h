@@ -3,6 +3,7 @@
 
 #include "serial_impl.h"
 
+#include "kinematics.h"
 #include "stateFlag.h"
 
 enum SerialComm::States : uint8_t {
@@ -110,9 +111,9 @@ READ_SUBSTATE(MOTOR_OUT) {
     airframe_.writeMotorsTo(payload);
 }
 
-READ_SUBSTATE_PAYLOAD(KINE_ANGLE, state_.kinematicsAngle)
-READ_SUBSTATE_PAYLOAD(KINE_RATE, state_.kinematicsRate)
-READ_SUBSTATE_PAYLOAD(KINE_ALTITUDE, state_.kinematicsAltitude)
+READ_SUBSTATE_PAYLOAD(KINE_ANGLE, kinematics_.angle)
+READ_SUBSTATE_PAYLOAD(KINE_RATE, kinematics_.rate)
+READ_SUBSTATE_PAYLOAD(KINE_ALTITUDE, kinematics_.altitude)
 READ_SUBSTATE_PAYLOAD(LOOP_COUNT, state_.loopCount)
 
 #undef READ_SUBSTATE

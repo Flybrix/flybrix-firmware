@@ -22,6 +22,7 @@ class LED;
 class State;
 class StateFlag;
 struct Systems;
+struct Kinematics;
 
 using CobsPayloadGeneric = CobsPayload<1000>;  // impacts memory use only; packet size should be <= client packet size
 
@@ -77,6 +78,7 @@ class SerialComm {
     const BMP280& bmp_;
     Airframe& airframe_;
     StateFlag& flag_;
+    Kinematics& kinematics_;
 
     uint16_t send_state_delay{1001};  // anything over 1000 turns off state messages
     uint16_t sd_card_state_delay{2};  // write to SD at the highest rate by default

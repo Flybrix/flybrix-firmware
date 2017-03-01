@@ -44,11 +44,6 @@ class State {
     // Control
     float Fz = 0, Tx = 0, Ty = 0, Tz = 0;  // control vectors (forces/torques)
 
-    // Kinematics
-    float kinematicsAngle[3] = {0.0f, 0.0f, 0.0f};  // radians -- pitch/roll/yaw (x,y,z)
-    float kinematicsRate[3] = {0.0f, 0.0f, 0.0f};   // radians/sec -- pitch/roll/yaw (x,y,z) rates
-    float kinematicsAltitude = 0.0f;                // meters
-
     // Motors
     void processMotorEnablingIteration();  // must be called ~80 times to enable motors.
     void disableMotors();

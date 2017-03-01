@@ -27,6 +27,7 @@
 #include "devicename.h"
 #include "config.h"
 #include "stateFlag.h"
+#include "kinematics.h"
 
 struct Systems {
     Systems();
@@ -35,6 +36,7 @@ struct Systems {
     StateFlag flag;
     R415X receiver;
 
+    Kinematics kinematics;
     I2CManager i2c;
     State state;
     LED led;

@@ -17,6 +17,7 @@
 
 class PID;
 class State;
+class Kinematics;
 
 class Control {
    public:
@@ -25,7 +26,7 @@ class Control {
     Control(State* state, const PIDParameters& config);
     void parseConfig();
 
-    void calculateControlVectors();
+    void calculateControlVectors(const Kinematics& input);
 
     State* state;
 

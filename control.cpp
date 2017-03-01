@@ -7,6 +7,7 @@
 #include "control.h"
 #include "debug.h"
 #include "state.h"
+#include "kinematics.h"
 
 #define BYPASS_THRUST_MASTER 1 << 0
 #define BYPASS_PITCH_MASTER 1 << 1
@@ -107,15 +108,19 @@ void Control::parseConfig() {
     yaw_pid.IntegralReset();
 }
 
-void Control::calculateControlVectors() {
-    thrust_pid.setMasterInput(state->kinematicsAltitude);
-    thrust_pid.setSlaveInput(0.0f);  // state->kinematicsClimbRate
-    pitch_pid.setMasterInput(state->kinematicsAngle[0] * 57.2957795f);
-    pitch_pid.setSlaveInput(state->kinematicsRate[0] * 57.2957795f);
-    roll_pid.setMasterInput(state->kinematicsAngle[1] * 57.2957795f);
-    roll_pid.setSlaveInput(state->kinematicsRate[1] * 57.2957795f);
-    yaw_pid.setMasterInput(state->kinematicsAngle[2] * 57.2957795f);
-    yaw_pid.setSlaveInput(state->kinematicsRate[2] * 57.2957795f);
+float radToDeg(float v) {
+    return v * 57.2957795f;
+}
+
+void Control::calculateControlVectors(const Kinematics& input) {
+    thrust_pid.setMasterInput(input.altitude);
+    thrust_pid.setSlaveInput(0.0f);  // input.ClimbRate
+    pitch_pid.setMasterInput(radToDeg(input.angle.pitch));
+    pitch_pid.setSlaveInput(radToDeg(input.rate.pitch));
+    roll_pid.setMasterInput(radToDeg(input.angle.roll));
+    roll_pid.setSlaveInput(radToDeg(input.rate.roll));
+    yaw_pid.setMasterInput(radToDeg(input.angle.yaw));
+    yaw_pid.setSlaveInput(radToDeg(input.rate.yaw));
 
     thrust_pid.setSetpoint(state->command_throttle * (1.0f / 4095.0f) * thrust_pid.getScalingFactor(pidEnabled[THRUST_MASTER], pidEnabled[THRUST_SLAVE], pid_parameters.thrust_gain));
     pitch_pid.setSetpoint(state->command_pitch * (1.0f / 2047.0f) * pitch_pid.getScalingFactor(pidEnabled[PITCH_MASTER], pidEnabled[PITCH_SLAVE], pid_parameters.pitch_gain));

@@ -53,7 +53,15 @@ template <uint8_t I = 0>
 }
 
 SerialComm::SerialComm(Systems& systems, const volatile uint16_t* ppm)
-    : state_(systems.state), ppm{ppm}, control_(systems.control), systems_(systems), led_(systems.led), bmp_(systems.bmp), airframe_(systems.airframe), flag_(systems.flag) {
+    : state_(systems.state),
+      ppm{ppm},
+      control_(systems.control),
+      systems_(systems),
+      led_(systems.led),
+      bmp_(systems.bmp),
+      airframe_(systems.airframe),
+      flag_(systems.flag),
+      kinematics_(systems.kinematics) {
 }
 
 void SerialComm::Read() {

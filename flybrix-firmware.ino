@@ -139,7 +139,7 @@ void loop() {
     sys.i2c.update();
 
     if (!sys.airframe.motorsOverridden()) {  // user isn't changing motor levels using Configurator
-        sys.control.calculateControlVectors();
+        sys.control.calculateControlVectors(sys.kinematics);
     }
     sys.airframe.applyChanges();
 
