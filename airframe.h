@@ -19,7 +19,25 @@ class State;
 class Airframe {
    public:
     Airframe(State* state);
-    void updateMotorsMix();
+    void setMotorsToMixTable();
+    void setMotor(size_t index, uint16_t value);
+    void resetMotors();
+    void applyChanges(bool enabled);
+
+    template <typename Tstream>
+    bool readMotor(size_t index, Tstream& input) {
+        uint16_t buffer;
+        if (!input.ParseInto(buffer)) {
+            return false;
+        }
+        setMotor(index, buffer);
+        return true;
+    }
+
+    template <typename Tstream>
+    void writeMotorsTo(Tstream& output) {
+        motors_.writeTo(output);
+    }
 
     struct __attribute__((packed)) MixTable {
         MixTable();
@@ -34,9 +52,8 @@ class Airframe {
 
     static_assert(sizeof(MixTable) == 4 * 8, "Data is not packed");
 
-    Motors motors;
-
    private:
+    Motors motors_;
     uint16_t mix(int32_t mFz, int32_t mTx, int32_t mTy, int32_t mTz);
     State* state;
 };

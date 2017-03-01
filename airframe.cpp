@@ -16,9 +16,21 @@ uint16_t Airframe::mix(int32_t mFz, int32_t mTx, int32_t mTy, int32_t mTz) {
     return constrain((mFz * state->Fz + mTx * state->Tx + mTy * state->Ty + mTz * state->Tz) / mmax, 0, 4095);
 }
 
-void Airframe::updateMotorsMix() {
+void Airframe::setMotorsToMixTable() {
     for (size_t i = 0; i < 8; ++i)
-        motors.set(i, mix(mix_table.fz[i], mix_table.tx[i], mix_table.ty[i], mix_table.tz[i]));
+        motors_.set(i, mix(mix_table.fz[i], mix_table.tx[i], mix_table.ty[i], mix_table.tz[i]));
+}
+
+void Airframe::setMotor(size_t index, uint16_t value) {
+    motors_.set(index, value);
+}
+
+void Airframe::resetMotors() {
+    motors_.reset();
+}
+
+void Airframe::applyChanges(bool enabled) {
+    motors_.updateAllChannels(enabled);
 }
 
 // default configuration is the flat8 octocopter:

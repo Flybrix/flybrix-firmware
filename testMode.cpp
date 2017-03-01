@@ -11,25 +11,23 @@
 
 #include "Arduino.h"
 #include "led.h"
-#include "motors.h"
+#include "airframe.h"
 #include "state.h"
 
-void runTestRoutine(State& state, LED& led, Motors& motors, size_t led_id, size_t motor_id) {
-    for (std::size_t id{0}; id < 8; ++id) {
-        motors.set(id, 0);
-    }
-    motors.set(motor_id, 4095);
-    motors.updateAllChannels(true);
+void runTestRoutine(State& state, LED& led, Airframe& airframe, size_t led_id, size_t motor_id) {
+    airframe.resetMotors();
+    airframe.setMotor(motor_id, 4095);
+    airframe.applyChanges(true);
     led.setWhite(board::led::POSITION[led_id], board::led::POSITION[led_id], led_id % 2 == 0, led_id % 2 == 1);
     led.update();
 }
 
-void runTestMode(State& state, LED& led, Motors& motors) {
+void runTestMode(State& state, LED& led, Airframe& airframe) {
     state.set(STATUS_ENABLED);
     size_t led_id{0};
     size_t motor_id{0};
     while (true) {
-        runTestRoutine(state, led, motors, led_id, motor_id);
+        runTestRoutine(state, led, airframe, led_id, motor_id);
         led_id = (led_id + 1) % 4;
         motor_id = (motor_id + 1) % 8;
         delay(500);

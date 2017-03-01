@@ -27,6 +27,17 @@ class Motors {
         output_[index] = value;
     }
 
+    void reset() {
+        for (auto& v : output_) {
+            v = 0;
+        }
+    };
+
+    template <typename Tstream>
+    void writeTo(Tstream& output) {
+        output.Append(output_);
+    }
+
    private:
     uint16_t output_[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 };

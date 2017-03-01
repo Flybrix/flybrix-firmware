@@ -106,7 +106,10 @@ READ_SUBSTATE(PID_TZ_SLAVE) {
     WritePIDData(payload, control->yaw_pid.slave());
 }
 
-READ_SUBSTATE_PAYLOAD(MOTOR_OUT, airframe->motors)
+READ_SUBSTATE(MOTOR_OUT) {
+    airframe->writeMotorsTo(payload);
+}
+
 READ_SUBSTATE_PAYLOAD(KINE_ANGLE, state->kinematicsAngle)
 READ_SUBSTATE_PAYLOAD(KINE_RATE, state->kinematicsRate)
 READ_SUBSTATE_PAYLOAD(KINE_ALTITUDE, state->kinematicsAltitude)
