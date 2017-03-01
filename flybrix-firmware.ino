@@ -138,7 +138,7 @@ void loop() {
 
     sys.i2c.update();
 
-    if (!sys.state.is(STATUS_OVERRIDE)) {  // user isn't changing motor levels using Configurator
+    if (!sys.airframe.motorsOverridden()) {  // user isn't changing motor levels using Configurator
         sys.control.calculateControlVectors();
     }
     sys.airframe.applyChanges();

@@ -26,6 +26,9 @@ class Airframe {
     void setOverride(bool override);
     void applyChanges();
 
+    bool motorsEnabled() const;
+    bool motorsOverridden() const;
+
     template <typename Tstream>
     bool readMotor(size_t index, Tstream& input) {
         uint16_t buffer;

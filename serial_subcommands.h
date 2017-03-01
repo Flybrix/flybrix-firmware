@@ -118,11 +118,6 @@ DO_SUBCOMMAND(SET_COMMAND_OVERRIDE) {
     }
     bool override = flag != 0;
     airframe->setOverride(override);
-    if (override) {
-        state->set(STATUS_OVERRIDE);
-    } else {
-        state->clear(STATUS_OVERRIDE);
-    }
     return true;
 }
 

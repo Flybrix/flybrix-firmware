@@ -64,7 +64,6 @@ class State {
     void updateStateIMU(uint32_t currentTime);
     void updateStatePT(uint32_t currentTime);
     void updateStateMag();
-    bool motorsEnabled();
 
     // const float* q; //quaternion storage for logging
     float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};

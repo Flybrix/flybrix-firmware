@@ -52,7 +52,7 @@ bool State::upright(void) {
 }
 
 void State::processMotorEnablingIteration(void) {
-    if (is(STATUS_ENABLED)) {  // lazy GUI calls...
+    if (sys_->airframe.motorsEnabled()) {  // lazy GUI calls...
         // ERROR: ("DEBUG: extra call to processMotorEnablingIteration()!");
     } else if (is(STATUS_IDLE)) {  // first call
         clear(STATUS_IDLE);
@@ -85,7 +85,6 @@ void State::processMotorEnablingIteration(void) {
 
             } else {
                 clear(STATUS_ENABLING);
-                set(STATUS_ENABLED);
                 sys_->airframe.enableMotors();
             }
         }
@@ -94,7 +93,6 @@ void State::processMotorEnablingIteration(void) {
 
 void State::disableMotors(void) {
     clear(STATUS_BATTERY_LOW);
-    clear(STATUS_ENABLED);
     sys_->airframe.disableMotors();
     clear(STATUS_FAIL_STABILITY);
     clear(STATUS_FAIL_ANGLE);
@@ -112,10 +110,6 @@ void State::clear(const uint16_t status_code) {
 
 bool State::is(const uint16_t status_code) const {
     return (status & status_code);
-}
-
-bool State::motorsEnabled() {
-    return is(STATUS_ENABLED || STATUS_OVERRIDE);
 }
 
 void State::resetState() {

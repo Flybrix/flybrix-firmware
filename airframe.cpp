@@ -31,14 +31,21 @@ void Airframe::resetMotors() {
 
 void Airframe::enableMotors() {
     enabled_ = true;
+    state->set(STATUS_ENABLED);
 }
 
 void Airframe::disableMotors() {
     enabled_ = false;
+    state->clear(STATUS_ENABLED);
 }
 
 void Airframe::setOverride(bool override) {
     override_ = override;
+    if (override_) {
+        state->set(STATUS_OVERRIDE);
+    } else {
+        state->clear(STATUS_OVERRIDE);
+    }
 }
 
 void Airframe::applyChanges() {
@@ -46,6 +53,14 @@ void Airframe::applyChanges() {
         setMotorsToMixTable();
     }
     motors_.updateAllChannels(enabled_ || override_);
+}
+
+bool Airframe::motorsEnabled() const {
+    return enabled_;
+}
+
+bool Airframe::motorsOverridden() const {
+    return override_;
 }
 
 // default configuration is the flat8 octocopter:
