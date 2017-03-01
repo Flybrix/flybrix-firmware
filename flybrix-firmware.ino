@@ -52,7 +52,7 @@ void setup() {
 
     // MPU9250 is limited to 400kHz bus speed.
     Wire.begin(I2C_MASTER, 0x00, board::I2C_PINS, board::I2C_PULLUP, I2C_RATE_400);  // For I2C pins 18 and 19
-    sys.state.set(STATUS_BOOT);
+    sys.state.set(Status::BOOT);
     sys.led.update();
 
     bool go_to_test_mode{isEmptyEEPROM()};
@@ -65,11 +65,11 @@ void setup() {
 
     setBluetoothUart(sys.name);
 
-    sys.state.set(STATUS_BMP_FAIL);
+    sys.state.set(Status::BMP_FAIL);
     sys.led.update();
     sys.bmp.restart();
     if (sys.bmp.getID() == 0x58) {
-        sys.state.clear(STATUS_BMP_FAIL);
+        sys.state.clear(Status::BMP_FAIL);
         // state is unhappy without an initial pressure
         sys.bmp.startMeasurement();     // important; otherwise we'll never set ready!
         sys.i2c.update();               // write data
@@ -82,12 +82,12 @@ void setup() {
             ;
     }
 
-    sys.state.set(STATUS_MPU_FAIL);
+    sys.state.set(Status::MPU_FAIL);
     sys.led.update();
     sys.mpu.restart();
     sys.mag.restart();
     if ((sys.mpu.getID() == 0x71) && (sys.mag.getID() == 0x48)) {
-        sys.state.clear(STATUS_MPU_FAIL);
+        sys.state.clear(Status::MPU_FAIL);
         while (!sys.mpu.startMeasurement()) {
             delay(1);
         };                           // important; otherwise we'll never set ready!
@@ -107,8 +107,8 @@ void setup() {
     // Perform intial check for an SD card
     sdcard::startup();
 
-    sys.state.clear(STATUS_BOOT);
-    sys.state.set(STATUS_IDLE);
+    sys.state.clear(Status::BOOT);
+    sys.state.set(Status::IDLE);
     sys.led.update();
 }
 
@@ -199,13 +199,13 @@ bool ProcessTask<100>::Run() {
         return false;
     }
 
-    if (sys.state.is(STATUS_CLEAR_MPU_BIAS)) {
+    if (sys.state.is(Status::CLEAR_MPU_BIAS)) {
         sys.mpu.forgetBiasValues();
-        sys.state.clear(STATUS_CLEAR_MPU_BIAS);
+        sys.state.clear(Status::CLEAR_MPU_BIAS);
     }
-    if (sys.state.is(STATUS_SET_MPU_BIAS)) {
+    if (sys.state.is(Status::SET_MPU_BIAS)) {
         sys.mpu.correctBiasValues();
-        sys.state.clear(STATUS_SET_MPU_BIAS);
+        sys.state.clear(Status::SET_MPU_BIAS);
     }
 
     sys.conf.Read();  // Respond to commands from the Configurator chrome extension
@@ -230,7 +230,7 @@ bool ProcessTask<40>::Run() {
         if (((20.5 + 226) / 20.5 * 1.2 / 65536 * sys.state.V0_raw) < 2.8f) {
             low_battery_counter++;
             if (low_battery_counter > 40) {
-                sys.state.set(STATUS_BATTERY_LOW);
+                sys.state.set(Status::BATTERY_LOW);
             }
         } else {
             low_battery_counter = 0;
@@ -239,7 +239,7 @@ bool ProcessTask<40>::Run() {
         if (((20.5 + 226) / 20.5 * 1.2 / 65536 * sys.state.V0_raw) < 3.63f) {
             low_battery_counter++;
             if (low_battery_counter > 40) {
-                sys.state.set(STATUS_BATTERY_LOW);
+                sys.state.set(Status::BATTERY_LOW);
             }
         } else {
             low_battery_counter = 0;

@@ -7,10 +7,9 @@
 #include "command.h"
 
 #include "state.h"
-
 #include "R415X.h"
-
 #include "cardManagement.h"
+#include "stateFlag.h"
 
 PilotCommand::PilotCommand(State* __state, R415X* __receiver) : state(__state), receiver(__receiver) {
 }
@@ -19,7 +18,7 @@ void PilotCommand::processCommands(void) {
     bool attempting_to_enable = false;
     bool attempting_to_disable = false;
 
-    if (state->is(STATUS_RX_FAIL)) {
+    if (state->is(Status::RX_FAIL)) {
         state->command_throttle *= 0.99;
     }
 
@@ -42,12 +41,12 @@ void PilotCommand::processCommands(void) {
         if (state->command_invalid_count > 80) {
             // we haven't received data in two seconds
             state->command_invalid_count = 80;
-            state->set(STATUS_RX_FAIL);
+            state->set(Status::RX_FAIL);
         }
     } else if (state->command_invalid_count > 0) {
         state->command_invalid_count--;
         if (state->command_invalid_count == 0) {
-            state->clear(STATUS_RX_FAIL);
+            state->clear(Status::RX_FAIL);
         }
     } else {
         // use valid command data
@@ -60,21 +59,21 @@ void PilotCommand::processCommands(void) {
         state->command_source_mask &= ~(COMMAND_READY_BTLE);
     }
 
-    if (blockEnabling && attempting_to_enable && !state->is(STATUS_OVERRIDE)) {  // user attempted to enable, but we are blocking it
-        state->clear(STATUS_IDLE);
-        state->set(STATUS_FAIL_OTHER);
+    if (blockEnabling && attempting_to_enable && !state->is(Status::OVERRIDE)) {  // user attempted to enable, but we are blocking it
+        state->clear(Status::IDLE);
+        state->set(Status::FAIL_OTHER);
     }
     blockEnabling = false;  // we only block enabling if attempting_to_enable may have been accidentally set
 
-    if (!state->is(STATUS_OVERRIDE)) {
-        if (attempting_to_enable && !state->is(STATUS_ENABLED | STATUS_FAIL_STABILITY | STATUS_FAIL_ANGLE | STATUS_FAIL_OTHER)) {
-            state->processMotorEnablingIteration();  // this can flip STATUS_ENABLED to true
+    if (!state->is(Status::OVERRIDE)) {
+        if (attempting_to_enable && !state->is(Status::ENABLED | Status::FAIL_STABILITY | Status::FAIL_ANGLE | Status::FAIL_OTHER)) {
+            state->processMotorEnablingIteration();  // this can flip Status::ENABLED to true
             recentlyEnabled = true;
             throttleHoldOff = 80;  // @40Hz -- hold for 2 sec
-            if (state->is(STATUS_ENABLED))
+            if (state->is(Status::ENABLED))
                 sdcard::openFile();
         }
-        if (attempting_to_disable && state->is(STATUS_ENABLED | STATUS_FAIL_STABILITY | STATUS_FAIL_ANGLE | STATUS_FAIL_OTHER)) {
+        if (attempting_to_disable && state->is(Status::ENABLED | Status::FAIL_STABILITY | Status::FAIL_ANGLE | Status::FAIL_OTHER)) {
             state->disableMotors();
             sdcard::closeFile();
         }

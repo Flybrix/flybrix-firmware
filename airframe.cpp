@@ -7,6 +7,7 @@
 #include "airframe.h"
 #include <Arduino.h>
 #include "state.h"
+#include "stateFlag.h"
 
 Airframe::Airframe(State* state) : state(state) {
 }
@@ -31,20 +32,20 @@ void Airframe::resetMotors() {
 
 void Airframe::enableMotors() {
     enabled_ = true;
-    state->set(STATUS_ENABLED);
+    state->set(Status::ENABLED);
 }
 
 void Airframe::disableMotors() {
     enabled_ = false;
-    state->clear(STATUS_ENABLED);
+    state->clear(Status::ENABLED);
 }
 
 void Airframe::setOverride(bool override) {
     override_ = override;
     if (override_) {
-        state->set(STATUS_OVERRIDE);
+        state->set(Status::OVERRIDE);
     } else {
-        state->clear(STATUS_OVERRIDE);
+        state->clear(Status::OVERRIDE);
     }
 }
 
