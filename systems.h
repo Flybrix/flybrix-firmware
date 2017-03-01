@@ -26,11 +26,13 @@
 #include "version.h"
 #include "devicename.h"
 #include "config.h"
+#include "stateFlag.h"
 
 struct Systems {
     Systems();
     // subsystem objects initialize pins when created
     // Storing inside a struct forces the right initialization order
+    StateFlag flag;
     R415X receiver;
 
     I2CManager i2c;

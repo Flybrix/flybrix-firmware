@@ -54,7 +54,7 @@ READ_SUBSTATE(MICROS) {
     payload.Append(timestamp_us);
 }
 
-READ_SUBSTATE_PAYLOAD(STATUS, state->status)
+READ_SUBSTATE_PAYLOAD(STATUS, state->status())
 READ_SUBSTATE_PAYLOAD(V0, state->V0_raw)
 READ_SUBSTATE_PAYLOAD(I0, state->I0_raw)
 READ_SUBSTATE_PAYLOAD(I1, state->I1_raw)

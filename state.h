@@ -24,11 +24,10 @@ class State {
     // timing
     uint32_t loopCount = 0;
 
-    // Status bitfield / LED
-    uint16_t status = 0;
     void set(const uint16_t status_bit);
     void clear(const uint16_t status_bit);
     bool is(const uint16_t status_bit) const;
+    uint16_t status() const;
 
     // Power
     uint16_t V0_raw = 0, I0_raw = 0, I1_raw = 0;  // raw ADC levels

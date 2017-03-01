@@ -12,7 +12,8 @@
 #include "config.h"
 
 Systems::Systems()
-    : receiver{},
+    : flag{},
+      receiver{},
       i2c{},
       state{this},
       led{&state},

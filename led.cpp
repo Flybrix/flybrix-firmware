@@ -236,8 +236,8 @@ void LED::set(Pattern pattern, CRGB color, bool red_indicator, bool green_indica
 }
 
 void LED::update() {
-    if (!override && oldStatus != state->status) {
-        oldStatus = state->status;
+    if (!override && oldStatus != state->status()) {
+        oldStatus = state->status();
         changeLights();
     }
     if (LED_driver.getPattern() == LED::ALTERNATE && !(LED_driver.getCycleIndex() & 15)) {
@@ -290,7 +290,7 @@ void LED::changeLights() {
 }
 
 void LED::parseConfig() {
-    oldStatus = ~state->status;
+    oldStatus = ~state->status();
     update();
 }
 

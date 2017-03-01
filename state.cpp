@@ -101,15 +101,19 @@ void State::disableMotors(void) {
 }
 
 void State::set(const uint16_t status_code) {
-    status |= status_code;
+    sys_->flag.set(status_code);
 }
 
 void State::clear(const uint16_t status_code) {
-    status &= ~(status_code);
+    sys_->flag.clear(status_code);
 }
 
 bool State::is(const uint16_t status_code) const {
-    return (status & status_code);
+    return sys_->flag.is(status_code);
+}
+
+uint16_t State::status() const {
+    return sys_->flag.value();
 }
 
 void State::resetState() {
