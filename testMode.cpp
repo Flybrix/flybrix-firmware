@@ -17,13 +17,14 @@
 void runTestRoutine(State& state, LED& led, Airframe& airframe, size_t led_id, size_t motor_id) {
     airframe.resetMotors();
     airframe.setMotor(motor_id, 4095);
-    airframe.applyChanges(true);
+    airframe.applyChanges();
     led.setWhite(board::led::POSITION[led_id], board::led::POSITION[led_id], led_id % 2 == 0, led_id % 2 == 1);
     led.update();
 }
 
 void runTestMode(State& state, LED& led, Airframe& airframe) {
-    state.set(STATUS_ENABLED);
+    airframe.enableMotors();
+    airframe.setOverride(true);
     size_t led_id{0};
     size_t motor_id{0};
     while (true) {

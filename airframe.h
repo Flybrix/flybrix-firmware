@@ -19,10 +19,12 @@ class State;
 class Airframe {
    public:
     Airframe(State* state);
-    void setMotorsToMixTable();
     void setMotor(size_t index, uint16_t value);
     void resetMotors();
-    void applyChanges(bool enabled);
+    void enableMotors();
+    void disableMotors();
+    void setOverride(bool override);
+    void applyChanges();
 
     template <typename Tstream>
     bool readMotor(size_t index, Tstream& input) {
@@ -53,6 +55,10 @@ class Airframe {
     static_assert(sizeof(MixTable) == 4 * 8, "Data is not packed");
 
    private:
+    void setMotorsToMixTable();
+
+    bool enabled_{false};
+    bool override_{false};
     Motors motors_;
     uint16_t mix(int32_t mFz, int32_t mTx, int32_t mTy, int32_t mTz);
     State* state;

@@ -116,7 +116,9 @@ DO_SUBCOMMAND(SET_COMMAND_OVERRIDE) {
     if (!input.ParseInto(flag)) {
         return false;
     }
-    if (flag == 1) {
+    bool override = flag != 0;
+    airframe->setOverride(override);
+    if (override) {
         state->set(STATUS_OVERRIDE);
     } else {
         state->clear(STATUS_OVERRIDE);

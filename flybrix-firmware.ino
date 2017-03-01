@@ -138,14 +138,10 @@ void loop() {
 
     sys.i2c.update();
 
-    if (sys.state.is(STATUS_OVERRIDE)) {  // user is changing motor levels using Configurator
-        sys.airframe.applyChanges(sys.state.motorsEnabled());
-    } else {
+    if (!sys.state.is(STATUS_OVERRIDE)) {  // user isn't changing motor levels using Configurator
         sys.control.calculateControlVectors();
-
-        sys.airframe.setMotorsToMixTable();
-        sys.airframe.applyChanges(sys.state.motorsEnabled());
     }
+    sys.airframe.applyChanges();
 
     RunProcess<1000>(micros());
     sys.i2c.update();

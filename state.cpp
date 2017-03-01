@@ -86,6 +86,7 @@ void State::processMotorEnablingIteration(void) {
             } else {
                 clear(STATUS_ENABLING);
                 set(STATUS_ENABLED);
+                sys_->airframe.enableMotors();
             }
         }
     }
@@ -94,6 +95,7 @@ void State::processMotorEnablingIteration(void) {
 void State::disableMotors(void) {
     clear(STATUS_BATTERY_LOW);
     clear(STATUS_ENABLED);
+    sys_->airframe.disableMotors();
     clear(STATUS_FAIL_STABILITY);
     clear(STATUS_FAIL_ANGLE);
     clear(STATUS_FAIL_OTHER);
