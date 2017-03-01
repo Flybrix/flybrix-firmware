@@ -49,14 +49,14 @@ DO_SUBCOMMAND(SET_EEPROM_DATA) {
     if (!tmp_config.verify()) {
         return false;
     }
-    tmp_config.applyTo(*systems);
+    tmp_config.applyTo(systems_);
     tmp_config.writeTo(EEPROMCursor());
     return true;
 }
 
 DO_SUBCOMMAND(REINIT_EEPROM_DATA) {
     const Config tmp_config;
-    tmp_config.applyTo(*systems);
+    tmp_config.applyTo(systems_);
     tmp_config.writeTo(EEPROMCursor());
     return true;
 }
@@ -72,43 +72,43 @@ DO_SUBCOMMAND(REQ_ENABLE_ITERATION) {
         return false;
     }
     if (flag == 1) {
-        state->processMotorEnablingIteration();
+        state_.processMotorEnablingIteration();
     } else {
-        state->disableMotors();
+        state_.disableMotors();
     }
     return true;
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_0) {
-    return airframe->readMotor(0, input);
+    return airframe_.readMotor(0, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_1) {
-    return airframe->readMotor(1, input);
+    return airframe_.readMotor(1, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_2) {
-    return airframe->readMotor(2, input);
+    return airframe_.readMotor(2, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_3) {
-    return airframe->readMotor(3, input);
+    return airframe_.readMotor(3, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_4) {
-    return airframe->readMotor(4, input);
+    return airframe_.readMotor(4, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_5) {
-    return airframe->readMotor(5, input);
+    return airframe_.readMotor(5, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_6) {
-    return airframe->readMotor(6, input);
+    return airframe_.readMotor(6, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_7) {
-    return airframe->readMotor(7, input);
+    return airframe_.readMotor(7, input);
 }
 
 DO_SUBCOMMAND(SET_COMMAND_OVERRIDE) {
@@ -117,7 +117,7 @@ DO_SUBCOMMAND(SET_COMMAND_OVERRIDE) {
         return false;
     }
     bool override = flag != 0;
-    airframe->setOverride(override);
+    airframe_.setOverride(override);
     return true;
 }
 
@@ -153,7 +153,7 @@ DO_SUBCOMMAND(SET_LED) {
     if (!input.ParseInto(mode, r1, g1, b1, r2, g2, b2, ind_r, ind_g)) {
         return false;
     }
-    led->set(LED::Pattern(mode), r1, g1, b1, r2, g2, b2, ind_r, ind_g);
+    led_.set(LED::Pattern(mode), r1, g1, b1, r2, g2, b2, ind_r, ind_g);
     return true;
 }
 
@@ -165,14 +165,14 @@ DO_SUBCOMMAND(SET_SERIAL_RC) {
         return false;
     }
     if (enabled) {
-        state->command_source_mask |= COMMAND_READY_BTLE;
-        state->command_AUX_mask = auxmask;
-        state->command_throttle = throttle;
-        state->command_pitch = pitch;
-        state->command_roll = roll;
-        state->command_yaw = yaw;
+        state_.command_source_mask |= COMMAND_READY_BTLE;
+        state_.command_AUX_mask = auxmask;
+        state_.command_throttle = throttle;
+        state_.command_pitch = pitch;
+        state_.command_roll = roll;
+        state_.command_yaw = yaw;
     } else {
-        state->command_source_mask &= ~COMMAND_READY_BTLE;
+        state_.command_source_mask &= ~COMMAND_READY_BTLE;
     }
     return true;
 }
@@ -195,14 +195,14 @@ DO_SUBCOMMAND(SET_CARD_RECORDING) {
 }
 
 DO_SUBCOMMAND(SET_PARTIAL_EEPROM_DATA) {
-    Config tmp_config(*systems);
+    Config tmp_config(systems_);
     if (!tmp_config.readPartialFrom(input)) {
         return false;
     }
     if (!tmp_config.verify()) {
         return false;
     }
-    tmp_config.applyTo(*systems);
+    tmp_config.applyTo(systems_);
     tmp_config.writeTo(EEPROMCursor());
     return true;
 }
@@ -212,12 +212,12 @@ DO_SUBCOMMAND(REINIT_PARTIAL_EEPROM_DATA) {
     if (!Config::readMasks(input, submask, led_mask)) {
         return false;
     }
-    Config tmp_config(*systems);
+    Config tmp_config(systems_);
     tmp_config.resetPartial(submask, led_mask);
     if (!tmp_config.verify()) {
         return false;
     }
-    tmp_config.applyTo(*systems);
+    tmp_config.applyTo(systems_);
     tmp_config.writeTo(EEPROMCursor());
     return true;
 }
@@ -248,14 +248,14 @@ DO_SUBCOMMAND(REQ_CARD_RECORDING_STATE) {
 }
 
 DO_SUBCOMMAND(SET_PARTIAL_TEMPORARY_CONFIG) {
-    Config tmp_config(*systems);
+    Config tmp_config(systems_);
     if (!tmp_config.readPartialFrom(input)) {
         return false;
     }
     if (!tmp_config.verify()) {
         return false;
     }
-    tmp_config.applyTo(*systems);
+    tmp_config.applyTo(systems_);
     return true;
 }
 

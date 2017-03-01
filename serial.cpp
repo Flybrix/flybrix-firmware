@@ -52,8 +52,8 @@ template <uint8_t I = 0>
 }
 }
 
-SerialComm::SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, Systems* systems, LED* led, PilotCommand* command, BMP280* bmp, Airframe* airframe, StateFlag& flag)
-    : state{state}, ppm{ppm}, control{control}, systems{systems}, led{led}, command{command}, bmp{bmp}, airframe{airframe}, flag_(flag) {
+SerialComm::SerialComm(Systems& systems, const volatile uint16_t* ppm)
+    : state_(systems.state), ppm{ppm}, control_(systems.control), systems_(systems), led_(systems.led), bmp_(systems.bmp), airframe_(systems.airframe), flag_(systems.flag) {
 }
 
 void SerialComm::Read() {
@@ -87,14 +87,14 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
 void SerialComm::SendConfiguration() const {
     CobsPayloadGeneric payload;
     WriteProtocolHead(SerialComm::MessageType::Command, FLAG(SET_EEPROM_DATA), payload);
-    Config(*systems).writeTo(payload);
+    Config(systems_).writeTo(payload);
     WriteToOutput(payload);
 }
 
 void SerialComm::SendPartialConfiguration(uint16_t submask, uint16_t led_mask) const {
     CobsPayloadGeneric payload;
     WriteProtocolHead(SerialComm::MessageType::Command, FLAG(SET_PARTIAL_EEPROM_DATA), payload);
-    Config(*systems).writePartialTo(payload, submask, led_mask);
+    Config(systems_).writePartialTo(payload, submask, led_mask);
     WriteToOutput(payload);
 }
 

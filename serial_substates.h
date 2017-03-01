@@ -55,14 +55,14 @@ READ_SUBSTATE(MICROS) {
 }
 
 READ_SUBSTATE_PAYLOAD(STATUS, flag_.value())
-READ_SUBSTATE_PAYLOAD(V0, state->V0_raw)
-READ_SUBSTATE_PAYLOAD(I0, state->I0_raw)
-READ_SUBSTATE_PAYLOAD(I1, state->I1_raw)
-READ_SUBSTATE_PAYLOAD(ACCEL, state->accel)
-READ_SUBSTATE_PAYLOAD(GYRO, state->gyro)
-READ_SUBSTATE_PAYLOAD(MAG, state->mag)
-READ_SUBSTATE_PAYLOAD(TEMPERATURE, bmp->temperature)
-READ_SUBSTATE_PAYLOAD(PRESSURE, bmp->pressure)
+READ_SUBSTATE_PAYLOAD(V0, state_.V0_raw)
+READ_SUBSTATE_PAYLOAD(I0, state_.I0_raw)
+READ_SUBSTATE_PAYLOAD(I1, state_.I1_raw)
+READ_SUBSTATE_PAYLOAD(ACCEL, state_.accel)
+READ_SUBSTATE_PAYLOAD(GYRO, state_.gyro)
+READ_SUBSTATE_PAYLOAD(MAG, state_.mag)
+READ_SUBSTATE_PAYLOAD(TEMPERATURE, bmp_.temperature)
+READ_SUBSTATE_PAYLOAD(PRESSURE, bmp_.pressure)
 
 READ_SUBSTATE(RX_PPM) {
     for (std::size_t i = 0; i < 6; ++i) {
@@ -70,50 +70,50 @@ READ_SUBSTATE(RX_PPM) {
     }
 }
 
-READ_SUBSTATE_PAYLOAD(AUX_CHAN_MASK, state->command_AUX_mask)
-READ_SUBSTATE_PAYLOAD(COMMANDS, state->command_throttle, state->command_pitch, state->command_roll, state->command_yaw)
-READ_SUBSTATE_PAYLOAD(F_AND_T, state->Fz, state->Tx, state->Ty, state->Tz)
+READ_SUBSTATE_PAYLOAD(AUX_CHAN_MASK, state_.command_AUX_mask)
+READ_SUBSTATE_PAYLOAD(COMMANDS, state_.command_throttle, state_.command_pitch, state_.command_roll, state_.command_yaw)
+READ_SUBSTATE_PAYLOAD(F_AND_T, state_.Fz, state_.Tx, state_.Ty, state_.Tz)
 
 READ_SUBSTATE(PID_FZ_MASTER) {
-    WritePIDData(payload, control->thrust_pid.master());
+    WritePIDData(payload, control_.thrust_pid.master());
 }
 
 READ_SUBSTATE(PID_TX_MASTER) {
-    WritePIDData(payload, control->pitch_pid.master());
+    WritePIDData(payload, control_.pitch_pid.master());
 }
 
 READ_SUBSTATE(PID_TY_MASTER) {
-    WritePIDData(payload, control->roll_pid.master());
+    WritePIDData(payload, control_.roll_pid.master());
 }
 
 READ_SUBSTATE(PID_TZ_MASTER) {
-    WritePIDData(payload, control->yaw_pid.master());
+    WritePIDData(payload, control_.yaw_pid.master());
 }
 
 READ_SUBSTATE(PID_FZ_SLAVE) {
-    WritePIDData(payload, control->thrust_pid.slave());
+    WritePIDData(payload, control_.thrust_pid.slave());
 }
 
 READ_SUBSTATE(PID_TX_SLAVE) {
-    WritePIDData(payload, control->pitch_pid.slave());
+    WritePIDData(payload, control_.pitch_pid.slave());
 }
 
 READ_SUBSTATE(PID_TY_SLAVE) {
-    WritePIDData(payload, control->roll_pid.slave());
+    WritePIDData(payload, control_.roll_pid.slave());
 }
 
 READ_SUBSTATE(PID_TZ_SLAVE) {
-    WritePIDData(payload, control->yaw_pid.slave());
+    WritePIDData(payload, control_.yaw_pid.slave());
 }
 
 READ_SUBSTATE(MOTOR_OUT) {
-    airframe->writeMotorsTo(payload);
+    airframe_.writeMotorsTo(payload);
 }
 
-READ_SUBSTATE_PAYLOAD(KINE_ANGLE, state->kinematicsAngle)
-READ_SUBSTATE_PAYLOAD(KINE_RATE, state->kinematicsRate)
-READ_SUBSTATE_PAYLOAD(KINE_ALTITUDE, state->kinematicsAltitude)
-READ_SUBSTATE_PAYLOAD(LOOP_COUNT, state->loopCount)
+READ_SUBSTATE_PAYLOAD(KINE_ANGLE, state_.kinematicsAngle)
+READ_SUBSTATE_PAYLOAD(KINE_RATE, state_.kinematicsRate)
+READ_SUBSTATE_PAYLOAD(KINE_ALTITUDE, state_.kinematicsAltitude)
+READ_SUBSTATE_PAYLOAD(LOOP_COUNT, state_.loopCount)
 
 #undef READ_SUBSTATE
 #undef READ_SUBSTATE_PAYLOAD

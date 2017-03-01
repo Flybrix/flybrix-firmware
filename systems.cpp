@@ -25,7 +25,7 @@ Systems::Systems()
       pilot{&state, &receiver, flag},
       control{&state, Control::PIDParameters()},
       // listen for configuration inputs
-      conf{&state, RX, &control, this, &led, &pilot, &bmp, &airframe, flag},
+      conf{*this, RX},
       id{0} {
     Config().applyTo(*this);
 }

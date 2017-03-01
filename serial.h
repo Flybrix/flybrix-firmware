@@ -43,7 +43,7 @@ class SerialComm {
     enum Commands : uint8_t;
     enum States : uint8_t;
 
-    SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, Systems* systems, LED* led, PilotCommand* command, BMP280* bmp, Airframe* airframe, StateFlag& flag_);
+    SerialComm(Systems& systems, const volatile uint16_t* ppm);
 
     void Read();
 
@@ -69,15 +69,13 @@ class SerialComm {
 
     uint16_t PacketSize(uint32_t mask) const;
 
-    State* state;
+    State& state_;
     const volatile uint16_t* ppm;
-    const Control* control;
-    Systems* systems;
-    LED* led;
-    PilotCommand* command;
-
-    BMP280* bmp;
-    Airframe* airframe;
+    const Control& control_;
+    Systems& systems_;
+    LED& led_;
+    const BMP280& bmp_;
+    Airframe& airframe_;
     StateFlag& flag_;
 
     uint16_t send_state_delay{1001};  // anything over 1000 turns off state messages
