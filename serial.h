@@ -20,6 +20,7 @@ class PilotCommand;
 class Control;
 class LED;
 class State;
+class StateFlag;
 struct Systems;
 
 using CobsPayloadGeneric = CobsPayload<1000>;  // impacts memory use only; packet size should be <= client packet size
@@ -42,7 +43,7 @@ class SerialComm {
     enum Commands : uint8_t;
     enum States : uint8_t;
 
-    SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, Systems* systems, LED* led, PilotCommand* command, BMP280* bmp, Airframe* airframe);
+    SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, Systems* systems, LED* led, PilotCommand* command, BMP280* bmp, Airframe* airframe, StateFlag& flag_);
 
     void Read();
 
@@ -77,6 +78,7 @@ class SerialComm {
 
     BMP280* bmp;
     Airframe* airframe;
+    StateFlag& flag_;
 
     uint16_t send_state_delay{1001};  // anything over 1000 turns off state messages
     uint16_t sd_card_state_delay{2};  // write to SD at the highest rate by default

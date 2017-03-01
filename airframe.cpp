@@ -9,7 +9,7 @@
 #include "state.h"
 #include "stateFlag.h"
 
-Airframe::Airframe(State* state) : state(state) {
+Airframe::Airframe(State* state, StateFlag& flag) : state(state), flag_(flag) {
 }
 
 uint16_t Airframe::mix(int32_t mFz, int32_t mTx, int32_t mTy, int32_t mTz) {
@@ -32,20 +32,20 @@ void Airframe::resetMotors() {
 
 void Airframe::enableMotors() {
     enabled_ = true;
-    state->set(Status::ENABLED);
+    flag_.set(Status::ENABLED);
 }
 
 void Airframe::disableMotors() {
     enabled_ = false;
-    state->clear(Status::ENABLED);
+    flag_.clear(Status::ENABLED);
 }
 
 void Airframe::setOverride(bool override) {
     override_ = override;
     if (override_) {
-        state->set(Status::OVERRIDE);
+        flag_.set(Status::OVERRIDE);
     } else {
-        state->clear(Status::OVERRIDE);
+        flag_.clear(Status::OVERRIDE);
     }
 }
 

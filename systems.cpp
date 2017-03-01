@@ -16,16 +16,16 @@ Systems::Systems()
       receiver{},
       i2c{},
       state{this},
-      led{&state},
+      led{flag},
       bmp{&i2c},          // pressure sensor object
       mpu{&state, &i2c},  // inertial sensor object
       mag{&state, &i2c},  // magnetometer
       pwr{&state},        // onboard power monitoring object
-      airframe{&state},
-      pilot{&state, &receiver},
+      airframe{&state, flag},
+      pilot{&state, &receiver, flag},
       control{&state, Control::PIDParameters()},
       // listen for configuration inputs
-      conf{&state, RX, &control, this, &led, &pilot, &bmp, &airframe},
+      conf{&state, RX, &control, this, &led, &pilot, &bmp, &airframe, flag},
       id{0} {
     Config().applyTo(*this);
 }

@@ -5,7 +5,6 @@
 */
 
 #include "led.h"
-#include "state.h"
 #include "stateFlag.h"
 
 CRGB fade(CRGB color) {
@@ -210,7 +209,7 @@ void LEDDriver::writeToDisplay() {
 }
 }  // namespace
 
-LED::LED(State* __state) : state(__state) {
+LED::LED(StateFlag& flag) : flag_(flag) {
     // indicator leds are not inverted
     pinMode(board::GREEN_LED, OUTPUT);
     pinMode(board::RED_LED, OUTPUT);
@@ -237,8 +236,8 @@ void LED::set(Pattern pattern, CRGB color, bool red_indicator, bool green_indica
 }
 
 void LED::update() {
-    if (!override && oldStatus != state->status()) {
-        oldStatus = state->status();
+    if (!override && oldStatus != flag_.value()) {
+        oldStatus = flag_.value();
         changeLights();
     }
     if (LED_driver.getPattern() == LED::ALTERNATE && !(LED_driver.getCycleIndex() & 15)) {
@@ -282,7 +281,7 @@ void LED::setWhite(board::led::Position lower_left, board::led::Position upper_r
 
 void LED::changeLights() {
     for (const StateCase& s : states.states) {
-        if (!s.status || state->is(s.status)) {
+        if (!s.status || flag_.is(s.status)) {
             use(s.pattern, s.color_right_front.crgb(), s.color_right_back.crgb(), s.color_left_front.crgb(), s.color_left_back.crgb(), s.indicator_red, s.indicator_green);
             return;
         }
@@ -291,7 +290,7 @@ void LED::changeLights() {
 }
 
 void LED::parseConfig() {
-    oldStatus = ~state->status();
+    oldStatus = ~flag_.value();
     update();
 }
 

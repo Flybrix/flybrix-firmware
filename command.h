@@ -16,21 +16,22 @@
 #include "R415X.h"
 
 class State;
+class StateFlag;
 
 class PilotCommand {
    public:
-    PilotCommand(State* state, R415X* receiver);
+    PilotCommand(State* state, R415X* receiver, StateFlag& flag);
     void processCommands(void);
 
    private:
     State* state;
     R415X* receiver;
+    StateFlag& flag_;
 
     boolean blockEnabling = true;
     boolean recentlyEnabled = false;
     uint16_t throttleHoldOff = 0;  // hold controls low for some time after enabling
     uint8_t bluetoothTolerance{0};
-
 };
 
 #endif

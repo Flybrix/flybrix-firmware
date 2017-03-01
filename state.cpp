@@ -54,24 +54,24 @@ bool State::upright(void) {
 void State::processMotorEnablingIteration(void) {
     if (sys_->airframe.motorsEnabled()) {  // lazy GUI calls...
         // ERROR: ("DEBUG: extra call to processMotorEnablingIteration()!");
-    } else if (is(Status::IDLE)) {  // first call
-        clear(Status::IDLE);
-        set(Status::ENABLING);
-        set(Status::CLEAR_MPU_BIAS);  // our filters will start filling with fresh values!
+    } else if (sys_->flag.is(Status::IDLE)) {  // first call
+        sys_->flag.clear(Status::IDLE);
+        sys_->flag.set(Status::ENABLING);
+        sys_->flag.set(Status::CLEAR_MPU_BIAS);  // our filters will start filling with fresh values!
         enableAttempts = 0;
-    } else if (is(Status::ENABLING)) {
+    } else if (sys_->flag.is(Status::ENABLING)) {
         enableAttempts++;  // we call this routine from "command" at 40Hz
         if (!upright()) {
-            clear(Status::ENABLING);
-            set(Status::FAIL_ANGLE);
+            sys_->flag.clear(Status::ENABLING);
+            sys_->flag.set(Status::FAIL_ANGLE);
         }
         // wait ~1 seconds for the IIR filters to adjust to their bias free values
         if (enableAttempts == 40) {
             if (!stable()) {
-                clear(Status::ENABLING);
-                set(Status::FAIL_STABILITY);
+                sys_->flag.clear(Status::ENABLING);
+                sys_->flag.set(Status::FAIL_STABILITY);
             } else {
-                set(Status::SET_MPU_BIAS);  // now our filters will start filling with accurate
+                sys_->flag.set(Status::SET_MPU_BIAS);  // now our filters will start filling with accurate
             }
 
         } else if (enableAttempts == 41) {  // reset the filter to start letting state reconverge with bias corrected mpu data
@@ -80,11 +80,11 @@ void State::processMotorEnablingIteration(void) {
         // wait ~1 seconds for the state filter to converge
         else if (enableAttempts > 80) {  // check one more time to see if we were stable
             if (!stable()) {
-                clear(Status::ENABLING);
-                set(Status::FAIL_STABILITY);
+                sys_->flag.clear(Status::ENABLING);
+                sys_->flag.set(Status::FAIL_STABILITY);
 
             } else {
-                clear(Status::ENABLING);
+                sys_->flag.clear(Status::ENABLING);
                 sys_->airframe.enableMotors();
             }
         }
@@ -92,28 +92,12 @@ void State::processMotorEnablingIteration(void) {
 }
 
 void State::disableMotors(void) {
-    clear(Status::BATTERY_LOW);
+    sys_->flag.clear(Status::BATTERY_LOW);
     sys_->airframe.disableMotors();
-    clear(Status::FAIL_STABILITY);
-    clear(Status::FAIL_ANGLE);
-    clear(Status::FAIL_OTHER);
-    set(Status::IDLE);
-}
-
-void State::set(const uint16_t status_code) {
-    sys_->flag.set(status_code);
-}
-
-void State::clear(const uint16_t status_code) {
-    sys_->flag.clear(status_code);
-}
-
-bool State::is(const uint16_t status_code) const {
-    return sys_->flag.is(status_code);
-}
-
-uint16_t State::status() const {
-    return sys_->flag.value();
+    sys_->flag.clear(Status::FAIL_STABILITY);
+    sys_->flag.clear(Status::FAIL_ANGLE);
+    sys_->flag.clear(Status::FAIL_OTHER);
+    sys_->flag.set(Status::IDLE);
 }
 
 void State::resetState() {

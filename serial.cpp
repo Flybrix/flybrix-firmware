@@ -11,6 +11,7 @@
 #include "led.h"
 #include "state.h"
 #include "systems.h"
+#include "stateFlag.h"
 
 namespace {
 
@@ -51,8 +52,8 @@ template <uint8_t I = 0>
 }
 }
 
-SerialComm::SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, Systems* systems, LED* led, PilotCommand* command, BMP280* bmp, Airframe* airframe)
-    : state{state}, ppm{ppm}, control{control}, systems{systems}, led{led}, command{command}, bmp{bmp}, airframe{airframe} {
+SerialComm::SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, Systems* systems, LED* led, PilotCommand* command, BMP280* bmp, Airframe* airframe, StateFlag& flag)
+    : state{state}, ppm{ppm}, control{control}, systems{systems}, led{led}, command{command}, bmp{bmp}, airframe{airframe}, flag_(flag) {
 }
 
 void SerialComm::Read() {

@@ -18,7 +18,7 @@
 
 #include "board.h"
 
-class State;
+class StateFlag;
 
 extern void (*LEDFastUpdate)();
 
@@ -33,7 +33,7 @@ class LED {
         SOLID = 5,
     };
 
-    explicit LED(State* state);
+    explicit LED(StateFlag& flag);
 
     void update();
 
@@ -115,7 +115,7 @@ class LED {
     void indicatorRedOff();
     void indicatorGreenOff();
 
-    State* state;
+    StateFlag& flag_;
     uint16_t oldStatus{0};
     bool override{false};
 

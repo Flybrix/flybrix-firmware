@@ -15,10 +15,11 @@
 #include "motors.h"
 
 class State;
+class StateFlag;
 
 class Airframe {
    public:
-    Airframe(State* state);
+    Airframe(State* state, StateFlag& flag);
     void setMotor(size_t index, uint16_t value);
     void resetMotors();
     void enableMotors();
@@ -65,6 +66,7 @@ class Airframe {
     Motors motors_;
     uint16_t mix(int32_t mFz, int32_t mTx, int32_t mTy, int32_t mTz);
     State* state;
+    StateFlag& flag_;
 };
 
 #endif
