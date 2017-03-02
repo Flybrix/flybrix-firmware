@@ -28,6 +28,7 @@
 #include "config.h"
 #include "stateFlag.h"
 #include "kinematics.h"
+#include "controlVectors.h"
 
 struct Systems {
     Systems();
@@ -37,6 +38,8 @@ struct Systems {
     R415X receiver;
 
     Kinematics kinematics;
+    ControlVectors control_vectors;
+
     I2CManager i2c;
     State state;
     LED led;

@@ -8,18 +8,19 @@
 #include <Arduino.h>
 #include "state.h"
 #include "stateFlag.h"
+#include "controlVectors.h"
 
-Airframe::Airframe(State* state, StateFlag& flag) : state(state), flag_(flag) {
+Airframe::Airframe(StateFlag& flag) : flag_(flag) {
 }
 
-uint16_t Airframe::mix(int32_t mFz, int32_t mTx, int32_t mTy, int32_t mTz) {
+uint16_t mix(const ControlVectors& controls, int32_t mFz, int32_t mTx, int32_t mTy, int32_t mTz) {
     int32_t mmax = max(max(mFz, mTx), max(mTy, mTz));
-    return constrain((mFz * state->Fz + mTx * state->Tx + mTy * state->Ty + mTz * state->Tz) / mmax, 0, 4095);
+    return constrain((mFz * controls.force_z + mTx * controls.torque_x + mTy * controls.torque_y + mTz * controls.torque_z) / mmax, 0, 4095);
 }
 
-void Airframe::setMotorsToMixTable() {
+void Airframe::setMotorsToMixTable(const ControlVectors& controls) {
     for (size_t i = 0; i < 8; ++i)
-        motors_.set(i, mix(mix_table.fz[i], mix_table.tx[i], mix_table.ty[i], mix_table.tz[i]));
+        motors_.set(i, mix(controls, mix_table.fz[i], mix_table.tx[i], mix_table.ty[i], mix_table.tz[i]));
 }
 
 void Airframe::setMotor(size_t index, uint16_t value) {
@@ -49,9 +50,9 @@ void Airframe::setOverride(bool override) {
     }
 }
 
-void Airframe::applyChanges() {
+void Airframe::applyChanges(const ControlVectors& control) {
     if (!override_) {
-        setMotorsToMixTable();
+        setMotorsToMixTable(control);
     }
     motors_.updateAllChannels(enabled_ || override_);
 }

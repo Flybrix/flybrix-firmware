@@ -13,11 +13,12 @@
 #include "led.h"
 #include "airframe.h"
 #include "state.h"
+#include "controlVectors.h"
 
 void runTestRoutine(State& state, LED& led, Airframe& airframe, size_t led_id, size_t motor_id) {
     airframe.resetMotors();
     airframe.setMotor(motor_id, 4095);
-    airframe.applyChanges();
+    airframe.applyChanges(ControlVectors());
     led.setWhite(board::led::POSITION[led_id], board::led::POSITION[led_id], led_id % 2 == 0, led_id % 2 == 1);
     led.update();
 }

@@ -61,7 +61,8 @@ SerialComm::SerialComm(Systems& systems, const volatile uint16_t* ppm)
       bmp_(systems.bmp),
       airframe_(systems.airframe),
       flag_(systems.flag),
-      kinematics_(systems.kinematics) {
+      kinematics_(systems.kinematics),
+      control_vectors_(systems.control_vectors) {
 }
 
 void SerialComm::Read() {

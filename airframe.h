@@ -16,16 +16,17 @@
 
 class State;
 class StateFlag;
+class ControlVectors;
 
 class Airframe {
    public:
-    Airframe(State* state, StateFlag& flag);
+    Airframe(StateFlag& flag);
     void setMotor(size_t index, uint16_t value);
     void resetMotors();
     void enableMotors();
     void disableMotors();
     void setOverride(bool override);
-    void applyChanges();
+    void applyChanges(const ControlVectors& control);
 
     bool motorsEnabled() const;
     bool motorsOverridden() const;
@@ -59,13 +60,11 @@ class Airframe {
     static_assert(sizeof(MixTable) == 4 * 8, "Data is not packed");
 
    private:
-    void setMotorsToMixTable();
+    void setMotorsToMixTable(const ControlVectors& control);
 
     bool enabled_{false};
     bool override_{false};
     Motors motors_;
-    uint16_t mix(int32_t mFz, int32_t mTx, int32_t mTy, int32_t mTz);
-    State* state;
     StateFlag& flag_;
 };
 

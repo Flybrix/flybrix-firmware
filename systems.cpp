@@ -21,7 +21,7 @@ Systems::Systems()
       mpu{&state, &i2c},  // inertial sensor object
       mag{&state, &i2c},  // magnetometer
       pwr{&state},        // onboard power monitoring object
-      airframe{&state, flag},
+      airframe{flag},
       pilot{&state, &receiver, flag},
       control{&state, Control::PIDParameters()},
       // listen for configuration inputs

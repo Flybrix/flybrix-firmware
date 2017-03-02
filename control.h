@@ -14,6 +14,7 @@
 
 #include "Arduino.h"
 #include "cascadedPID.h"
+#include "controlVectors.h"
 
 class PID;
 class State;
@@ -26,7 +27,7 @@ class Control {
     Control(State* state, const PIDParameters& config);
     void parseConfig();
 
-    void calculateControlVectors(const Kinematics& input);
+    ControlVectors calculateControlVectors(const Kinematics& input);
 
     State* state;
 

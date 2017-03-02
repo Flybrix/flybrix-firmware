@@ -112,7 +112,7 @@ float radToDeg(float v) {
     return v * 57.2957795f;
 }
 
-void Control::calculateControlVectors(const Kinematics& input) {
+ControlVectors Control::calculateControlVectors(const Kinematics& input) {
     thrust_pid.setMasterInput(input.altitude);
     thrust_pid.setSlaveInput(0.0f);  // input.ClimbRate
     pitch_pid.setMasterInput(radToDeg(input.angle.pitch));
@@ -129,19 +129,23 @@ void Control::calculateControlVectors(const Kinematics& input) {
 
     // compute new output levels for state
     uint32_t now = micros();
-    state->Fz = thrust_pid.Compute(now, pidEnabled[THRUST_MASTER], pidEnabled[THRUST_SLAVE]);
-    state->Tx = pitch_pid.Compute(now, pidEnabled[PITCH_MASTER], pidEnabled[PITCH_SLAVE]);
-    state->Ty = roll_pid.Compute(now, pidEnabled[ROLL_MASTER], pidEnabled[ROLL_SLAVE]);
-    state->Tz = yaw_pid.Compute(now, pidEnabled[YAW_MASTER], pidEnabled[YAW_SLAVE]);
 
-    if (state->Fz == 0) {  // throttle is in low condition
-        state->Tx = 0;
-        state->Ty = 0;
-        state->Tz = 0;
+    ControlVectors control;
+    control.force_z = thrust_pid.Compute(now, pidEnabled[THRUST_MASTER], pidEnabled[THRUST_SLAVE]);
+    control.torque_x = pitch_pid.Compute(now, pidEnabled[PITCH_MASTER], pidEnabled[PITCH_SLAVE]);
+    control.torque_y = roll_pid.Compute(now, pidEnabled[ROLL_MASTER], pidEnabled[ROLL_SLAVE]);
+    control.torque_z = yaw_pid.Compute(now, pidEnabled[YAW_MASTER], pidEnabled[YAW_SLAVE]);
+
+    if (control.force_z == 0) {  // throttle is in low condition
+        control.torque_x = 0;
+        control.torque_y = 0;
+        control.torque_z = 0;
 
         thrust_pid.IntegralReset();
         pitch_pid.IntegralReset();
         roll_pid.IntegralReset();
         yaw_pid.IntegralReset();
     }
+
+    return control;
 }

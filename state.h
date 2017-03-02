@@ -41,9 +41,6 @@ class State {
     uint8_t command_AUX_mask = 0;     // bitfield order is {AUX1_low, AUX1_mid, AUX1_high, AUX2_low, AUX2_mid, AUX2_high, x, x} (LSB-->MSB)
     int16_t command_throttle = 0, command_pitch = 0, command_roll = 0, command_yaw = 0;
 
-    // Control
-    float Fz = 0, Tx = 0, Ty = 0, Tz = 0;  // control vectors (forces/torques)
-
     // Motors
     void processMotorEnablingIteration();  // must be called ~80 times to enable motors.
     void disableMotors();
