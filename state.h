@@ -36,10 +36,7 @@ class State {
     float gyro_filter[3] = {0.0, 0.0, 0.0};                                         // for gyro drift correction
 
     // Command
-    int16_t command_invalid_count = 0;
     uint8_t command_source_mask = 0;  // bitfield order is {x, R415X, BTLE, x, x, x, x, x} (LSB-->MSB)
-    uint8_t command_AUX_mask = 0;     // bitfield order is {AUX1_low, AUX1_mid, AUX1_high, AUX2_low, AUX2_mid, AUX2_high, x, x} (LSB-->MSB)
-    int16_t command_throttle = 0, command_pitch = 0, command_roll = 0, command_yaw = 0;
 
     // Motors
     void processMotorEnablingIteration();  // must be called ~80 times to enable motors.

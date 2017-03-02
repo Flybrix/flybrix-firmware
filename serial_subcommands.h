@@ -3,6 +3,8 @@
 
 #include "serial_impl.h"
 
+#include "commandVector.h"
+
 enum SerialComm::Commands : uint8_t {
     REQ_RESPONSE,
     SET_EEPROM_DATA,
@@ -166,11 +168,11 @@ DO_SUBCOMMAND(SET_SERIAL_RC) {
     }
     if (enabled) {
         state_.command_source_mask |= COMMAND_READY_BTLE;
-        state_.command_AUX_mask = auxmask;
-        state_.command_throttle = throttle;
-        state_.command_pitch = pitch;
-        state_.command_roll = roll;
-        state_.command_yaw = yaw;
+        command_vector_.aux_mask = auxmask;
+        command_vector_.throttle = throttle;
+        command_vector_.pitch = pitch;
+        command_vector_.roll = roll;
+        command_vector_.yaw = yaw;
     } else {
         state_.command_source_mask &= ~COMMAND_READY_BTLE;
     }

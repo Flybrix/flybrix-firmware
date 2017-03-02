@@ -29,6 +29,7 @@
 #include "stateFlag.h"
 #include "kinematics.h"
 #include "controlVectors.h"
+#include "commandVector.h"
 
 struct Systems {
     Systems();
@@ -39,6 +40,7 @@ struct Systems {
 
     Kinematics kinematics;
     ControlVectors control_vectors;
+    CommandVector command_vector;
 
     I2CManager i2c;
     State state;

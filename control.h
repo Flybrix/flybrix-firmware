@@ -17,19 +17,17 @@
 #include "controlVectors.h"
 
 class PID;
-class State;
 class Kinematics;
+struct CommandVector;
 
 class Control {
    public:
     struct PIDParameters;
 
-    Control(State* state, const PIDParameters& config);
+    explicit Control(const PIDParameters& config);
     void parseConfig();
 
-    ControlVectors calculateControlVectors(const Kinematics& input);
-
-    State* state;
+    ControlVectors calculateControlVectors(const Kinematics& feedback, const CommandVector& setpoint);
 
     struct __attribute__((packed)) PIDParameters {
         PIDParameters();

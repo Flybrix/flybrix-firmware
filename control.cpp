@@ -6,8 +6,8 @@
 
 #include "control.h"
 #include "debug.h"
-#include "state.h"
 #include "kinematics.h"
+#include "commandVector.h"
 
 #define BYPASS_THRUST_MASTER 1 << 0
 #define BYPASS_PITCH_MASTER 1 << 1
@@ -68,9 +68,8 @@ enum PID_ID {
 };
 }
 
-Control::Control(State* __state, const PIDParameters& config)
-    : state(__state),
-      pid_parameters(config),
+Control::Control(const PIDParameters& config)
+    : pid_parameters(config),
       thrust_pid{config.thrust_master, config.thrust_slave},
       pitch_pid{config.pitch_master, config.pitch_slave},
       roll_pid{config.roll_master, config.roll_slave},
@@ -112,20 +111,20 @@ float radToDeg(float v) {
     return v * 57.2957795f;
 }
 
-ControlVectors Control::calculateControlVectors(const Kinematics& input) {
-    thrust_pid.setMasterInput(input.altitude);
-    thrust_pid.setSlaveInput(0.0f);  // input.ClimbRate
-    pitch_pid.setMasterInput(radToDeg(input.angle.pitch));
-    pitch_pid.setSlaveInput(radToDeg(input.rate.pitch));
-    roll_pid.setMasterInput(radToDeg(input.angle.roll));
-    roll_pid.setSlaveInput(radToDeg(input.rate.roll));
-    yaw_pid.setMasterInput(radToDeg(input.angle.yaw));
-    yaw_pid.setSlaveInput(radToDeg(input.rate.yaw));
+ControlVectors Control::calculateControlVectors(const Kinematics& feedback, const CommandVector& setpoint) {
+    thrust_pid.setMasterInput(feedback.altitude);
+    thrust_pid.setSlaveInput(0.0f);  // feedback.ClimbRate
+    pitch_pid.setMasterInput(radToDeg(feedback.angle.pitch));
+    pitch_pid.setSlaveInput(radToDeg(feedback.rate.pitch));
+    roll_pid.setMasterInput(radToDeg(feedback.angle.roll));
+    roll_pid.setSlaveInput(radToDeg(feedback.rate.roll));
+    yaw_pid.setMasterInput(radToDeg(feedback.angle.yaw));
+    yaw_pid.setSlaveInput(radToDeg(feedback.rate.yaw));
 
-    thrust_pid.setSetpoint(state->command_throttle * (1.0f / 4095.0f) * thrust_pid.getScalingFactor(pidEnabled[THRUST_MASTER], pidEnabled[THRUST_SLAVE], pid_parameters.thrust_gain));
-    pitch_pid.setSetpoint(state->command_pitch * (1.0f / 2047.0f) * pitch_pid.getScalingFactor(pidEnabled[PITCH_MASTER], pidEnabled[PITCH_SLAVE], pid_parameters.pitch_gain));
-    roll_pid.setSetpoint(state->command_roll * (1.0f / 2047.0f) * roll_pid.getScalingFactor(pidEnabled[ROLL_MASTER], pidEnabled[ROLL_SLAVE], pid_parameters.roll_gain));
-    yaw_pid.setSetpoint(state->command_yaw * (1.0f / 2047.0f) * yaw_pid.getScalingFactor(pidEnabled[YAW_MASTER], pidEnabled[YAW_SLAVE], pid_parameters.yaw_gain));
+    thrust_pid.setSetpoint(setpoint.throttle * (1.0f / 4095.0f) * thrust_pid.getScalingFactor(pidEnabled[THRUST_MASTER], pidEnabled[THRUST_SLAVE], pid_parameters.thrust_gain));
+    pitch_pid.setSetpoint(setpoint.pitch * (1.0f / 2047.0f) * pitch_pid.getScalingFactor(pidEnabled[PITCH_MASTER], pidEnabled[PITCH_SLAVE], pid_parameters.pitch_gain));
+    roll_pid.setSetpoint(setpoint.roll * (1.0f / 2047.0f) * roll_pid.getScalingFactor(pidEnabled[ROLL_MASTER], pidEnabled[ROLL_SLAVE], pid_parameters.roll_gain));
+    yaw_pid.setSetpoint(setpoint.yaw * (1.0f / 2047.0f) * yaw_pid.getScalingFactor(pidEnabled[YAW_MASTER], pidEnabled[YAW_SLAVE], pid_parameters.yaw_gain));
 
     // compute new output levels for state
     uint32_t now = micros();

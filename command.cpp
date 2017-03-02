@@ -9,9 +9,10 @@
 #include "state.h"
 #include "R415X.h"
 #include "cardManagement.h"
+#include "commandVector.h"
 #include "stateFlag.h"
 
-PilotCommand::PilotCommand(State* __state, R415X* __receiver, StateFlag& flag) : state(__state), receiver(__receiver), flag_(flag) {
+PilotCommand::PilotCommand(State* __state, R415X* __receiver, StateFlag& flag, CommandVector& command_vector) : state(__state), receiver(__receiver), flag_(flag), command_vector_(command_vector) {
 }
 
 void PilotCommand::processCommands(void) {
@@ -19,7 +20,7 @@ void PilotCommand::processCommands(void) {
     bool attempting_to_disable = false;
 
     if (flag_.is(Status::RX_FAIL)) {
-        state->command_throttle *= 0.99;
+        command_vector_.throttle *= 0.99;
     }
 
     if (!(state->command_source_mask & COMMAND_READY_BTLE)) {
@@ -28,7 +29,13 @@ void PilotCommand::processCommands(void) {
             --bluetoothTolerance;
         } else {
             // since we haven't seen bluetooth commands for more than 1 second, try the R415X
-            receiver->getCommandData(state);
+            auto response = receiver->getCommandData();
+            if (std::get<0>(response)) {
+                state->command_source_mask |= COMMAND_READY_R415X;
+                command_vector_ = std::get<1>(response);
+            } else {
+                state->command_source_mask &= ~COMMAND_READY_R415X;
+            }
         }
     } else {
         // as soon as we start receiving bluetooth, reset the watchdog
@@ -37,21 +44,21 @@ void PilotCommand::processCommands(void) {
 
     if (!(state->command_source_mask & (COMMAND_READY_R415X | COMMAND_READY_BTLE))) {
         // we have no command data!
-        state->command_invalid_count++;
-        if (state->command_invalid_count > 80) {
+        invalid_count++;
+        if (invalid_count > 80) {
             // we haven't received data in two seconds
-            state->command_invalid_count = 80;
+            invalid_count = 80;
             flag_.set(Status::RX_FAIL);
         }
-    } else if (state->command_invalid_count > 0) {
-        state->command_invalid_count--;
-        if (state->command_invalid_count == 0) {
+    } else if (invalid_count > 0) {
+        invalid_count--;
+        if (invalid_count == 0) {
             flag_.clear(Status::RX_FAIL);
         }
     } else {
         // use valid command data
-        attempting_to_enable = state->command_AUX_mask & (1 << 0);   // AUX1 is low
-        attempting_to_disable = state->command_AUX_mask & (1 << 2);  // AUX1 is high
+        attempting_to_enable = command_vector_.aux_mask & (1 << 0);   // AUX1 is low
+        attempting_to_disable = command_vector_.aux_mask & (1 << 2);  // AUX1 is high
 
         // in the future, this would be the place to look for other combination inputs or for AUX levels that mean something
 
@@ -81,13 +88,13 @@ void PilotCommand::processCommands(void) {
         blockEnabling = true;  // block accidental enabling when we come out of pilot override
     }
 
-    bool throttle_is_low = (state->command_throttle == 0);
+    bool throttle_is_low = (command_vector_.throttle == 0);
 
     if (recentlyEnabled || throttle_is_low) {
-        state->command_throttle = 0;
-        state->command_pitch = 0;
-        state->command_roll = 0;
-        state->command_yaw = 0;
+        command_vector_.throttle = 0;
+        command_vector_.pitch = 0;
+        command_vector_.roll = 0;
+        command_vector_.yaw = 0;
 
         throttleHoldOff--;
         if (recentlyEnabled && (throttleHoldOff == 0)) {
