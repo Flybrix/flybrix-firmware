@@ -12,13 +12,10 @@
 #ifndef R415X_h
 #define R415X_h
 
-#include <tuple>
-
 #include "Arduino.h"
 #include "commandVector.h"
 
 struct CommandVector;
-class State;
 
 class PPMchannel {
    public:
@@ -69,7 +66,7 @@ class PPMchannel {
 class R415X {
    public:
     R415X();
-    std::tuple<bool, CommandVector> getCommandData();
+    CommandVector getCommandData();
 
     struct __attribute__((packed)) ChannelProperties {
         ChannelProperties();

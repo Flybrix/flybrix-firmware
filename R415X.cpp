@@ -105,7 +105,8 @@ extern "C" void ftm1_isr(void) {
     startPulse = stopPulse;  // Save time at pulse start
 }
 
-std::tuple<bool, CommandVector> R415X::getCommandData() {
+CommandVector R415X::getCommandData() {
+    CommandVector command;
     cli();  // disable interrupts
 
     // if R415X is working, we should never see anything less than 900!
@@ -113,8 +114,8 @@ std::tuple<bool, CommandVector> R415X::getCommandData() {
         if (RX[i] < 900) {
             // tell state that R415X is not ready and return
             sei();  // enable interrupts
-
-            return std::make_tuple(false, CommandVector());  // don't load bad data into state
+            command.source = CommandVector::Source::None;
+            return command;
         }
     }
 
@@ -145,8 +146,7 @@ std::tuple<bool, CommandVector> R415X::getCommandData() {
     sei();  // enable interrupts
 
     // Translate PPMChannel data into the four command level and aux mask
-
-    CommandVector command;
+    command.source = CommandVector::Source::Radio;
 
     command.aux_mask = 0x00;  // reset the AUX mode bitmask
     // bitfield order is {AUX1_low, AUX1_mid, AUX1_high, AUX2_low, AUX2_mid, AUX2_high, x, x} (LSB-->MSB)
@@ -178,5 +178,5 @@ std::tuple<bool, CommandVector> R415X::getCommandData() {
     command.roll = constrain((1 - 2 * ((channel.inversion >> 2) & 1)) * (roll.val - roll.mid) * 4095 / (roll.max - roll.min), -2047, 2047);
     command.yaw = constrain((1 - 2 * ((channel.inversion >> 3) & 1)) * (yaw.val - yaw.mid) * 4095 / (yaw.max - yaw.min), -2047, 2047);
 
-    return std::make_tuple(true, command);
+    return command;
 }

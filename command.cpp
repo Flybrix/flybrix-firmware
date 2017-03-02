@@ -23,26 +23,20 @@ void PilotCommand::processCommands(void) {
         command_vector_.throttle *= 0.99;
     }
 
-    if (!(state->command_source_mask & COMMAND_READY_BTLE)) {
+    if (command_vector_.source != CommandVector::Source::Bluetooth) {
         if (bluetoothTolerance) {
             // we allow bluetooth a generous 1s before we give up
             --bluetoothTolerance;
         } else {
             // since we haven't seen bluetooth commands for more than 1 second, try the R415X
-            auto response = receiver->getCommandData();
-            if (std::get<0>(response)) {
-                state->command_source_mask |= COMMAND_READY_R415X;
-                command_vector_ = std::get<1>(response);
-            } else {
-                state->command_source_mask &= ~COMMAND_READY_R415X;
-            }
+            command_vector_ = receiver->getCommandData();
         }
     } else {
         // as soon as we start receiving bluetooth, reset the watchdog
         bluetoothTolerance = 40;
     }
 
-    if (!(state->command_source_mask & (COMMAND_READY_R415X | COMMAND_READY_BTLE))) {
+    if (command_vector_.source == CommandVector::Source::None) {
         // we have no command data!
         invalid_count++;
         if (invalid_count > 80) {
@@ -63,7 +57,7 @@ void PilotCommand::processCommands(void) {
         // in the future, this would be the place to look for other combination inputs or for AUX levels that mean something
 
         // mark the BTLE data as used so we don't use it again
-        state->command_source_mask &= ~(COMMAND_READY_BTLE);
+        command_vector_.clearBluetoothState();
     }
 
     if (blockEnabling && attempting_to_enable && !flag_.is(Status::OVERRIDE)) {  // user attempted to enable, but we are blocking it

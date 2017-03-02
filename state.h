@@ -35,9 +35,6 @@ class State {
     float accel_filter[3] = {0.0, 0.0, 0.0}, accel_filter_sq[3] = {0.0, 0.0, 0.0};  // for stability variance calculation
     float gyro_filter[3] = {0.0, 0.0, 0.0};                                         // for gyro drift correction
 
-    // Command
-    uint8_t command_source_mask = 0;  // bitfield order is {x, R415X, BTLE, x, x, x, x, x} (LSB-->MSB)
-
     // Motors
     void processMotorEnablingIteration();  // must be called ~80 times to enable motors.
     void disableMotors();
@@ -78,9 +75,5 @@ class State {
 };  // end of class State
 
 #define DEG2RAD 0.01745329251f
-
-// Controller ready codes
-#define COMMAND_READY_R415X 0x01
-#define COMMAND_READY_BTLE 0x02
 
 #endif
