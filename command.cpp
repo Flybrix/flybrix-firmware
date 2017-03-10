@@ -15,7 +15,7 @@
 PilotCommand::PilotCommand(State* __state, R415X* __receiver, StateFlag& flag, CommandVector& command_vector) : state(__state), receiver(__receiver), flag_(flag), command_vector_(command_vector) {
 }
 
-void PilotCommand::processCommands(void) {
+void PilotCommand::processCommands() {
     bool attempting_to_enable = false;
     bool attempting_to_disable = false;
 
@@ -36,28 +36,32 @@ void PilotCommand::processCommands(void) {
         bluetoothTolerance = 40;
     }
 
-    if (command_vector_.source == CommandVector::Source::None) {
-        // we have no command data!
-        invalid_count++;
-        if (invalid_count > 80) {
-            // we haven't received data in two seconds
-            invalid_count = 80;
-            flag_.set(Status::RX_FAIL);
-        }
-    } else if (invalid_count > 0) {
-        invalid_count--;
-        if (invalid_count == 0) {
-            flag_.clear(Status::RX_FAIL);
-        }
-    } else {
-        // use valid command data
+    switch (command_vector_.source) {
+        case CommandVector::Source::Radio:
+            --invalid_count;
+            break;
+        case CommandVector::Source::Bluetooth:
+            // We tolerate bluetooth working as bad as 1 in 10 times
+            invalid_count -= 10;
+            break;
+        default:
+            ++invalid_count;
+    }
+
+    // mark the command data as used so we don't use it again
+    command_vector_.source = CommandVector::Source::None;
+
+    if (invalid_count > 80) {
+        invalid_count = 80;
+        flag_.set(Status::RX_FAIL);
+    } else if (invalid_count < 0) {
+        invalid_count = 0;
+        flag_.clear(Status::RX_FAIL);
+    }
+
+    if (!flag_.is(Status::RX_FAIL)) {
         attempting_to_enable = command_vector_.aux_mask & (1 << 0);   // AUX1 is low
         attempting_to_disable = command_vector_.aux_mask & (1 << 2);  // AUX1 is high
-
-        // in the future, this would be the place to look for other combination inputs or for AUX levels that mean something
-
-        // mark the BTLE data as used so we don't use it again
-        command_vector_.clearBluetoothState();
     }
 
     if (blockEnabling && attempting_to_enable && !flag_.is(Status::OVERRIDE)) {  // user attempted to enable, but we are blocking it

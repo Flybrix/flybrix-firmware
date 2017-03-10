@@ -22,7 +22,7 @@ class StateFlag;
 class PilotCommand {
    public:
     PilotCommand(State* state, R415X* receiver, StateFlag& flag, CommandVector& command_vector);
-    void processCommands(void);
+    void processCommands();
 
    private:
     State* state;
