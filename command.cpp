@@ -24,16 +24,14 @@ void PilotCommand::processCommands() {
     }
 
     if (command_vector_.source != CommandVector::Source::Bluetooth) {
-        if (bluetoothTolerance) {
-            // we allow bluetooth a generous 1s before we give up
-            --bluetoothTolerance;
-        } else {
+        if (!bluetooth_tolerance_.tick()) {
             // since we haven't seen bluetooth commands for more than 1 second, try the R415X
             command_vector_ = receiver_.getCommandData();
         }
     } else {
+        // we allow bluetooth a generous 1s before we give up
         // as soon as we start receiving bluetooth, reset the watchdog
-        bluetoothTolerance = 40;
+        bluetooth_tolerance_.reset(40);
     }
 
     switch (command_vector_.source) {
@@ -73,8 +71,8 @@ void PilotCommand::processCommands() {
     if (!flag_.is(Status::OVERRIDE)) {
         if (attempting_to_enable && !flag_.is(Status::ENABLED | Status::FAIL_STABILITY | Status::FAIL_ANGLE | Status::FAIL_OTHER)) {
             state_.processMotorEnablingIteration();  // this can flip Status::ENABLED to true
-            recentlyEnabled = true;
-            throttleHoldOff = 80;  // @40Hz -- hold for 2 sec
+            // hold controls low for some time after enabling
+            throttle_hold_off_.reset(80);  // @40Hz -- hold for 2 sec
             if (flag_.is(Status::ENABLED))
                 sdcard::openFile();
         }
@@ -86,17 +84,22 @@ void PilotCommand::processCommands() {
         blockEnabling = true;  // block accidental enabling when we come out of pilot override
     }
 
-    bool throttle_is_low = (command_vector_.throttle == 0);
-
-    if (recentlyEnabled || throttle_is_low) {
+    if (throttle_hold_off_.tick() || command_vector_.throttle == 0) {
         command_vector_.throttle = 0;
         command_vector_.pitch = 0;
         command_vector_.roll = 0;
         command_vector_.yaw = 0;
-
-        throttleHoldOff--;
-        if (recentlyEnabled && (throttleHoldOff == 0)) {
-            recentlyEnabled = false;
-        }
     }
+}
+
+bool PilotCommand::Ticker::tick() {
+    if (count_ == 0) {
+        return false;
+    }
+    --count_;
+    return true;
+}
+
+void PilotCommand::Ticker::reset(uint8_t ticks) {
+    count_ = ticks;
 }

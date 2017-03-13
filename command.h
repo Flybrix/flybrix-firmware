@@ -25,15 +25,23 @@ class PilotCommand {
     void processCommands();
 
    private:
+    class Ticker final {
+       public:
+        bool tick();
+        void reset(uint8_t ticks);
+
+       private:
+        uint8_t count_{0};
+    };
+
     State& state_;
     R415X& receiver_;
     StateFlag& flag_;
     CommandVector& command_vector_;
 
     bool blockEnabling{true};
-    bool recentlyEnabled{false};
-    uint16_t throttleHoldOff{0};  // hold controls low for some time after enabling
-    uint8_t bluetoothTolerance{0};
+    Ticker throttle_hold_off_;  // hold controls low for some time after enabling
+    Ticker bluetooth_tolerance_;
     int16_t invalid_count{0};
 };
 
