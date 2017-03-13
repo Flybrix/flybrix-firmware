@@ -12,27 +12,27 @@
 #ifndef command_h
 #define command_h
 
-#include "Arduino.h"
-#include "R415X.h"
+#include <cstdint>
 
 struct CommandVector;
 class State;
 class StateFlag;
+class R415X;
 
 class PilotCommand {
    public:
-    PilotCommand(State* state, R415X* receiver, StateFlag& flag, CommandVector& command_vector);
+    PilotCommand(State& state, R415X& receiver, StateFlag& flag, CommandVector& command_vector);
     void processCommands();
 
    private:
-    State* state;
-    R415X* receiver;
+    State& state_;
+    R415X& receiver_;
     StateFlag& flag_;
     CommandVector& command_vector_;
 
-    boolean blockEnabling = true;
-    boolean recentlyEnabled = false;
-    uint16_t throttleHoldOff = 0;  // hold controls low for some time after enabling
+    bool blockEnabling{true};
+    bool recentlyEnabled{false};
+    uint16_t throttleHoldOff{0};  // hold controls low for some time after enabling
     uint8_t bluetoothTolerance{0};
     int16_t invalid_count{0};
 };

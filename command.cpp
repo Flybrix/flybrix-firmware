@@ -12,7 +12,7 @@
 #include "commandVector.h"
 #include "stateFlag.h"
 
-PilotCommand::PilotCommand(State* __state, R415X* __receiver, StateFlag& flag, CommandVector& command_vector) : state(__state), receiver(__receiver), flag_(flag), command_vector_(command_vector) {
+PilotCommand::PilotCommand(State& state, R415X& receiver, StateFlag& flag, CommandVector& command_vector) : state_(state), receiver_(receiver), flag_(flag), command_vector_(command_vector) {
 }
 
 void PilotCommand::processCommands() {
@@ -29,7 +29,7 @@ void PilotCommand::processCommands() {
             --bluetoothTolerance;
         } else {
             // since we haven't seen bluetooth commands for more than 1 second, try the R415X
-            command_vector_ = receiver->getCommandData();
+            command_vector_ = receiver_.getCommandData();
         }
     } else {
         // as soon as we start receiving bluetooth, reset the watchdog
@@ -72,14 +72,14 @@ void PilotCommand::processCommands() {
 
     if (!flag_.is(Status::OVERRIDE)) {
         if (attempting_to_enable && !flag_.is(Status::ENABLED | Status::FAIL_STABILITY | Status::FAIL_ANGLE | Status::FAIL_OTHER)) {
-            state->processMotorEnablingIteration();  // this can flip Status::ENABLED to true
+            state_.processMotorEnablingIteration();  // this can flip Status::ENABLED to true
             recentlyEnabled = true;
             throttleHoldOff = 80;  // @40Hz -- hold for 2 sec
             if (flag_.is(Status::ENABLED))
                 sdcard::openFile();
         }
         if (attempting_to_disable && flag_.is(Status::ENABLED | Status::FAIL_STABILITY | Status::FAIL_ANGLE | Status::FAIL_OTHER)) {
-            state->disableMotors();
+            state_.disableMotors();
             sdcard::closeFile();
         }
     } else {
