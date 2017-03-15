@@ -35,10 +35,8 @@ class State {
     float accel_filter[3] = {0.0, 0.0, 0.0}, accel_filter_sq[3] = {0.0, 0.0, 0.0};  // for stability variance calculation
     float gyro_filter[3] = {0.0, 0.0, 0.0};                                         // for gyro drift correction
 
-    // Motors
-    void processMotorEnablingIteration();  // must be called ~80 times to enable motors.
-    void disableMotors();
-    uint16_t enableAttempts = 0;  // increment when we're in the STATUS_ENABLING state
+    bool stable() const;
+    bool upright() const;
 
     void resetState();
     void updateStateIMU(uint32_t currentTime);
@@ -63,9 +61,7 @@ class State {
     static_assert(sizeof(Parameters) == 2 * 2 * 4, "Data is not packed");
 
    private:
-    bool stable();
-    bool upright();
-    float fast_cosine(float x_deg);
+    static float fast_cosine(float x_deg);
 
     float mixRadians(float w1, float a1, float a2);
     uint32_t lastUpdateMicros = 0;  // 1.2 hrs should be enough

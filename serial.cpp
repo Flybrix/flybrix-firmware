@@ -62,6 +62,7 @@ SerialComm::SerialComm(Systems& systems, const volatile uint16_t* ppm)
       airframe_(systems.airframe),
       flag_(systems.flag),
       kinematics_(systems.kinematics),
+      pilot_(systems.pilot),
       command_vector_(systems.command_vector),
       control_vectors_(systems.control_vectors) {
 }

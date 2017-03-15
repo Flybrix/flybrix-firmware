@@ -72,7 +72,7 @@ class SerialComm {
 
     uint16_t PacketSize(uint32_t mask) const;
 
-    State& state_;
+    const State& state_;
     const volatile uint16_t* ppm;
     const Control& control_;
     Systems& systems_;
@@ -81,6 +81,7 @@ class SerialComm {
     Airframe& airframe_;
     StateFlag& flag_;
     Kinematics& kinematics_;
+    PilotCommand& pilot_;
     CommandVector& command_vector_;
     ControlVectors& control_vectors_;
 

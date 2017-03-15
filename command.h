@@ -12,17 +12,21 @@
 #ifndef command_h
 #define command_h
 
-#include <cstdint>
+#include <Arduino.h>
 
+struct Systems;
 struct CommandVector;
+class Airframe;
 class State;
 class StateFlag;
 class R415X;
 
 class PilotCommand {
    public:
-    PilotCommand(State& state, R415X& receiver, StateFlag& flag, CommandVector& command_vector);
+    explicit PilotCommand(Systems& systems);
     void processCommands();
+    void processMotorEnablingIteration();
+    void disableMotors();
 
    private:
     class Ticker final {
@@ -34,15 +38,29 @@ class PilotCommand {
         uint8_t count_{0};
     };
 
+    enum class ControlState {
+        Overridden,
+        AwaitingAuxDisable,
+        Disabled,
+        Enabling,
+        ThrottleLocked,
+        Enabled,
+    };
+
+    void updateControlStateFlags();
+    void processMotorEnablingIterationHelper();
+
+    Airframe& airframe_;
     State& state_;
     R415X& receiver_;
     StateFlag& flag_;
     CommandVector& command_vector_;
 
-    bool blockEnabling{true};
+    ControlState control_state_{ControlState::Overridden};
     Ticker throttle_hold_off_;  // hold controls low for some time after enabling
     Ticker bluetooth_tolerance_;
     int16_t invalid_count{0};
+    uint16_t enable_attempts_{0};  // increment when we're in the STATUS_ENABLING state
 };
 
 #endif

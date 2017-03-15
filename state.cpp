@@ -25,7 +25,7 @@ State::Parameters::Parameters() : state_estimation{1.0, 0.01}, enable{0.001, 30.
 State::State(Systems* sys) : localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, FilterType::Madgwick, parameters.state_estimation, STATE_BARO_VARIANCE), sys_{sys} {
 }
 
-bool State::stable(void) {
+bool State::stable(void) const {
     float max_variance = 0.0f;
     for (int i = 0; i < 3; i++) {
         float variance = accel_filter_sq[i] - accel_filter[i] * accel_filter[i];
@@ -40,7 +40,7 @@ float State::fast_cosine(float x_deg) {
     return 1.0f + x_deg * (-0.000275817445684765f - 0.00013858051199801900f * x_deg);
 }
 
-bool State::upright(void) {
+bool State::upright(void) const {
     // cos(angle) = (a dot g) / |a| / |g| = -a[2]
     // cos(angle)^2 = a[2]*a[2] / (a dot a)
     float cos_test_angle = fast_cosine(parameters.enable[1]);
@@ -49,55 +49,6 @@ bool State::upright(void) {
         a_dot_a += accel_filter[i] * accel_filter[i];
     }
     return (accel_filter[2] * accel_filter[2] > a_dot_a * cos_test_angle * cos_test_angle);
-}
-
-void State::processMotorEnablingIteration(void) {
-    if (sys_->airframe.motorsEnabled()) {  // lazy GUI calls...
-        // ERROR: ("DEBUG: extra call to processMotorEnablingIteration()!");
-    } else if (sys_->flag.is(Status::IDLE)) {  // first call
-        sys_->flag.clear(Status::IDLE);
-        sys_->flag.set(Status::ENABLING);
-        sys_->flag.set(Status::CLEAR_MPU_BIAS);  // our filters will start filling with fresh values!
-        enableAttempts = 0;
-    } else if (sys_->flag.is(Status::ENABLING)) {
-        enableAttempts++;  // we call this routine from "command" at 40Hz
-        if (!upright()) {
-            sys_->flag.clear(Status::ENABLING);
-            sys_->flag.set(Status::FAIL_ANGLE);
-        }
-        // wait ~1 seconds for the IIR filters to adjust to their bias free values
-        if (enableAttempts == 40) {
-            if (!stable()) {
-                sys_->flag.clear(Status::ENABLING);
-                sys_->flag.set(Status::FAIL_STABILITY);
-            } else {
-                sys_->flag.set(Status::SET_MPU_BIAS);  // now our filters will start filling with accurate
-            }
-
-        } else if (enableAttempts == 41) {  // reset the filter to start letting state reconverge with bias corrected mpu data
-            resetState();
-        }
-        // wait ~1 seconds for the state filter to converge
-        else if (enableAttempts > 80) {  // check one more time to see if we were stable
-            if (!stable()) {
-                sys_->flag.clear(Status::ENABLING);
-                sys_->flag.set(Status::FAIL_STABILITY);
-
-            } else {
-                sys_->flag.clear(Status::ENABLING);
-                sys_->airframe.enableMotors();
-            }
-        }
-    }
-}
-
-void State::disableMotors(void) {
-    sys_->flag.clear(Status::BATTERY_LOW);
-    sys_->airframe.disableMotors();
-    sys_->flag.clear(Status::FAIL_STABILITY);
-    sys_->flag.clear(Status::FAIL_ANGLE);
-    sys_->flag.clear(Status::FAIL_OTHER);
-    sys_->flag.set(Status::IDLE);
 }
 
 void State::resetState() {

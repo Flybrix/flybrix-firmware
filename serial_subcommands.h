@@ -4,6 +4,7 @@
 #include "serial_impl.h"
 
 #include "commandVector.h"
+#include "command.h"
 
 enum SerialComm::Commands : uint8_t {
     REQ_RESPONSE,
@@ -74,9 +75,9 @@ DO_SUBCOMMAND(REQ_ENABLE_ITERATION) {
         return false;
     }
     if (flag == 1) {
-        state_.processMotorEnablingIteration();
+        pilot_.processMotorEnablingIteration();
     } else {
-        state_.disableMotors();
+        pilot_.disableMotors();
     }
     return true;
 }

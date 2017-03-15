@@ -22,7 +22,7 @@ Systems::Systems()
       mag{&state, &i2c},  // magnetometer
       pwr{&state},        // onboard power monitoring object
       airframe{flag},
-      pilot{state, receiver, flag, command_vector},
+      pilot{*this},
       control{Control::PIDParameters()},
       // listen for configuration inputs
       conf{*this, RX},
