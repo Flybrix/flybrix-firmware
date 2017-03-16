@@ -30,14 +30,20 @@ void PilotCommand::processMotorEnablingIteration() {
 }
 
 void PilotCommand::processMotorEnablingIterationHelper() {
-    if (airframe_.motorsEnabled()) {  // lazy GUI calls...
-        // ERROR: ("DEBUG: extra call to processMotorEnablingIteration()!");
-    } else if (flag_.is(Status::IDLE)) {  // first call
+    if (airframe_.motorsEnabled()) {
+        // Ignore if motors are already enabled
+        return;
+    }
+
+    if (flag_.is(Status::IDLE)) {  // first call
         flag_.clear(Status::IDLE);
         flag_.set(Status::ENABLING);
         flag_.set(Status::CLEAR_MPU_BIAS);  // our filters will start filling with fresh values!
         enable_attempts_ = 0;
-    } else if (flag_.is(Status::ENABLING)) {
+        return;
+    }
+
+    if (flag_.is(Status::ENABLING)) {
         enable_attempts_++;  // we call this routine from "command" at 40Hz
         if (!state_.upright()) {
             flag_.clear(Status::ENABLING);
@@ -162,7 +168,7 @@ void PilotCommand::processCommands() {
 
     if (control_state_ == ControlState::Enabling && !flag_.is(Status::ENABLED | Status::FAIL_STABILITY | Status::FAIL_ANGLE)) {
         processMotorEnablingIteration();
-    } else if (control_state_ == ControlState::Disabled && flag_.is(Status::ENABLED | Status::FAIL_STABILITY | Status::FAIL_ANGLE)) {
+    } else if (control_state_ == ControlState::Disabled) {
         disableMotors();
     }
 
@@ -180,7 +186,7 @@ void PilotCommand::updateControlStateFlags() {
     switch (control_state_) {
         case ControlState::AwaitingAuxDisable:
         case ControlState::ThrottleLocked:
-            flag_.clear(Status::IDLE);
+            flag_.clear(Status::IDLE | Status::ENABLING);
             flag_.set(Status::FAIL_OTHER);
             break;
         case ControlState::Enabled:
@@ -189,11 +195,11 @@ void PilotCommand::updateControlStateFlags() {
             break;
         case ControlState::Overridden:
             flag_.set(Status::IDLE);
-            flag_.clear(Status::FAIL_OTHER);
+            flag_.clear(Status::FAIL_OTHER | Status::ENABLING);
             break;
         case ControlState::Disabled:
             flag_.set(Status::IDLE);
-            flag_.clear(Status::FAIL_STABILITY | Status::FAIL_ANGLE | Status::FAIL_OTHER);
+            flag_.clear(Status::FAIL_STABILITY | Status::FAIL_ANGLE | Status::FAIL_OTHER | Status::ENABLING);
             break;
     }
 }
