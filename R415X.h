@@ -80,6 +80,22 @@ class R415X {
     static_assert(sizeof(ChannelProperties) == 6 + 1 + 6 * 2 * 2, "Data is not packed");
 
    private:
+    // Detects in-flight failure by noticing a pattern that is impossible to perform by hand:
+    // * RC sending both an arming AUX and a nonzero throttle
+    // * Next frame we send disarm and a zero throttle
+    // Perfect frame timing would need the operator to intentionally time things down to 10ms
+    // Since that will not happen while normally operating the device, we know that this
+    // happens only when R415X switches to default
+    class ErrorTracker final {
+       public:
+        bool check(const CommandVector& command_vector);
+        void reportFailure();
+
+       private:
+        bool was_legal_{false};
+        bool was_flying_{false};
+    } error_tracker_;
+
     PPMchannel throttle;
     PPMchannel pitch;
     PPMchannel roll;

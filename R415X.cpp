@@ -105,6 +105,22 @@ extern "C" void ftm1_isr(void) {
     startPulse = stopPulse;  // Save time at pulse start
 }
 
+bool R415X::ErrorTracker::check(const CommandVector& command_vector) {
+    bool armed{(command_vector.aux_mask & 1) != 0};
+    bool nonzero_throttle{command_vector.throttle > 0};
+    bool is_legal{armed || nonzero_throttle};
+    if (was_legal_ && !was_flying_) {
+        is_legal = true;
+    }
+    was_legal_ = is_legal;
+    was_flying_ = armed && nonzero_throttle;
+    return is_legal;
+}
+
+void R415X::ErrorTracker::reportFailure() {
+    was_legal_ = false;
+}
+
 CommandVector R415X::getCommandData() {
     CommandVector command;
     cli();  // disable interrupts
@@ -115,6 +131,7 @@ CommandVector R415X::getCommandData() {
             // tell state that R415X is not ready and return
             sei();  // enable interrupts
             command.source = CommandVector::Source::None;
+            error_tracker_.reportFailure();
             return command;
         }
     }
@@ -177,6 +194,10 @@ CommandVector R415X::getCommandData() {
     command.pitch = constrain((1 - 2 * ((channel.inversion >> 1) & 1)) * (pitch.val - pitch.mid) * 4095 / (pitch.max - pitch.min), -2047, 2047);
     command.roll = constrain((1 - 2 * ((channel.inversion >> 2) & 1)) * (roll.val - roll.mid) * 4095 / (roll.max - roll.min), -2047, 2047);
     command.yaw = constrain((1 - 2 * ((channel.inversion >> 3) & 1)) * (yaw.val - yaw.mid) * 4095 / (yaw.max - yaw.min), -2047, 2047);
+
+    if (!error_tracker_.check(command)) {
+        command.source = CommandVector::Source::None;
+    }
 
     return command;
 }
