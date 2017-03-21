@@ -6,7 +6,6 @@
 
 #include "airframe.h"
 #include <Arduino.h>
-#include "state.h"
 #include "controlVectors.h"
 
 uint16_t mix(const ControlVectors& controls, int32_t mFz, int32_t mTx, int32_t mTy, int32_t mTz) {

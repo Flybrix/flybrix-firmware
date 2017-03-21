@@ -14,8 +14,6 @@
 #include <cstdint>
 #include "motors.h"
 
-class State;
-class StateFlag;
 class ControlVectors;
 
 class Airframe {
