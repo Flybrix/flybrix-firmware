@@ -7,11 +7,7 @@
 #include "airframe.h"
 #include <Arduino.h>
 #include "state.h"
-#include "stateFlag.h"
 #include "controlVectors.h"
-
-Airframe::Airframe(StateFlag& flag) : flag_(flag) {
-}
 
 uint16_t mix(const ControlVectors& controls, int32_t mFz, int32_t mTx, int32_t mTy, int32_t mTz) {
     int32_t mmax = max(max(mFz, mTx), max(mTy, mTz));
@@ -33,21 +29,14 @@ void Airframe::resetMotors() {
 
 void Airframe::enableMotors() {
     enabled_ = true;
-    flag_.set(Status::ENABLED);
 }
 
 void Airframe::disableMotors() {
     enabled_ = false;
-    flag_.clear(Status::ENABLED);
 }
 
 void Airframe::setOverride(bool override) {
     override_ = override;
-    if (override_) {
-        flag_.set(Status::OVERRIDE);
-    } else {
-        flag_.clear(Status::OVERRIDE);
-    }
 }
 
 void Airframe::applyChanges(const ControlVectors& control) {

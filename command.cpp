@@ -201,31 +201,14 @@ void PilotCommand::processCommands() {
 }
 
 void PilotCommand::updateControlStateFlags() {
-    flag_.clear(Status::IDLE | Status::ENABLING | Status::FAIL_OTHER | Status::FAIL_STABILITY | Status::FAIL_ANGLE | Status::RX_FAIL);
-    switch (control_state_) {
-        case ControlState::AwaitingAuxDisable:
-        case ControlState::ThrottleLocked:
-            flag_.set(Status::FAIL_OTHER);
-            break;
-        case ControlState::Enabling:
-            flag_.set(Status::ENABLING);
-            break;
-        case ControlState::Overridden:
-        case ControlState::Disabled:
-            flag_.set(Status::IDLE);
-            break;
-        case ControlState::FailStability:
-            flag_.set(Status::FAIL_STABILITY);
-            break;
-        case ControlState::FailAngle:
-            flag_.set(Status::FAIL_ANGLE);
-            break;
-        case ControlState::FailRx:
-            flag_.set(Status::RX_FAIL);
-            break;
-        case ControlState::Enabled:
-            break;
-    }
+    flag_.assign(Status::IDLE, control_state_ == ControlState::Disabled);
+    flag_.assign(Status::ENABLING, control_state_ == ControlState::Enabling);
+    flag_.assign(Status::FAIL_OTHER, control_state_ == ControlState::AwaitingAuxDisable || control_state_ == ControlState::ThrottleLocked);
+    flag_.assign(Status::FAIL_STABILITY, control_state_ == ControlState::FailStability);
+    flag_.assign(Status::FAIL_ANGLE, control_state_ == ControlState::FailAngle);
+    flag_.assign(Status::RX_FAIL, control_state_ == ControlState::FailRx);
+    flag_.assign(Status::ENABLED, control_state_ == ControlState::Enabled);
+    flag_.assign(Status::OVERRIDE, control_state_ == ControlState::Overridden);
 }
 
 bool PilotCommand::Ticker::tick() {

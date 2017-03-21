@@ -12,16 +12,12 @@
 #include "config.h"
 
 Systems::Systems()
-    : flag{},
-      receiver{},
-      i2c{},
-      state{this},
+    : state{this},
       led{flag},
       bmp{&i2c},          // pressure sensor object
       mpu{&state, &i2c},  // inertial sensor object
       mag{&state, &i2c},  // magnetometer
       pwr{&state},        // onboard power monitoring object
-      airframe{flag},
       pilot{*this},
       control{Control::PIDParameters()},
       // listen for configuration inputs

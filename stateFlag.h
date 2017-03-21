@@ -34,6 +34,7 @@ class StateFlag final {
    public:
     void set(FlagData bits);
     void clear(FlagData bits);
+    void assign(FlagData bits, bool value);
     bool is(FlagData bits) const;
     FlagData value() const;
 

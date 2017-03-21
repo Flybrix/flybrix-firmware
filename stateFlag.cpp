@@ -8,6 +8,14 @@ void StateFlag::clear(FlagData bits) {
     flag_ &= ~bits;
 }
 
+void StateFlag::assign(FlagData bits, bool value) {
+    if (value) {
+        set(bits);
+    } else {
+        clear(bits);
+    }
+}
+
 bool StateFlag::is(FlagData bits) const {
     return flag_ & bits;
 }

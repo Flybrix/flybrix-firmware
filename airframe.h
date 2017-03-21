@@ -20,7 +20,6 @@ class ControlVectors;
 
 class Airframe {
    public:
-    Airframe(StateFlag& flag);
     void setMotor(size_t index, uint16_t value);
     void resetMotors();
     void enableMotors();
@@ -65,7 +64,6 @@ class Airframe {
     bool enabled_{false};
     bool override_{false};
     Motors motors_;
-    StateFlag& flag_;
 };
 
 #endif
