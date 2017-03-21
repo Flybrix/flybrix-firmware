@@ -18,61 +18,81 @@ PilotCommand::PilotCommand(Systems& systems) : airframe_(systems.airframe), stat
 }
 
 void PilotCommand::processMotorEnablingIteration() {
-    processMotorEnablingIterationHelper();  // this can flip Status::ENABLED to true
-    // hold controls low for some time after enabling
-    throttle_hold_off_.reset(80);  // @40Hz -- hold for 2 sec
-    control_state_ = ControlState::Enabling;
-    if (flag_.is(Status::ENABLED)) {
-        control_state_ = ControlState::ThrottleLocked;
-        sdcard::openFile();
+    // Ignore if motors are already enabled
+    if (!airframe_.motorsEnabled()) {
+        processMotorEnablingIterationHelper();  // this can flip Status::ENABLED to true
+        // hold controls low for some time after enabling
+        throttle_hold_off_.reset(80);  // @40Hz -- hold for 2 sec
+        if (airframe_.motorsEnabled()) {
+            control_state_ = ControlState::ThrottleLocked;
+            sdcard::openFile();
+        }
     }
     updateControlStateFlags();
 }
 
 void PilotCommand::processMotorEnablingIterationHelper() {
-    if (airframe_.motorsEnabled()) {
-        // Ignore if motors are already enabled
+    if (!canRequestEnabling()) {
         return;
     }
-
-    if (flag_.is(Status::IDLE)) {  // first call
-        flag_.clear(Status::IDLE);
-        flag_.set(Status::ENABLING);
-        flag_.set(Status::CLEAR_MPU_BIAS);  // our filters will start filling with fresh values!
+    if (control_state_ != ControlState::Enabling) {
+        control_state_ = ControlState::Enabling;
         enable_attempts_ = 0;
+    }
+
+    if (enable_attempts_ == 0) {            // first call
+        flag_.set(Status::CLEAR_MPU_BIAS);  // our filters will start filling with fresh values!
+        enable_attempts_ = 1;
         return;
     }
 
-    if (flag_.is(Status::ENABLING)) {
-        enable_attempts_++;  // we call this routine from "command" at 40Hz
-        if (!state_.upright()) {
-            flag_.clear(Status::ENABLING);
-            flag_.set(Status::FAIL_ANGLE);
-        }
-        // wait ~1 seconds for the IIR filters to adjust to their bias free values
-        if (enable_attempts_ == 40) {
-            if (!state_.stable()) {
-                flag_.clear(Status::ENABLING);
-                flag_.set(Status::FAIL_STABILITY);
-            } else {
-                flag_.set(Status::SET_MPU_BIAS);  // now our filters will start filling with accurate
-            }
-
-        } else if (enable_attempts_ == 41) {  // reset the filter to start letting state reconverge with bias corrected mpu data
-            state_.resetState();
-        }
-        // wait ~1 seconds for the state filter to converge
-        else if (enable_attempts_ > 80) {  // check one more time to see if we were stable
-            if (!state_.stable()) {
-                flag_.clear(Status::ENABLING);
-                flag_.set(Status::FAIL_STABILITY);
-
-            } else {
-                flag_.clear(Status::ENABLING);
-                airframe_.enableMotors();
-            }
-        }
+    enable_attempts_++;  // we call this routine from "command" at 40Hz
+    if (!state_.upright()) {
+        control_state_ = ControlState::FailAngle;
+        return;
     }
+    // wait ~1 seconds for the IIR filters to adjust to their bias free values
+    if (enable_attempts_ == 41) {
+        if (!state_.stable()) {
+            control_state_ = ControlState::FailStability;
+        } else {
+            flag_.set(Status::SET_MPU_BIAS);  // now our filters will start filling with accurate
+        }
+        return;
+    }
+
+    // reset the filter to start letting state reconverge with bias corrected mpu data
+    if (enable_attempts_ == 42) {
+        state_.resetState();
+        return;
+    }
+    // wait ~1 seconds for the state filter to converge
+    // check one more time to see if we were stable
+    if (enable_attempts_ > 81) {
+        if (!state_.stable()) {
+            control_state_ = ControlState::FailStability;
+        } else {
+            airframe_.enableMotors();
+        }
+        return;
+    }
+}
+
+bool PilotCommand::canRequestEnabling() const {
+    switch (control_state_) {
+        case ControlState::ThrottleLocked:
+        case ControlState::Enabled:
+        case ControlState::FailStability:
+        case ControlState::FailAngle:
+        case ControlState::FailRx:
+        case ControlState::Overridden:
+            return false;
+        case ControlState::AwaitingAuxDisable:
+        case ControlState::Disabled:
+        case ControlState::Enabling:
+            return true;
+    }
+    return true;
 }
 
 void PilotCommand::disableMotors() {
@@ -83,13 +103,6 @@ void PilotCommand::disableMotors() {
 }
 
 void PilotCommand::processCommands() {
-    bool attempting_to_enable = false;
-    bool attempting_to_disable = false;
-
-    if (flag_.is(Status::RX_FAIL)) {
-        command_vector_.throttle *= 0.99;
-    }
-
     if (command_vector_.source != CommandVector::Source::Bluetooth) {
         if (!bluetooth_tolerance_.tick()) {
             // since we haven't seen bluetooth commands for more than 1 second, try the R415X
@@ -120,18 +133,17 @@ void PilotCommand::processCommands() {
 
     if (invalid_count > 80) {
         invalid_count = 80;
-        flag_.set(Status::RX_FAIL);
+        control_state_ = ControlState::FailRx;
     } else if (invalid_count < 0) {
         invalid_count = 0;
-        flag_.clear(Status::RX_FAIL);
+        if (control_state_ == ControlState::FailRx) {
+            control_state_ = ControlState::AwaitingAuxDisable;
+        }
     }
 
-    if (!flag_.is(Status::RX_FAIL)) {
-        attempting_to_enable = command_vector_.aux_mask & (1 << 0);   // AUX1 is low
-        attempting_to_disable = command_vector_.aux_mask & (1 << 2);  // AUX1 is high
-    }
-
-    bool override{flag_.is(Status::OVERRIDE)};
+    bool attempting_to_enable{(command_vector_.aux_mask & (1 << 0)) != 0};   // AUX1 is low
+    bool attempting_to_disable{(command_vector_.aux_mask & (1 << 2)) != 0};  // AUX1 is high
+    bool override{airframe_.motorsOverridden()};
 
     if (override) {
         control_state_ = ControlState::Overridden;
@@ -146,6 +158,7 @@ void PilotCommand::processCommands() {
         case ControlState::Disabled: {
             if (attempting_to_enable) {
                 control_state_ = ControlState::Enabling;
+                enable_attempts_ = 0;
             }
         } break;
         case ControlState::ThrottleLocked: {
@@ -155,6 +168,8 @@ void PilotCommand::processCommands() {
                 control_state_ = ControlState::Enabled;
             }
         } break;
+        case ControlState::FailStability:
+        case ControlState::FailAngle:
         case ControlState::AwaitingAuxDisable:
         case ControlState::Enabling:
         case ControlState::Enabled: {
@@ -162,11 +177,14 @@ void PilotCommand::processCommands() {
                 control_state_ = ControlState::Disabled;
             }
         } break;
+        case ControlState::FailRx: {
+            command_vector_.throttle *= 0.99;
+        } break;
     }
 
     updateControlStateFlags();
 
-    if (control_state_ == ControlState::Enabling && !flag_.is(Status::ENABLED | Status::FAIL_STABILITY | Status::FAIL_ANGLE)) {
+    if (control_state_ == ControlState::Enabling) {
         processMotorEnablingIteration();
     } else if (control_state_ == ControlState::Disabled) {
         disableMotors();
@@ -183,23 +201,29 @@ void PilotCommand::processCommands() {
 }
 
 void PilotCommand::updateControlStateFlags() {
+    flag_.clear(Status::IDLE | Status::ENABLING | Status::FAIL_OTHER | Status::FAIL_STABILITY | Status::FAIL_ANGLE | Status::RX_FAIL);
     switch (control_state_) {
         case ControlState::AwaitingAuxDisable:
         case ControlState::ThrottleLocked:
-            flag_.clear(Status::IDLE | Status::ENABLING);
             flag_.set(Status::FAIL_OTHER);
             break;
-        case ControlState::Enabled:
         case ControlState::Enabling:
-            flag_.clear(Status::FAIL_OTHER);
+            flag_.set(Status::ENABLING);
             break;
         case ControlState::Overridden:
-            flag_.set(Status::IDLE);
-            flag_.clear(Status::FAIL_OTHER | Status::ENABLING);
-            break;
         case ControlState::Disabled:
             flag_.set(Status::IDLE);
-            flag_.clear(Status::FAIL_STABILITY | Status::FAIL_ANGLE | Status::FAIL_OTHER | Status::ENABLING);
+            break;
+        case ControlState::FailStability:
+            flag_.set(Status::FAIL_STABILITY);
+            break;
+        case ControlState::FailAngle:
+            flag_.set(Status::FAIL_ANGLE);
+            break;
+        case ControlState::FailRx:
+            flag_.set(Status::RX_FAIL);
+            break;
+        case ControlState::Enabled:
             break;
     }
 }

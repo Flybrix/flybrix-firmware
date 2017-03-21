@@ -45,10 +45,14 @@ class PilotCommand {
         Enabling,
         ThrottleLocked,
         Enabled,
+        FailStability,
+        FailAngle,
+        FailRx,
     };
 
     void updateControlStateFlags();
     void processMotorEnablingIterationHelper();
+    bool canRequestEnabling() const;
 
     Airframe& airframe_;
     State& state_;
@@ -61,6 +65,7 @@ class PilotCommand {
     Ticker bluetooth_tolerance_;
     int16_t invalid_count{0};
     uint16_t enable_attempts_{0};  // increment when we're in the STATUS_ENABLING state
+    bool idle_{false};
 };
 
 #endif
