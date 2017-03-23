@@ -15,6 +15,7 @@
 #include "stateFlag.h"
 
 PilotCommand::PilotCommand(Systems& systems) : state_(systems.state), receiver_(systems.receiver), flag_(systems.flag), command_vector_(systems.command_vector) {
+    setControlState(ControlState::AwaitingAuxDisable);
 }
 
 Airframe::MixTable& PilotCommand::mix_table() {
@@ -23,12 +24,10 @@ Airframe::MixTable& PilotCommand::mix_table() {
 
 void PilotCommand::override(bool override) {
     if (override) {
-        control_state_ = ControlState::Overridden;
-    } else if (control_state_ == ControlState::Overridden) {
-        control_state_ = ControlState::AwaitingAuxDisable;
+        setControlState(ControlState::Overridden);
+    } else if (isOverridden()) {
+        setControlState(ControlState::AwaitingAuxDisable);
     }
-    airframe_.setOverride(override);
-    updateControlStateFlags();
 }
 
 bool PilotCommand::isOverridden() const {
@@ -58,7 +57,6 @@ void PilotCommand::processMotorEnablingIteration() {
         // hold controls low for some time after enabling
         throttle_hold_off_.reset(80);  // @40Hz -- hold for 2 sec
     }
-    updateControlStateFlags();
 }
 
 void PilotCommand::processMotorEnablingIterationHelper() {
@@ -66,7 +64,7 @@ void PilotCommand::processMotorEnablingIterationHelper() {
         return;
     }
     if (control_state_ != ControlState::Enabling) {
-        control_state_ = ControlState::Enabling;
+        setControlState(ControlState::Enabling);
         enable_attempts_ = 0;
     }
 
@@ -78,13 +76,13 @@ void PilotCommand::processMotorEnablingIterationHelper() {
 
     enable_attempts_++;  // we call this routine from "command" at 40Hz
     if (!state_.upright()) {
-        control_state_ = ControlState::FailAngle;
+        setControlState(ControlState::FailAngle);
         return;
     }
     // wait ~1 seconds for the IIR filters to adjust to their bias free values
     if (enable_attempts_ == 41) {
         if (!state_.stable()) {
-            control_state_ = ControlState::FailStability;
+            setControlState(ControlState::FailStability);
         } else {
             flag_.set(Status::SET_MPU_BIAS);  // now our filters will start filling with accurate
         }
@@ -100,9 +98,9 @@ void PilotCommand::processMotorEnablingIterationHelper() {
     // check one more time to see if we were stable
     if (enable_attempts_ > 81) {
         if (!state_.stable()) {
-            control_state_ = ControlState::FailStability;
+            setControlState(ControlState::FailStability);
         } else {
-            control_state_ = ControlState::ThrottleLocked;
+            setControlState(ControlState::ThrottleLocked);
             sdcard::openFile();
             airframe_.enableMotors();
         }
@@ -129,9 +127,8 @@ bool PilotCommand::canRequestEnabling() const {
 
 void PilotCommand::disableMotors() {
     airframe_.disableMotors();
-    control_state_ = ControlState::Disabled;
+    setControlState(ControlState::Disabled);
     sdcard::closeFile();
-    updateControlStateFlags();
 }
 
 void PilotCommand::processCommands() {
@@ -166,12 +163,12 @@ void PilotCommand::processCommands() {
     if (invalid_count > 80) {
         invalid_count = 80;
         if (!isOverridden()) {
-            control_state_ = ControlState::FailRx;
+            setControlState(ControlState::FailRx);
         }
     } else if (invalid_count < 0) {
         invalid_count = 0;
         if (control_state_ == ControlState::FailRx) {
-            control_state_ = ControlState::AwaitingAuxDisable;
+            setControlState(ControlState::AwaitingAuxDisable);
         }
     }
 
@@ -183,15 +180,15 @@ void PilotCommand::processCommands() {
         } break;
         case ControlState::Disabled: {
             if (attempting_to_enable) {
-                control_state_ = ControlState::Enabling;
+                setControlState(ControlState::Enabling);
                 enable_attempts_ = 0;
             }
         } break;
         case ControlState::ThrottleLocked: {
             if (!attempting_to_enable) {
-                control_state_ = ControlState::Disabled;
+                setControlState(ControlState::Disabled);
             } else if (command_vector_.throttle == 0) {
-                control_state_ = ControlState::Enabled;
+                setControlState(ControlState::Enabled);
             }
         } break;
         case ControlState::FailStability:
@@ -200,15 +197,13 @@ void PilotCommand::processCommands() {
         case ControlState::Enabling:
         case ControlState::Enabled: {
             if (!attempting_to_enable) {
-                control_state_ = ControlState::Disabled;
+                setControlState(ControlState::Disabled);
             }
         } break;
         case ControlState::FailRx: {
             command_vector_.throttle *= 0.99;
         } break;
     }
-
-    updateControlStateFlags();
 
     if (control_state_ == ControlState::Enabling) {
         processMotorEnablingIteration();
@@ -226,7 +221,11 @@ void PilotCommand::processCommands() {
     }
 }
 
-void PilotCommand::updateControlStateFlags() {
+void PilotCommand::setControlState(ControlState state) {
+    control_state_ = state;
+
+    airframe_.setOverride(isOverridden());
+
     flag_.assign(Status::IDLE, control_state_ == ControlState::Disabled);
     flag_.assign(Status::ENABLING, control_state_ == ControlState::Enabling);
     flag_.assign(Status::FAIL_OTHER, control_state_ == ControlState::AwaitingAuxDisable || control_state_ == ControlState::ThrottleLocked);
@@ -234,7 +233,7 @@ void PilotCommand::updateControlStateFlags() {
     flag_.assign(Status::FAIL_ANGLE, control_state_ == ControlState::FailAngle);
     flag_.assign(Status::RX_FAIL, control_state_ == ControlState::FailRx);
     flag_.assign(Status::ENABLED, control_state_ == ControlState::Enabled);
-    flag_.assign(Status::OVERRIDE, control_state_ == ControlState::Overridden);
+    flag_.assign(Status::OVERRIDE, isOverridden());
 }
 
 bool PilotCommand::Ticker::tick() {

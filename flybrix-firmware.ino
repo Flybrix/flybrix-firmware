@@ -108,7 +108,6 @@ void setup() {
     sdcard::startup();
 
     sys.flag.clear(Status::BOOT);
-    sys.flag.set(Status::IDLE);
     sys.led.update();
 }
 

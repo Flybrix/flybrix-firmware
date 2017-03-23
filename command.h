@@ -69,9 +69,9 @@ class PilotCommand {
         FailRx,
     };
 
-    void updateControlStateFlags();
     void processMotorEnablingIterationHelper();
     bool canRequestEnabling() const;
+    void setControlState(ControlState state);
 
     State& state_;
     R415X& receiver_;
