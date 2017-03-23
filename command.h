@@ -14,9 +14,11 @@
 
 #include <Arduino.h>
 
+#include "airframe.h"
+
 struct Systems;
 struct CommandVector;
-class Airframe;
+struct ControlVectors;
 class State;
 class StateFlag;
 class R415X;
@@ -27,6 +29,23 @@ class PilotCommand {
     void processCommands();
     void processMotorEnablingIteration();
     void disableMotors();
+    void override(bool override);
+    bool isOverridden() const;
+    void applyControl(const ControlVectors& control_vectors);
+    void setMotor(size_t index, uint16_t value);
+    void resetMotors();
+
+    template <typename Tstream>
+    bool readMotor(size_t index, Tstream& input) {
+        return airframe_.readMotor(index, input);
+    }
+
+    template <typename Tstream>
+    void writeMotorsTo(Tstream& output) const {
+        return airframe_.writeMotorsTo(output);
+    }
+
+    Airframe::MixTable& mix_table();
 
    private:
     class Ticker final {
@@ -54,13 +73,13 @@ class PilotCommand {
     void processMotorEnablingIterationHelper();
     bool canRequestEnabling() const;
 
-    Airframe& airframe_;
     State& state_;
     R415X& receiver_;
     StateFlag& flag_;
     CommandVector& command_vector_;
 
-    ControlState control_state_{ControlState::Overridden};
+    Airframe airframe_;
+    ControlState control_state_{ControlState::AwaitingAuxDisable};
     Ticker throttle_hold_off_;  // hold controls low for some time after enabling
     Ticker bluetooth_tolerance_;
     int16_t invalid_count{0};

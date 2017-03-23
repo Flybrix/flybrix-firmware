@@ -39,7 +39,7 @@ class Airframe {
     }
 
     template <typename Tstream>
-    void writeMotorsTo(Tstream& output) {
+    void writeMotorsTo(Tstream& output) const {
         motors_.writeTo(output);
     }
 

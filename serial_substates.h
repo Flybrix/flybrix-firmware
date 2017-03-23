@@ -109,7 +109,7 @@ READ_SUBSTATE(PID_TZ_SLAVE) {
 }
 
 READ_SUBSTATE(MOTOR_OUT) {
-    airframe_.writeMotorsTo(payload);
+    pilot_.writeMotorsTo(payload);
 }
 
 READ_SUBSTATE_PAYLOAD(KINE_ANGLE, kinematics_.angle)

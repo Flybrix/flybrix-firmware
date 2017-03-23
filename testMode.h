@@ -10,7 +10,7 @@
 */
 
 class LED;
-class Airframe;
+class PilotCommand;
 class State;
 
-void runTestMode(State& state, LED& led, Airframe& motors);
+void runTestMode(State& state, LED& led, PilotCommand& pilot);

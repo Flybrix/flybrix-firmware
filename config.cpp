@@ -37,7 +37,7 @@ inline decltype(std::get<field>(Config::Data())) & systemMapping(Systems& sys);
 MAP_SYSTEM(VERSION, Version, version);
 MAP_SYSTEM(ID, ConfigID, id);
 MAP_SYSTEM(PCB, PcbTransform, pcb_transform);
-MAP_SYSTEM(MIX_TABLE, Airframe::MixTable, airframe.mix_table)
+MAP_SYSTEM(MIX_TABLE, Airframe::MixTable, pilot.mix_table())
 MAP_SYSTEM(MAG_BIAS, AK8963::MagBias, mag.mag_bias)
 MAP_SYSTEM(CHANNEL, R415X::ChannelProperties, receiver.channel)
 MAP_SYSTEM(PID_PARAMETERS, Control::PIDParameters, control.pid_parameters)

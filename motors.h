@@ -34,7 +34,7 @@ class Motors {
     };
 
     template <typename Tstream>
-    void writeTo(Tstream& output) {
+    void writeTo(Tstream& output) const {
         output.Append(output_);
     }
 

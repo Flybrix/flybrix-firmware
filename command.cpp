@@ -14,7 +14,41 @@
 #include "commandVector.h"
 #include "stateFlag.h"
 
-PilotCommand::PilotCommand(Systems& systems) : airframe_(systems.airframe), state_(systems.state), receiver_(systems.receiver), flag_(systems.flag), command_vector_(systems.command_vector) {
+PilotCommand::PilotCommand(Systems& systems) : state_(systems.state), receiver_(systems.receiver), flag_(systems.flag), command_vector_(systems.command_vector) {
+}
+
+Airframe::MixTable& PilotCommand::mix_table() {
+    return airframe_.mix_table;
+}
+
+void PilotCommand::override(bool override) {
+    if (override) {
+        control_state_ = ControlState::Overridden;
+    } else if (control_state_ == ControlState::Overridden) {
+        control_state_ = ControlState::AwaitingAuxDisable;
+    }
+    airframe_.setOverride(override);
+    updateControlStateFlags();
+}
+
+bool PilotCommand::isOverridden() const {
+    return control_state_ == ControlState::Overridden;
+}
+
+void PilotCommand::setMotor(size_t index, uint16_t value) {
+    if (isOverridden()) {
+        airframe_.setMotor(index, value);
+    }
+}
+
+void PilotCommand::resetMotors() {
+    if (isOverridden()) {
+        airframe_.resetMotors();
+    }
+}
+
+void PilotCommand::applyControl(const ControlVectors& control_vectors) {
+    airframe_.applyChanges(control_vectors);
 }
 
 void PilotCommand::processMotorEnablingIteration() {
@@ -23,10 +57,6 @@ void PilotCommand::processMotorEnablingIteration() {
         processMotorEnablingIterationHelper();  // this can flip Status::ENABLED to true
         // hold controls low for some time after enabling
         throttle_hold_off_.reset(80);  // @40Hz -- hold for 2 sec
-        if (airframe_.motorsEnabled()) {
-            control_state_ = ControlState::ThrottleLocked;
-            sdcard::openFile();
-        }
     }
     updateControlStateFlags();
 }
@@ -72,6 +102,8 @@ void PilotCommand::processMotorEnablingIterationHelper() {
         if (!state_.stable()) {
             control_state_ = ControlState::FailStability;
         } else {
+            control_state_ = ControlState::ThrottleLocked;
+            sdcard::openFile();
             airframe_.enableMotors();
         }
         return;
@@ -133,7 +165,9 @@ void PilotCommand::processCommands() {
 
     if (invalid_count > 80) {
         invalid_count = 80;
-        control_state_ = ControlState::FailRx;
+        if (!isOverridden()) {
+            control_state_ = ControlState::FailRx;
+        }
     } else if (invalid_count < 0) {
         invalid_count = 0;
         if (control_state_ == ControlState::FailRx) {
@@ -143,17 +177,9 @@ void PilotCommand::processCommands() {
 
     bool attempting_to_enable{(command_vector_.aux_mask & (1 << 0)) != 0};   // AUX1 is low
     bool attempting_to_disable{(command_vector_.aux_mask & (1 << 2)) != 0};  // AUX1 is high
-    bool override{airframe_.motorsOverridden()};
-
-    if (override) {
-        control_state_ = ControlState::Overridden;
-    }
 
     switch (control_state_) {
         case ControlState::Overridden: {
-            if (!override) {
-                control_state_ = ControlState::AwaitingAuxDisable;
-            }
         } break;
         case ControlState::Disabled: {
             if (attempting_to_enable) {

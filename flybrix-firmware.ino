@@ -102,7 +102,7 @@ void setup() {
 
     // factory test pattern runs only once
     if (go_to_test_mode)
-        runTestMode(sys.state, sys.led, sys.airframe);
+        runTestMode(sys.state, sys.led, sys.pilot);
 
     // Perform intial check for an SD card
     sdcard::startup();
@@ -138,10 +138,10 @@ void loop() {
 
     sys.i2c.update();
 
-    if (!sys.airframe.motorsOverridden()) {  // user isn't changing motor levels using Configurator
+    if (!sys.pilot.isOverridden()) {  // user isn't changing motor levels using Configurator
         sys.control_vectors = sys.control.calculateControlVectors(sys.kinematics, sys.command_vector);
     }
-    sys.airframe.applyChanges(sys.control_vectors);
+    sys.pilot.applyControl(sys.control_vectors);
 
     RunProcess<1000>(micros());
     sys.i2c.update();

@@ -83,35 +83,35 @@ DO_SUBCOMMAND(REQ_ENABLE_ITERATION) {
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_0) {
-    return airframe_.readMotor(0, input);
+    return pilot_.readMotor(0, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_1) {
-    return airframe_.readMotor(1, input);
+    return pilot_.readMotor(1, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_2) {
-    return airframe_.readMotor(2, input);
+    return pilot_.readMotor(2, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_3) {
-    return airframe_.readMotor(3, input);
+    return pilot_.readMotor(3, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_4) {
-    return airframe_.readMotor(4, input);
+    return pilot_.readMotor(4, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_5) {
-    return airframe_.readMotor(5, input);
+    return pilot_.readMotor(5, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_6) {
-    return airframe_.readMotor(6, input);
+    return pilot_.readMotor(6, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_7) {
-    return airframe_.readMotor(7, input);
+    return pilot_.readMotor(7, input);
 }
 
 DO_SUBCOMMAND(SET_COMMAND_OVERRIDE) {
@@ -120,7 +120,7 @@ DO_SUBCOMMAND(SET_COMMAND_OVERRIDE) {
         return false;
     }
     bool override = flag != 0;
-    airframe_.setOverride(override);
+    pilot_.override(override);
     return true;
 }
 

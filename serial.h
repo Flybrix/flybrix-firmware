@@ -12,7 +12,6 @@
 #define serial_h
 
 #include <Arduino.h>
-#include "airframe.h"
 #include "BMP280.h"
 #include "cobs.h"
 
@@ -78,7 +77,6 @@ class SerialComm {
     Systems& systems_;
     LED& led_;
     const BMP280& bmp_;
-    Airframe& airframe_;
     StateFlag& flag_;
     Kinematics& kinematics_;
     PilotCommand& pilot_;

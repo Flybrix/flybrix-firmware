@@ -14,7 +14,6 @@
 #include "BMP280.h"
 #include "MPU9250.h"
 #include "R415X.h"
-#include "airframe.h"
 #include "command.h"
 #include "config.h"
 #include "control.h"
@@ -50,7 +49,6 @@ struct Systems {
     MPU9250 mpu;
     AK8963 mag;
     PowerMonitor pwr;
-    Airframe airframe;
     PilotCommand pilot;
     Control control;
     SerialComm conf;
