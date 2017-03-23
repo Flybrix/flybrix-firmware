@@ -14,8 +14,6 @@ enum Status : FlagData {
     IDLE = 0x0010,
 
     ENABLING = 0x0020,
-    CLEAR_MPU_BIAS = 0x0040,
-    SET_MPU_BIAS = 0x0080,
 
     FAIL_STABILITY = 0x0100,
     FAIL_ANGLE = 0x0200,

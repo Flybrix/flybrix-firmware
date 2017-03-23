@@ -198,15 +198,6 @@ bool ProcessTask<100>::Run() {
         return false;
     }
 
-    if (sys.flag.is(Status::CLEAR_MPU_BIAS)) {
-        sys.mpu.forgetBiasValues();
-        sys.flag.clear(Status::CLEAR_MPU_BIAS);
-    }
-    if (sys.flag.is(Status::SET_MPU_BIAS)) {
-        sys.mpu.correctBiasValues();
-        sys.flag.clear(Status::SET_MPU_BIAS);
-    }
-
     sys.conf.Read();  // Respond to commands from the Configurator chrome extension
 
     return true;

@@ -9,12 +9,13 @@
 #include "airframe.h"
 #include "systems.h"
 #include "state.h"
+#include "MPU9250.h"
 #include "R415X.h"
 #include "cardManagement.h"
 #include "commandVector.h"
 #include "stateFlag.h"
 
-PilotCommand::PilotCommand(Systems& systems) : state_(systems.state), receiver_(systems.receiver), flag_(systems.flag), command_vector_(systems.command_vector) {
+PilotCommand::PilotCommand(Systems& systems) : state_(systems.state), mpu_(systems.mpu), receiver_(systems.receiver), flag_(systems.flag), command_vector_(systems.command_vector) {
     setControlState(ControlState::AwaitingAuxDisable);
 }
 
@@ -68,8 +69,8 @@ void PilotCommand::processMotorEnablingIterationHelper() {
         enable_attempts_ = 0;
     }
 
-    if (enable_attempts_ == 0) {            // first call
-        flag_.set(Status::CLEAR_MPU_BIAS);  // our filters will start filling with fresh values!
+    if (enable_attempts_ == 0) {  // first call
+        mpu_.forgetBiasValues();  // our filters will start filling with fresh values!
         enable_attempts_ = 1;
         return;
     }
@@ -84,7 +85,7 @@ void PilotCommand::processMotorEnablingIterationHelper() {
         if (!state_.stable()) {
             setControlState(ControlState::FailStability);
         } else {
-            flag_.set(Status::SET_MPU_BIAS);  // now our filters will start filling with accurate
+            mpu_.correctBiasValues();  // now our filters will start filling with accurate data
         }
         return;
     }
