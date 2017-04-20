@@ -22,6 +22,7 @@ class State;
 class StateFlag;
 struct Systems;
 struct Kinematics;
+struct PowerMonitor;
 struct CommandVector;
 struct ControlVectors;
 
@@ -80,6 +81,7 @@ class SerialComm {
     StateFlag& flag_;
     Kinematics& kinematics_;
     PilotCommand& pilot_;
+    PowerMonitor& pwr_;
     CommandVector& command_vector_;
     ControlVectors& control_vectors_;
 

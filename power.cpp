@@ -6,11 +6,8 @@
 
 #include "power.h"
 #include "board.h"
-#include "state.h"
 
-PowerMonitor::PowerMonitor(State* __state) {
-    state = __state;
-
+PowerMonitor::PowerMonitor() {
     // REFERENCE: https://github.com/pedvide/ADC
     pinMode(board::V0_DETECT, INPUT);
     pinMode(board::I0_DETECT, INPUT);
@@ -29,18 +26,18 @@ PowerMonitor::PowerMonitor(State* __state) {
     adc.setSamplingSpeed(ADC_HIGH_SPEED, ADC_1);    // change the sampling speed
 }
 
-void PowerMonitor::measureRawLevels(void) {
-    state->V0_raw = getV0Raw();
-    state->I0_raw = getI0Raw();
-    state->I1_raw = getI1Raw();
+void PowerMonitor::updateLevels(void) {
+    V0_ = getV0Raw();
+    I0_ = getI0Raw();
+    I1_ = getI1Raw();
 }
 
-float PowerMonitor::getTotalPower(void) {
-    return getI0() * getV0();
+float PowerMonitor::totalPower(void) const {
+    return I0() * V0();
 }
 
-float PowerMonitor::getElectronicsPower(void) {
-    return getI1() * 3.7;
+float PowerMonitor::electronicsPower(void) const {
+    return I1() * 3.7;
 }
 
 uint16_t PowerMonitor::getV0Raw(void) {
@@ -55,17 +52,28 @@ uint16_t PowerMonitor::getI1Raw(void) {
     return (uint16_t)adc.analogRead(board::I1_DETECT, ADC_0);
 }
 
-float PowerMonitor::getV0(void) {
-    // Volts = (20.5 + 226) / 20.5 * 1.2 / 65536 * raw
-    return 0.00022017316 * getV0Raw();
+namespace {
+constexpr float calculateVoltageScale(float v_ref, float r_in, float r_out, float int_max) {
+    return v_ref * r_in / r_out / int_max;
 }
 
-float PowerMonitor::getI0(void) {
-    // Amps = (1/50) / 0.003 * 1.2 / 65536 * raw
-    return 0.00012207031 * getI0Raw();
+constexpr float calculateCurrentScale(float v_ref, float ic_scaling, float r, float int_max) {
+    return v_ref / ic_scaling / r / int_max;
 }
 
-float PowerMonitor::getI1(void) {
-    // Amps = (1/50) / 0.03 * 1.2 / 65536 * raw
-    return 0.00001220703 * getI1Raw();
+constexpr float V0_SCALE = calculateVoltageScale(3.3, 150 + 150, 150, 65536);
+constexpr float I0_SCALE = calculateCurrentScale(3.3, 50, 0.005, 65536);
+constexpr float I1_SCALE = calculateCurrentScale(3.3, 50, 0.033, 65536);
+}
+
+float PowerMonitor::V0(void) const {
+    return V0_SCALE * V0_;
+}
+
+float PowerMonitor::I0(void) const {
+    return I0_SCALE * I0_;
+}
+
+float PowerMonitor::I1(void) const {
+    return I1_SCALE * I1_;
 }

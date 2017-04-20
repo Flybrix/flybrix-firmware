@@ -24,9 +24,6 @@ class State {
     // timing
     uint32_t loopCount = 0;
 
-    // Power
-    uint16_t V0_raw = 0, I0_raw = 0, I1_raw = 0;  // raw ADC levels
-
     // MPU9250 and AK8963
     float R[3][3];                                                                  // rotation matrix from pcb to flyer frame
     float accel[3] = {0.0, 0.0, 0.0};                                               // g's        -- (x,y,z)

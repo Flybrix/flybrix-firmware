@@ -3,6 +3,7 @@
 
 #include "serial_impl.h"
 
+#include "power.h"
 #include "commandVector.h"
 #include "kinematics.h"
 #include "stateFlag.h"
@@ -57,9 +58,9 @@ READ_SUBSTATE(MICROS) {
 }
 
 READ_SUBSTATE_PAYLOAD(STATUS, flag_.value())
-READ_SUBSTATE_PAYLOAD(V0, state_.V0_raw)
-READ_SUBSTATE_PAYLOAD(I0, state_.I0_raw)
-READ_SUBSTATE_PAYLOAD(I1, state_.I1_raw)
+READ_SUBSTATE_PAYLOAD(V0, pwr_.rawV0())
+READ_SUBSTATE_PAYLOAD(I0, pwr_.rawI0())
+READ_SUBSTATE_PAYLOAD(I1, pwr_.rawI1())
 READ_SUBSTATE_PAYLOAD(ACCEL, state_.accel)
 READ_SUBSTATE_PAYLOAD(GYRO, state_.gyro)
 READ_SUBSTATE_PAYLOAD(MAG, state_.mag)
