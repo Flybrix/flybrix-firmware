@@ -177,8 +177,7 @@ void PilotCommand::processCommands() {
         }
     }
 
-    bool attempting_to_enable{(command_vector_.aux_mask & (1 << 0)) != 0};   // AUX1 is low
-    bool attempting_to_disable{(command_vector_.aux_mask & (1 << 2)) != 0};  // AUX1 is high
+    bool attempting_to_enable{command_vector_.aux1 == CommandVector::AUX::Low};
 
     switch (control_state_) {
         case ControlState::Overridden: {

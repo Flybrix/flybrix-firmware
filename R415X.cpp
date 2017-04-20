@@ -106,7 +106,7 @@ extern "C" void ftm1_isr(void) {
 }
 
 bool R415X::ErrorTracker::check(const CommandVector& command_vector) {
-    bool armed{(command_vector.aux_mask & 1) != 0};
+    bool armed{command_vector.aux1 == CommandVector::AUX::Low};
     bool nonzero_throttle{command_vector.throttle > 0};
     bool is_legal{armed || nonzero_throttle};
     if (was_legal_ && !was_flying_) {
@@ -165,22 +165,7 @@ CommandVector R415X::getCommandData() {
     // Translate PPMChannel data into the four command level and aux mask
     command.source = CommandVector::Source::Radio;
 
-    command.aux_mask = 0x00;  // reset the AUX mode bitmask
-    // bitfield order is {AUX1_low, AUX1_mid, AUX1_high, AUX2_low, AUX2_mid, AUX2_high, x, x} (LSB-->MSB)
-    if (AUX1.isLow()) {
-        command.aux_mask |= (1 << 0);
-    } else if (AUX1.isMid()) {
-        command.aux_mask |= (1 << 1);
-    } else if (AUX1.isHigh()) {
-        command.aux_mask |= (1 << 2);
-    }
-    if (AUX2.isLow()) {
-        command.aux_mask |= (1 << 3);
-    } else if (AUX2.isMid()) {
-        command.aux_mask |= (1 << 4);
-    } else if (AUX2.isHigh()) {
-        command.aux_mask |= (1 << 5);
-    }
+    command.parseBools(AUX1.isLow(), AUX1.isMid(), AUX1.isHigh(), AUX2.isLow(), AUX2.isMid(), AUX2.isHigh());
 
     // in some cases it is impossible to get a ppm channel to be close enought to the midpoint (~1500 usec) because the controller trim is too coarse to correct a small error
     // we get around this by creating a small dead zone around the midpoint of signed channel, specified in usec units

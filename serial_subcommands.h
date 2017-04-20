@@ -169,7 +169,7 @@ DO_SUBCOMMAND(SET_SERIAL_RC) {
     }
     if (enabled) {
         command_vector_.source = CommandVector::Source::Bluetooth;
-        command_vector_.aux_mask = auxmask;
+        command_vector_.parseAuxMask(auxmask);
         command_vector_.throttle = throttle;
         command_vector_.pitch = pitch;
         command_vector_.roll = roll;

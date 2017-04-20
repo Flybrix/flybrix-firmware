@@ -72,7 +72,7 @@ READ_SUBSTATE(RX_PPM) {
     }
 }
 
-READ_SUBSTATE_PAYLOAD(AUX_CHAN_MASK, command_vector_.aux_mask)
+READ_SUBSTATE_PAYLOAD(AUX_CHAN_MASK, command_vector_.auxMask())
 READ_SUBSTATE_PAYLOAD(COMMANDS, command_vector_.throttle, command_vector_.pitch, command_vector_.roll, command_vector_.yaw)
 READ_SUBSTATE_PAYLOAD(F_AND_T, control_vectors_)
 
