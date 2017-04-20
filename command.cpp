@@ -152,7 +152,7 @@ void PilotCommand::processCommands() {
             break;
         case CommandVector::Source::Bluetooth:
             // We tolerate bluetooth working as bad as 1 in 10 times
-            invalid_count -= 10;
+            invalid_count -= 20;
             break;
         default:
             ++invalid_count;
