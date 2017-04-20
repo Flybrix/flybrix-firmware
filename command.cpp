@@ -236,15 +236,3 @@ void PilotCommand::setControlState(ControlState state) {
     flag_.assign(Status::ENABLED, control_state_ == ControlState::Enabled);
     flag_.assign(Status::OVERRIDE, isOverridden());
 }
-
-bool PilotCommand::Ticker::tick() {
-    if (count_ == 0) {
-        return false;
-    }
-    --count_;
-    return true;
-}
-
-void PilotCommand::Ticker::reset(uint8_t ticks) {
-    count_ = ticks;
-}

@@ -16,6 +16,8 @@
 
 #include "airframe.h"
 
+#include "utility/ticker.h"
+
 struct Systems;
 struct CommandVector;
 struct ControlVectors;
@@ -49,15 +51,6 @@ class PilotCommand {
     Airframe::MixTable& mix_table();
 
    private:
-    class Ticker final {
-       public:
-        bool tick();
-        void reset(uint8_t ticks);
-
-       private:
-        uint8_t count_{0};
-    };
-
     enum class ControlState {
         Overridden,
         AwaitingAuxDisable,
@@ -82,8 +75,8 @@ class PilotCommand {
 
     Airframe airframe_;
     ControlState control_state_{ControlState::AwaitingAuxDisable};
-    Ticker throttle_hold_off_;  // hold controls low for some time after enabling
-    Ticker bluetooth_tolerance_;
+    Ticker<uint8_t> throttle_hold_off_;  // hold controls low for some time after enabling
+    Ticker<uint8_t> bluetooth_tolerance_;
     int16_t invalid_count{0};
     uint16_t enable_attempts_{0};  // increment when we're in the STATUS_ENABLING state
     bool idle_{false};
