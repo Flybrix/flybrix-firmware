@@ -15,6 +15,7 @@
 #include <Arduino.h>
 
 #include "airframe.h"
+#include "R415X.h"
 
 #include "utility/ticker.h"
 
@@ -24,7 +25,6 @@ struct ControlVectors;
 class State;
 class StateFlag;
 class MPU9250;
-class R415X;
 
 class PilotCommand {
    public:
@@ -49,6 +49,7 @@ class PilotCommand {
     }
 
     Airframe::MixTable& mix_table();
+    R415X& receiver();
 
    private:
     enum class ControlState {
@@ -69,7 +70,7 @@ class PilotCommand {
 
     State& state_;
     MPU9250& mpu_;
-    R415X& receiver_;
+    R415X receiver_;
     StateFlag& flag_;
     CommandVector& command_vector_;
 

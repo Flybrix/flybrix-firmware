@@ -15,12 +15,16 @@
 #include "commandVector.h"
 #include "stateFlag.h"
 
-PilotCommand::PilotCommand(Systems& systems) : state_(systems.state), mpu_(systems.mpu), receiver_(systems.receiver), flag_(systems.flag), command_vector_(systems.command_vector) {
+PilotCommand::PilotCommand(Systems& systems) : state_(systems.state), mpu_(systems.mpu), flag_(systems.flag), command_vector_(systems.command_vector) {
     setControlState(ControlState::AwaitingAuxDisable);
 }
 
 Airframe::MixTable& PilotCommand::mix_table() {
     return airframe_.mix_table;
+}
+
+R415X& PilotCommand::receiver() {
+    return receiver_;
 }
 
 void PilotCommand::override(bool override) {

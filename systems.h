@@ -13,7 +13,6 @@
 #include "AK8963.h"
 #include "BMP280.h"
 #include "MPU9250.h"
-#include "R415X.h"
 #include "command.h"
 #include "config.h"
 #include "control.h"
@@ -35,7 +34,6 @@ struct Systems {
     // subsystem objects initialize pins when created
     // Storing inside a struct forces the right initialization order
     StateFlag flag;
-    R415X receiver;
 
     Kinematics kinematics;
     ControlVectors control_vectors;
