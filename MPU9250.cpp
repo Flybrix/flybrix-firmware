@@ -37,10 +37,7 @@
 #define GYRO_YSIGN 1
 #define GYRO_ZSIGN 1  // verified by experiment
 
-MPU9250::MPU9250(State *__state, I2CManager *__i2c) {
-    state = __state;
-    i2c = __i2c;
-    ready = false;
+MPU9250::MPU9250(State* state, I2CManager* i2c, RotationMatrix<float>& R) : ready{false}, state{state}, i2c{i2c}, R(R) {
     pinMode(board::MPU_INTERRUPT, INPUT);
 }
 
@@ -119,17 +116,17 @@ void MPU9250::correctBiasValues()  // all in FLYER system
     // note: qz = 0.
     // we also want this to be the inverse/transpose to take us from ax ay az back to 0 0 -1
 
-    state->R[0][0] = 1 - 2 * qy * qy;
-    state->R[1][0] = 2 * qx * qy;
-    state->R[2][0] = 2 * qy * qw;
+    R.fields_[0][0] = 1 - 2 * qy * qy;
+    R.fields_[1][0] = 2 * qx * qy;
+    R.fields_[2][0] = 2 * qy * qw;
 
-    state->R[0][1] = 2 * qx * qy;
-    state->R[1][1] = 1 - 2 * qx * qx;
-    state->R[2][1] = -2 * qx * qw;
+    R.fields_[0][1] = 2 * qx * qy;
+    R.fields_[1][1] = 1 - 2 * qx * qx;
+    R.fields_[2][1] = -2 * qx * qw;
 
-    state->R[0][2] = -2 * qy * qw;
-    state->R[1][2] = 2 * qx * qw;
-    state->R[2][2] = 1 - 2 * qx * qx - 2 * qy * qy;
+    R.fields_[0][2] = -2 * qy * qw;
+    R.fields_[1][2] = 2 * qx * qw;
+    R.fields_[2][2] = 1 - 2 * qx * qx - 2 * qy * qy;
 
     // the bias correction in the IC/PCB coordinates
     accelBias[0] = state->accel_filter[0] - ax;
@@ -148,17 +145,7 @@ void MPU9250::forgetBiasValues() {
         accelBias[i] = 0.0f;
     }
     // set R to identity
-    state->R[0][0] = 1.0f;
-    state->R[0][1] = 0.0f;
-    state->R[0][2] = 0.0f;
-
-    state->R[1][0] = 0.0f;
-    state->R[1][1] = 1.0f;
-    state->R[1][2] = 0.0f;
-
-    state->R[2][0] = 0.0f;
-    state->R[2][1] = 0.0f;
-    state->R[2][2] = 1.0f;
+    R = RotationMatrix<float>();
 }
 
 // writes values to state in g's and in degrees per second
@@ -198,12 +185,12 @@ void MPU9250::triggerCallback() {
     state->accel[0] = (float)accelCount[0] * aRes - accelBias[0];
     state->accel[1] = (float)accelCount[1] * aRes - accelBias[1];
     state->accel[2] = (float)accelCount[2] * aRes - accelBias[2];
-    rotate(state->R, state->accel);  // rotate to FLYER coords
+    R.applyTo(state->accel);  // rotate to FLYER coords
 
     state->gyro[0] = (float)gyroCount[0] * gRes - gyroBias[0];
     state->gyro[1] = (float)gyroCount[1] * gRes - gyroBias[1];
     state->gyro[2] = (float)gyroCount[2] * gRes - gyroBias[2];
-    rotate(state->R, state->gyro);  // rotate to FLYER coords
+    R.applyTo(state->gyro);  // rotate to FLYER coords
 
     ready = true;
 }
@@ -318,28 +305,12 @@ void MPU9250::configure() {
     i2c->writeByte(MPU9250_ADDRESS, INT_ENABLE, 0x01);   // Enable data ready (bit 0) interrupt
 }
 
-void MPU9250::rotate(float R[3][3], float x[3]) {
-    /* R is [3][3] - [row][col], x is [3] */
-    float y[3] = {0.0, 0.0, 0.0};
-    float sum = 0.0;
-    for (uint8_t i = 0; i < 3; i++) {
-        sum = 0.0;
-        for (uint8_t j = 0; j < 3; j++) {
-            sum += R[i][j] * x[j];
-        }
-        y[i] = sum;
-    }
-    for (uint8_t i = 0; i < 3; i++) {
-        x[i] = y[i];
-    }
-}
-
 float MPU9250::invSqrt(float x) {
     float halfx = 0.5f * x;
     float y = x;
-    long i = *(long *)&y;
+    long i = *(long*)&y;
     i = 0x5f3759df - (i >> 1);
-    y = *(float *)&i;
+    y = *(float*)&i;
     y = y * (1.5f - (halfx * y * y));
     return y;
 }

@@ -14,7 +14,8 @@
 #include <math.h>
 #include "state.h"
 
-AK8963::MagBias::MagBias() : x{0.0}, y{0.0}, z{0.0} {}
+AK8963::MagBias::MagBias() : x{0.0}, y{0.0}, z{0.0} {
+}
 
 // we have three coordinate systems here:
 // 1. REGISTER coordinates: native values as read
@@ -31,10 +32,7 @@ AK8963::MagBias::MagBias() : x{0.0}, y{0.0}, z{0.0} {}
 #define MAG_YSIGN 1
 #define MAG_ZSIGN -1
 
-AK8963::AK8963(State *__state, I2CManager *__i2c) {
-    state = __state;
-    i2c = __i2c;
-    ready = false;
+AK8963::AK8963(State* state, I2CManager* i2c, const RotationMatrix<float>& R) : ready{false}, state{state}, i2c{i2c}, R(R) {
 }
 
 uint8_t AK8963::getID() {
@@ -63,7 +61,7 @@ bool AK8963::startMeasurement() {
 
 void AK8963::triggerCallback() {
     uint8_t c = data_to_read[6];  // ST2 register
-    if (!(c & 0x08)) {       // Check if magnetic sensor overflow set, if not then report data
+    if (!(c & 0x08)) {            // Check if magnetic sensor overflow set, if not then report data
         // convert from REGISTER system to IC/PCB system
         // "Measurement data is stored in two’s complement and Little Endian format."
         // be careful not to misinterpret 2's complement registers
@@ -81,7 +79,7 @@ void AK8963::triggerCallback() {
         state->mag[0] = (float)magCount[0] * mRes - mag_bias.x;
         state->mag[1] = (float)magCount[1] * mRes - mag_bias.y;
         state->mag[2] = (float)magCount[2] * mRes - mag_bias.z;
-        rotate(state->R, state->mag);  // rotate to FLYER coords
+        R.applyTo(state->mag);  // rotate to FLYER coords
         state->updateStateMag();
     } else {
         // ERROR: ("ERROR: Magnetometer overflow!");
@@ -110,20 +108,4 @@ void AK8963::configure() {
     delay(10);
     i2c->writeByte(AK8963_ADDRESS, AK8963_CNTL1, 0x16);  // Set magnetometer to 16bit, 100Hz continuous acquisition
     delay(10);
-}
-
-void AK8963::rotate(float R[3][3], float x[3]) {
-    /* R is [3][3] - [row][col], x is [3] */
-    float y[3] = {0.0, 0.0, 0.0};
-    float sum = 0.0;
-    for (uint8_t i = 0; i < 3; i++) {
-        sum = 0.0;
-        for (uint8_t j = 0; j < 3; j++) {
-            sum += R[i][j] * x[j];
-        }
-        y[i] = sum;
-    }
-    for (uint8_t i = 0; i < 3; i++) {
-        x[i] = y[i];
-    }
 }

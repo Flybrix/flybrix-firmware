@@ -3,7 +3,7 @@
 #include "state.h"
 #include "i2cManager.h"
 
-Imu::Imu(State& state, I2CManager& i2c) : magnetometer_{&state, &i2c}, accel_and_gyro_{&state, &i2c}, state_(state) {
+Imu::Imu(State& state, I2CManager& i2c) : magnetometer_{&state, &i2c, pcb_to_world_}, accel_and_gyro_{&state, &i2c, pcb_to_world_}, state_(state) {
 }
 
 bool Imu::hasCorrectIDs() {

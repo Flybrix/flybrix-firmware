@@ -3,6 +3,7 @@
 
 #include "AK8963.h"
 #include "MPU9250.h"
+#include "utility/rotation.h"
 
 class State;
 class I2CManager;
@@ -24,6 +25,7 @@ class Imu final {
     AK8963::MagBias& magnetometer_bias();
 
    private:
+    RotationMatrix<float> pcb_to_world_;
     AK8963 magnetometer_;
     MPU9250 accel_and_gyro_;
     State& state_;

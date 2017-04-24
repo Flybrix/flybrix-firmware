@@ -25,7 +25,6 @@ class State {
     uint32_t loopCount = 0;
 
     // MPU9250 and AK8963
-    float R[3][3];                                                                  // rotation matrix from pcb to flyer frame
     float accel[3] = {0.0, 0.0, 0.0};                                               // g's        -- (x,y,z)
     float gyro[3] = {0.0, 0.0, 0.0};                                                // deg/sec    -- (x,y,z)
     float mag[3] = {0.0, 0.0, 0.0};                                                 // milligauss -- (x,y,z)

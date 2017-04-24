@@ -14,6 +14,7 @@
 
 #include "Arduino.h"
 #include "i2cManager.h"
+#include "utility/rotation.h"
 
 class State;
 
@@ -24,14 +25,14 @@ class State;
 
 class MPU9250 : public CallbackProcessor {
    public:  // all in FLYER system
-    MPU9250(State *state, I2CManager *i2c);
+    MPU9250(State* state, I2CManager* i2c, RotationMatrix<float>& R);
 
     void restart();  // calculate bias and prepare for flight
 
     bool ready;
 
     void correctBiasValues();  // set bias values from state
-    void forgetBiasValues();  // discard bias values
+    void forgetBiasValues();   // discard bias values
 
     bool startMeasurement();
     void triggerCallback();  // handles return for getAccelGryo()
@@ -45,13 +46,12 @@ class MPU9250 : public CallbackProcessor {
     void setFilters(uint8_t gyrofilter, uint8_t accelfilter);
 
    private:
-    State *state;
-    I2CManager *i2c;
+    State* state;
+    I2CManager* i2c;
+    RotationMatrix<float>& R;
 
     bool dataReadyInterrupt();  // check interrupt
     uint8_t getStatusByte();
-
-    void rotate(float R[3][3], float x[3]);
 
     void reset();
     void configure();  // set up filters and resolutions for flight

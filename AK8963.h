@@ -14,6 +14,7 @@
 
 #include "Arduino.h"
 #include "i2cManager.h"
+#include "utility/rotation.h"
 
 class State;
 
@@ -24,7 +25,7 @@ class State;
 
 class AK8963 : public CallbackProcessor {
    public:  // all in FLYER system
-    AK8963(State *state, I2CManager *i2c);
+    AK8963(State* state, I2CManager* i2c, const RotationMatrix<float>& R);
 
     void restart();  // calculate bias and prepare for flight
 
@@ -48,12 +49,11 @@ class AK8963 : public CallbackProcessor {
     static_assert(sizeof(MagBias) == 3 * 4, "Data is not packed");
 
    private:
-    State *state;
-    I2CManager *i2c;
+    State* state;
+    I2CManager* i2c;
+    const RotationMatrix<float>& R;
 
     uint8_t getStatusByte();
-
-    void rotate(float R[3][3], float x[3]);
 
     void reset();
     void configure();
