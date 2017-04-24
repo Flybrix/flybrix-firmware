@@ -14,9 +14,8 @@
 Systems::Systems()
     : state{this},
       led{flag},
-      bmp{&i2c},          // pressure sensor object
-      mpu{&state, &i2c},  // inertial sensor object
-      mag{&state, &i2c},  // magnetometer
+      bmp{&i2c},  // pressure sensor object
+      imu{state, i2c},
       pilot{*this},
       control{Control::PIDParameters()},
       // listen for configuration inputs

@@ -24,7 +24,7 @@ struct CommandVector;
 struct ControlVectors;
 class State;
 class StateFlag;
-class MPU9250;
+class Imu;
 
 class PilotCommand {
    public:
@@ -69,7 +69,7 @@ class PilotCommand {
     void setControlState(ControlState state);
 
     State& state_;
-    MPU9250& mpu_;
+    Imu& imu_;
     R415X receiver_;
     StateFlag& flag_;
     CommandVector& command_vector_;

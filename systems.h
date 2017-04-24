@@ -10,9 +10,8 @@
 #ifndef SYSTEMS_H
 #define SYSTEMS_H
 
-#include "AK8963.h"
 #include "BMP280.h"
-#include "MPU9250.h"
+#include "imu.h"
 #include "command.h"
 #include "config.h"
 #include "control.h"
@@ -44,8 +43,7 @@ struct Systems {
     LED led;
 
     BMP280 bmp;
-    MPU9250 mpu;
-    AK8963 mag;
+    Imu imu;
     PowerMonitor pwr;
     PilotCommand pilot;
     Control control;

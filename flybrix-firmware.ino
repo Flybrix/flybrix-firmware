@@ -84,14 +84,10 @@ void setup() {
 
     sys.flag.set(Status::MPU_FAIL);
     sys.led.update();
-    sys.mpu.restart();
-    sys.mag.restart();
-    if ((sys.mpu.getID() == 0x71) && (sys.mag.getID() == 0x48)) {
+    sys.imu.restart();
+    if (sys.imu.hasCorrectIDs()) {
         sys.flag.clear(Status::MPU_FAIL);
-        while (!sys.mpu.startMeasurement()) {
-            delay(1);
-        };                           // important; otherwise we'll never set ready!
-        sys.mag.startMeasurement();  // important; otherwise we'll never set ready!
+        sys.imu.initialize();
     } else {
         sys.led.update();
         while (1)
@@ -116,24 +112,12 @@ uint32_t low_battery_counter = 0;
 template <uint32_t f>
 uint32_t RunProcess(uint32_t start);
 
-bool skip_state_update = false;
-
 void loop() {
     sys.state.loopCount++;
 
     sys.i2c.update();  // manages a queue of requests for mpu, mag, bmp
 
-    if (sys.mpu.ready) {
-        if (!skip_state_update) {
-            sys.state.updateStateIMU(micros());  // update state as often as we can
-        } else {
-        }
-        if (sys.mpu.startMeasurement()) {
-            skip_state_update = false;
-        } else {
-            skip_state_update = true;  // stop updating state until we queue another mpu measurement
-        }
-    }
+    sys.imu.startInertialMeasurement();
 
     sys.i2c.update();
 
@@ -241,13 +225,7 @@ bool ProcessTask<40>::Run() {
 
 template <>
 bool ProcessTask<10>::Run() {
-    if (sys.mag.ready) {
-        sys.mag.startMeasurement();
-    } else {
-        return false;
-    }
-
-    return true;
+    return sys.imu.startMagnetFieldMeasurement();
 }
 
 template <>
