@@ -99,6 +99,6 @@ void State::updateStatePT(uint32_t currentTime) {
     sys_->kinematics.altitude = localization.getElevation();
 }
 
-void State::updateStateMag() {
-    localization.ProcessMeasurementMagnetometer(mag);
+void State::updateStateMag(const Vector3<float>& data) {
+    localization.ProcessMeasurementMagnetometer(data);
 }

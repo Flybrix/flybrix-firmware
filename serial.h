@@ -20,6 +20,7 @@ class Control;
 class LED;
 class State;
 class StateFlag;
+class Imu;
 struct Systems;
 struct Kinematics;
 struct PowerMonitor;
@@ -78,6 +79,7 @@ class SerialComm {
     Systems& systems_;
     LED& led_;
     const BMP280& bmp_;
+    const Imu& imu_;
     StateFlag& flag_;
     Kinematics& kinematics_;
     PilotCommand& pilot_;

@@ -4,6 +4,7 @@
 #include "AK8963.h"
 #include "MPU9250.h"
 #include "utility/rotation.h"
+#include "utility/vector3.h"
 
 class State;
 class I2CManager;
@@ -21,6 +22,8 @@ class Imu final {
 
     bool startInertialMeasurement();
     bool startMagnetFieldMeasurement();
+
+    Vector3<float> magnetField() const;
 
     AK8963::MagBias& magnetometer_bias();
 

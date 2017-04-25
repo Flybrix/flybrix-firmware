@@ -7,6 +7,7 @@
 #include "commandVector.h"
 #include "kinematics.h"
 #include "stateFlag.h"
+#include "imu.h"
 
 enum SerialComm::States : uint8_t {
     MICROS,
@@ -63,7 +64,7 @@ READ_SUBSTATE_PAYLOAD(I0, pwr_.rawI0())
 READ_SUBSTATE_PAYLOAD(I1, pwr_.rawI1())
 READ_SUBSTATE_PAYLOAD(ACCEL, state_.accel)
 READ_SUBSTATE_PAYLOAD(GYRO, state_.gyro)
-READ_SUBSTATE_PAYLOAD(MAG, state_.mag)
+READ_SUBSTATE_PAYLOAD(MAG, imu_.magnetField())
 READ_SUBSTATE_PAYLOAD(TEMPERATURE, bmp_.temperature)
 READ_SUBSTATE_PAYLOAD(PRESSURE, bmp_.pressure)
 

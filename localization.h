@@ -1,6 +1,8 @@
 #ifndef SE_LOCALIZATION_H_
 #define SE_LOCALIZATION_H_
 
+#include "utility/vector3.h"
+
 struct IMUState {
     float gyro_drift[3];
     float gravity_filter_weight;
@@ -24,7 +26,7 @@ class Localization {
 
     void ProcessMeasurementIMU(unsigned int time, const float* gyroscope, const float* accelerometer);
 
-    void ProcessMeasurementMagnetometer(const float* magnetometer);
+    void ProcessMeasurementMagnetometer(const Vector3<float>& magnetometer);
 
     void setTime(unsigned int time);
 

@@ -103,9 +103,10 @@ void Localization::ProcessMeasurementIMU(unsigned int time, const float* gyrosco
     se_kalman_correct(z, zCovar, SE_STATE_A_Z, getVerticalAcceleration(imuState.q, accelCorrected), SE_ACC_VARIANCE);
 }
 
-void Localization::ProcessMeasurementMagnetometer(const float* magnetometer) {
-    for (int i = 0; i < 3; ++i)
-        magLastMeas[i] = magnetometer[i];
+void Localization::ProcessMeasurementMagnetometer(const Vector3<float>& magnetometer) {
+    magLastMeas[0] = magnetometer.x;
+    magLastMeas[1] = magnetometer.y;
+    magLastMeas[2] = magnetometer.z;
     hasMagMeas = true;
 }
 

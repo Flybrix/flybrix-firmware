@@ -54,6 +54,10 @@ bool Imu::startMagnetFieldMeasurement() {
     return magnetometer_.startMeasurement();
 }
 
+Vector3<float> Imu::magnetField() const {
+    return magnetometer_.last_read;
+}
+
 AK8963::MagBias& Imu::magnetometer_bias() {
     return magnetometer_.mag_bias;
 }

@@ -15,6 +15,7 @@
 #include "Arduino.h"
 #include "i2cManager.h"
 #include "utility/rotation.h"
+#include "utility/vector3.h"
 
 class State;
 
@@ -47,6 +48,8 @@ class AK8963 : public CallbackProcessor {
     } mag_bias;
 
     static_assert(sizeof(MagBias) == 3 * 4, "Data is not packed");
+
+    Vector3<float> last_read;  // milligauss -- (x,y,z)
 
    private:
     State* state;

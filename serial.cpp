@@ -12,6 +12,7 @@
 #include "state.h"
 #include "systems.h"
 #include "stateFlag.h"
+#include "imu.h"
 
 namespace {
 
@@ -59,6 +60,7 @@ SerialComm::SerialComm(Systems& systems, const volatile uint16_t* ppm)
       systems_(systems),
       led_(systems.led),
       bmp_(systems.bmp),
+      imu_(systems.imu),
       flag_(systems.flag),
       kinematics_(systems.kinematics),
       pilot_(systems.pilot),

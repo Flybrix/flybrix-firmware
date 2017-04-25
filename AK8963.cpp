@@ -76,11 +76,11 @@ void AK8963::triggerCallback() {
         magCount[0] = (int16_t)((float)magCount[0] * magCalibration[0]);
         magCount[1] = (int16_t)((float)magCount[1] * magCalibration[1]);
         magCount[2] = (int16_t)((float)magCount[2] * magCalibration[2]);
-        state->mag[0] = (float)magCount[0] * mRes - mag_bias.x;
-        state->mag[1] = (float)magCount[1] * mRes - mag_bias.y;
-        state->mag[2] = (float)magCount[2] * mRes - mag_bias.z;
-        R.applyTo(state->mag);  // rotate to FLYER coords
-        state->updateStateMag();
+        last_read.x = (float)magCount[0] * mRes - mag_bias.x;
+        last_read.y = (float)magCount[1] * mRes - mag_bias.y;
+        last_read.z = (float)magCount[2] * mRes - mag_bias.z;
+        R.applyTo(last_read);  // rotate to FLYER coords
+        state->updateStateMag(last_read);
     } else {
         // ERROR: ("ERROR: Magnetometer overflow!");
     }
