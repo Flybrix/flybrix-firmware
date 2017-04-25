@@ -102,7 +102,7 @@ void AK8963::configure() {
     i2c->readBytes(AK8963_ADDRESS, AK8963_ASAX, 3, &rawData[0]);  // Read the x-, y-, and z-axis sensitivity calibration values
 
     // adjustment formula is taken from the datasheet
-    magCalibration = Vector3<float>(rawData[MAG_XDIR] - 128, rawData[MAG_XDIR] - 128, rawData[MAG_XDIR] - 128) / 256 + 1;
+    magCalibration = Vector3<float>(rawData[MAG_XDIR] - 128, rawData[MAG_YDIR] - 128, rawData[MAG_ZDIR] - 128) / 256 + 1;
     i2c->writeByte(AK8963_ADDRESS, AK8963_CNTL1, 0x00);  // Power down magnetometer
     delay(10);
     i2c->writeByte(AK8963_ADDRESS, AK8963_CNTL1, 0x16);  // Set magnetometer to 16bit, 100Hz continuous acquisition
