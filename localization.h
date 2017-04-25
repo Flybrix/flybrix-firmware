@@ -24,7 +24,7 @@ class Localization {
 
     void ProcessMeasurementPT(unsigned int time, float p_sl, float p, float t);
 
-    void ProcessMeasurementIMU(unsigned int time, const float* gyroscope, const float* accelerometer);
+    void ProcessMeasurementIMU(unsigned int time, const Vector3<float>& gyroscope, const Vector3<float>& accelerometer);
 
     void ProcessMeasurementMagnetometer(const Vector3<float>& magnetometer);
 

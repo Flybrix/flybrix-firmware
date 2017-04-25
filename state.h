@@ -26,8 +26,6 @@ class State {
     uint32_t loopCount = 0;
 
     // MPU9250
-    float accel[3] = {0.0, 0.0, 0.0};                                               // g's        -- (x,y,z)
-    float gyro[3] = {0.0, 0.0, 0.0};                                                // deg/sec    -- (x,y,z)
     float accel_filter[3] = {0.0, 0.0, 0.0}, accel_filter_sq[3] = {0.0, 0.0, 0.0};  // for stability variance calculation
     float gyro_filter[3] = {0.0, 0.0, 0.0};                                         // for gyro drift correction
 
@@ -35,7 +33,7 @@ class State {
     bool upright() const;
 
     void resetState();
-    void updateStateIMU(uint32_t currentTime);
+    void updateStateIMU(uint32_t currentTime, const Vector3<float>& accel, const Vector3<float>& gyro);
     void updateStatePT(uint32_t currentTime);
     void updateStateMag(const Vector3<float>& data);
 

@@ -39,7 +39,8 @@ bool Imu::startInertialMeasurement() {
     }
 
     if (do_state_update_) {
-        state_.updateStateIMU(micros());  // update state as often as we can
+        // update state as often as we can
+        state_.updateStateIMU(micros(), accel_and_gyro_.linear_acceleration, accel_and_gyro_.angular_velocity);
     }
 
     do_state_update_ = accel_and_gyro_.startMeasurement();
@@ -54,8 +55,16 @@ bool Imu::startMagnetFieldMeasurement() {
     return magnetometer_.startMeasurement();
 }
 
-Vector3<float> Imu::magnetField() const {
+Vector3<float> Imu::magnet_field() const {
     return magnetometer_.last_read;
+}
+
+Vector3<float> Imu::linear_acceleration() const {
+    return accel_and_gyro_.linear_acceleration;
+}
+
+Vector3<float> Imu::angular_velocity() const {
+    return accel_and_gyro_.angular_velocity;
 }
 
 AK8963::MagBias& Imu::magnetometer_bias() {

@@ -182,15 +182,15 @@ void MPU9250::triggerCallback() {
     gyroCount[1] = GYRO_YSIGN * registerValuesGyro[GYRO_YDIR];
     gyroCount[2] = GYRO_ZSIGN * registerValuesGyro[GYRO_ZDIR];
 
-    state->accel[0] = (float)accelCount[0] * aRes - accelBias[0];
-    state->accel[1] = (float)accelCount[1] * aRes - accelBias[1];
-    state->accel[2] = (float)accelCount[2] * aRes - accelBias[2];
-    R.applyTo(state->accel);  // rotate to FLYER coords
+    linear_acceleration.x = (float)accelCount[0] * aRes - accelBias[0];
+    linear_acceleration.y = (float)accelCount[1] * aRes - accelBias[1];
+    linear_acceleration.z = (float)accelCount[2] * aRes - accelBias[2];
+    R.applyTo(linear_acceleration);  // rotate to FLYER coords
 
-    state->gyro[0] = (float)gyroCount[0] * gRes - gyroBias[0];
-    state->gyro[1] = (float)gyroCount[1] * gRes - gyroBias[1];
-    state->gyro[2] = (float)gyroCount[2] * gRes - gyroBias[2];
-    R.applyTo(state->gyro);  // rotate to FLYER coords
+    angular_velocity.x = (float)gyroCount[0] * gRes - gyroBias[0];
+    angular_velocity.y = (float)gyroCount[1] * gRes - gyroBias[1];
+    angular_velocity.z = (float)gyroCount[2] * gRes - gyroBias[2];
+    R.applyTo(angular_velocity);  // rotate to FLYER coords
 
     ready = true;
 }

@@ -15,6 +15,7 @@
 #include "Arduino.h"
 #include "i2cManager.h"
 #include "utility/rotation.h"
+#include "utility/vector3.h"
 
 class State;
 
@@ -44,6 +45,9 @@ class MPU9250 : public CallbackProcessor {
     uint8_t getID();
 
     void setFilters(uint8_t gyrofilter, uint8_t accelfilter);
+
+    Vector3<float> linear_acceleration;  // g's        -- (x,y,z)
+    Vector3<float> angular_velocity;     // deg/sec    -- (x,y,z)
 
    private:
     State* state;

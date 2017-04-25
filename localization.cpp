@@ -87,15 +87,17 @@ void Localization::ProcessMeasurementPT(unsigned int time, float p_sl, float p, 
     ProcessMeasurementElevation(time, calculateElevation(p_sl, p, t));
 }
 
-void Localization::ProcessMeasurementIMU(unsigned int time, const float* gyroscope, const float* accelerometer) {
+void Localization::ProcessMeasurementIMU(unsigned int time, const Vector3<float>& gyroscope, const Vector3<float>& accelerometer) {
     float gyroCorrected[3];
     float accelCorrected[3];
     float deltaTime = (time - timeNow) / 1000000.0f;
     deltaTime = std::min(deltaTime, 4.0f * this->deltaTime);
-    for (int i = 0; i < 3; ++i) {
-        gyroCorrected[i] = gyroscope[i];
-        accelCorrected[i] = accelerometer[i] * 9.81f;
-    }
+    gyroCorrected[0] = gyroscope.x;
+    gyroCorrected[1] = gyroscope.y;
+    gyroCorrected[2] = gyroscope.z;
+    accelCorrected[0] = accelerometer.x * 9.81f;
+    accelCorrected[1] = accelerometer.y * 9.81f;
+    accelCorrected[2] = accelerometer.z * 9.81f;
     se_compensate_imu(deltaTime, ahrsType, ahrsParameters, &imuState, gyroCorrected, accelCorrected, magLastMeas, hasMagMeas);
     hasMagMeas = false;
     se_kalman_predict(deltaTime, z, zCovar);

@@ -67,19 +67,23 @@ float State::mixRadians(float w1, float a1, float a2) {
     return (1.0f - w1) * a2 + w1 * (a1 + correction);
 }
 
-void State::updateStateIMU(uint32_t currentTime) {
+void State::updateStateIMU(uint32_t currentTime, const Vector3<float>& accel, const Vector3<float>& gyro) {
     // update IIRs (@500Hz)
-    for (int i = 0; i < 3; i++) {
-        gyro_filter[i] = 0.1 * gyro[i] + 0.9 * gyro_filter[i];
-        accel_filter[i] = 0.1 * accel[i] + 0.9 * accel_filter[i];
-        accel_filter_sq[i] = 0.1 * accel[i] * accel[i] + 0.9 * accel_filter_sq[i];
-    }
+    gyro_filter[0] = 0.1 * gyro.x + 0.9 * gyro_filter[0];
+    gyro_filter[1] = 0.1 * gyro.y + 0.9 * gyro_filter[1];
+    gyro_filter[2] = 0.1 * gyro.z + 0.9 * gyro_filter[2];
+    accel_filter[0] = 0.1 * accel.x + 0.9 * accel_filter[0];
+    accel_filter[1] = 0.1 * accel.y + 0.9 * accel_filter[1];
+    accel_filter[2] = 0.1 * accel.z + 0.9 * accel_filter[2];
+    accel_filter_sq[0] = 0.1 * accel.x * accel.x + 0.9 * accel_filter_sq[0];
+    accel_filter_sq[1] = 0.1 * accel.y * accel.y + 0.9 * accel_filter_sq[1];
+    accel_filter_sq[2] = 0.1 * accel.z * accel.z + 0.9 * accel_filter_sq[2];
 
-    const float rate_scaled[3] = {gyro[0] * DEG2RAD, gyro[1] * DEG2RAD, gyro[2] * DEG2RAD};
+    Vector3<float> rate_scaled{gyro.x * DEG2RAD, gyro.y * DEG2RAD, gyro.z * DEG2RAD};
 
-    sys_->kinematics.rate.pitch = rate_scaled[0];
-    sys_->kinematics.rate.roll = rate_scaled[1];
-    sys_->kinematics.rate.yaw = rate_scaled[2];
+    sys_->kinematics.rate.pitch = rate_scaled.x;
+    sys_->kinematics.rate.roll = rate_scaled.y;
+    sys_->kinematics.rate.yaw = rate_scaled.z;
 
     localization.ProcessMeasurementIMU(currentTime, rate_scaled, accel);
 
