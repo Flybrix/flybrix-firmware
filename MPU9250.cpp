@@ -61,15 +61,9 @@ uint8_t MPU9250::getStatusByte() {
 
 void MPU9250::correctBiasValues()  // all in FLYER system
 {
-    float ax, ay, az; /*normalized accel_filter values */
-    float recipNorm = 0.0f;
-    for (uint8_t i = 0; i < 3; i++) {
-        recipNorm += state->accel_filter[i] * state->accel_filter[i];
-    }
-    recipNorm = invSqrt(recipNorm);
-    ax = state->accel_filter[0] * recipNorm;
-    ay = state->accel_filter[1] * recipNorm;
-    az = state->accel_filter[2] * recipNorm;
+    float recipNorm = invSqrt(state->accel_filter.lengthSq());
+    /*normalized accel_filter values */
+    Vector3<float> a = state->accel_filter * invSqrt(state->accel_filter.lengthSq());
 
     //
     // Generation of Rotation Matrix from quaternion between [ax,ay,az] and [0,0,-1]
@@ -79,7 +73,7 @@ void MPU9250::correctBiasValues()  // all in FLYER system
 
     //  float real_part = norm_u_norm_v + dot(u, v);
     float qw, qx, qy;  //, qz;
-    float r = 1.0f - az;
+    float r = 1.0f - a.z;
 
     if (r < 1.e-6f) {
         /* If u and v are exactly opposite, rotate 180 degrees
@@ -102,8 +96,8 @@ void MPU9250::correctBiasValues()  // all in FLYER system
         // a1 and a2 = 0, a3 = -1, b1 = ax, b2=ay, b3 = az
         //(ay, -ax, 0);
         qw = r;
-        qx = ay;
-        qy = -ax;
+        qx = a.y;
+        qy = -a.x;
         // qz = 0;
 
         recipNorm = invSqrt(qw * qw + qx * qx + qy * qy);
@@ -129,21 +123,16 @@ void MPU9250::correctBiasValues()  // all in FLYER system
     R.fields_[2][2] = 1 - 2 * qx * qx - 2 * qy * qy;
 
     // the bias correction in the IC/PCB coordinates
-    accelBias[0] = state->accel_filter[0] - ax;
-    accelBias[1] = state->accel_filter[1] - ay;
-    accelBias[2] = state->accel_filter[2] - az;
+    accelBias = state->accel_filter - a;
 
     // biases are additive corrections -- we were not rotating during calibration so we measured gyro drift
-    for (uint8_t i = 0; i < 3; i++) {  // construct biases for later manual subtraction
-        gyroBias[i] = (float)state->gyro_filter[i];
-    }
+    // construct biases for later manual subtraction
+    gyroBias = state->gyro_filter;
 }
 
 void MPU9250::forgetBiasValues() {
-    for (uint8_t i = 0; i < 3; i++) {
-        gyroBias[i] = 0.0f;
-        accelBias[i] = 0.0f;
-    }
+    gyroBias = Vector3<float>();
+    accelBias = Vector3<float>();
     // set R to identity
     R = RotationMatrix<float>();
 }
@@ -166,9 +155,9 @@ void MPU9250::triggerCallback() {
     registerValuesAccel[0] = (int16_t)(((uint16_t)data_to_read[0]) << 8) | (uint16_t)data_to_read[1];  // high byte, low byte
     registerValuesAccel[1] = (int16_t)(((uint16_t)data_to_read[2]) << 8) | (uint16_t)data_to_read[3];
     registerValuesAccel[2] = (int16_t)(((uint16_t)data_to_read[4]) << 8) | (uint16_t)data_to_read[5];
-    accelCount[0] = ACCEL_XSIGN * registerValuesAccel[ACCEL_XDIR];
-    accelCount[1] = ACCEL_YSIGN * registerValuesAccel[ACCEL_YDIR];
-    accelCount[2] = ACCEL_ZSIGN * registerValuesAccel[ACCEL_ZDIR];
+    accelCount.x = ACCEL_XSIGN * registerValuesAccel[ACCEL_XDIR];
+    accelCount.y = ACCEL_YSIGN * registerValuesAccel[ACCEL_YDIR];
+    accelCount.z = ACCEL_ZSIGN * registerValuesAccel[ACCEL_ZDIR];
 
     // be careful not to misinterpret 2's complement registers
     temperatureCount[0] = (int16_t)(((uint16_t)data_to_read[6]) << 8) | (uint16_t)data_to_read[7];
@@ -178,19 +167,15 @@ void MPU9250::triggerCallback() {
     registerValuesGyro[0] = (int16_t)(((uint16_t)data_to_read[8]) << 8) | (uint16_t)data_to_read[9];  // high byte, low byte
     registerValuesGyro[1] = (int16_t)(((uint16_t)data_to_read[10]) << 8) | (uint16_t)data_to_read[11];
     registerValuesGyro[2] = (int16_t)(((uint16_t)data_to_read[12]) << 8) | (uint16_t)data_to_read[13];
-    gyroCount[0] = GYRO_XSIGN * registerValuesGyro[GYRO_XDIR];
-    gyroCount[1] = GYRO_YSIGN * registerValuesGyro[GYRO_YDIR];
-    gyroCount[2] = GYRO_ZSIGN * registerValuesGyro[GYRO_ZDIR];
+    gyroCount.x = GYRO_XSIGN * registerValuesGyro[GYRO_XDIR];
+    gyroCount.y = GYRO_YSIGN * registerValuesGyro[GYRO_YDIR];
+    gyroCount.z = GYRO_ZSIGN * registerValuesGyro[GYRO_ZDIR];
 
-    linear_acceleration.x = (float)accelCount[0] * aRes - accelBias[0];
-    linear_acceleration.y = (float)accelCount[1] * aRes - accelBias[1];
-    linear_acceleration.z = (float)accelCount[2] * aRes - accelBias[2];
-    R.applyTo(linear_acceleration);  // rotate to FLYER coords
+    linear_acceleration = Vector3<float>(accelCount) * aRes - accelBias;
+    linear_acceleration = R * linear_acceleration;  // rotate to FLYER coords
 
-    angular_velocity.x = (float)gyroCount[0] * gRes - gyroBias[0];
-    angular_velocity.y = (float)gyroCount[1] * gRes - gyroBias[1];
-    angular_velocity.z = (float)gyroCount[2] * gRes - gyroBias[2];
-    R.applyTo(angular_velocity);  // rotate to FLYER coords
+    angular_velocity = Vector3<float>(gyroCount) * gRes - gyroBias;
+    angular_velocity = R * angular_velocity;  // rotate to FLYER coords
 
     ready = true;
 }

@@ -62,12 +62,10 @@ class AK8963 : public CallbackProcessor {
     void configure();
     void disable();
 
-    const float mRes = 10. * 4912. / 32760.0;  // +/- 0.15 uT (or 1.5mG) per LSB; range is -32760...32760
-
     // 16-bit raw values, bias correction, factory calibration
-    int16_t magCount[3] = {0, 0, 0};
+    Vector3<int16_t> magCount{0, 0, 0};
     // bias is stored in MagBias
-    float magCalibration[3] = {0.0, 0.0, 0.0};
+    Vector3<float> magCalibration{0.0, 0.0, 0.0};
 
     // buffers for processCallback
     uint8_t data_to_read[7];

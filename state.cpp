@@ -26,13 +26,8 @@ State::State(Systems* sys) : localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED
 }
 
 bool State::stable(void) const {
-    float max_variance = 0.0f;
-    for (int i = 0; i < 3; i++) {
-        float variance = accel_filter_sq[i] - accel_filter[i] * accel_filter[i];
-        if (variance > max_variance) {
-            max_variance = variance;
-        }
-    }
+    Vector3<float> variance = accel_filter_sq - accel_filter.squared();
+    float max_variance = std::max(std::max(variance.x, variance.y), variance.z);
     return (max_variance < parameters.enable[0]);
 }
 
@@ -41,14 +36,10 @@ float State::fast_cosine(float x_deg) {
 }
 
 bool State::upright(void) const {
-    // cos(angle) = (a dot g) / |a| / |g| = -a[2]
-    // cos(angle)^2 = a[2]*a[2] / (a dot a)
+    // cos(angle) = (a dot g) / |a| / |g| = -a.z
+    // cos(angle)^2 = a.z*a.z / (a dot a)
     float cos_test_angle = fast_cosine(parameters.enable[1]);
-    float a_dot_a = 0.0f;
-    for (uint8_t i = 0; i < 3; i++) {
-        a_dot_a += accel_filter[i] * accel_filter[i];
-    }
-    return (accel_filter[2] * accel_filter[2] > a_dot_a * cos_test_angle * cos_test_angle);
+    return (accel_filter.z * accel_filter.z > accel_filter.lengthSq() * cos_test_angle * cos_test_angle);
 }
 
 void State::resetState() {
@@ -69,17 +60,11 @@ float State::mixRadians(float w1, float a1, float a2) {
 
 void State::updateStateIMU(uint32_t currentTime, const Vector3<float>& accel, const Vector3<float>& gyro) {
     // update IIRs (@500Hz)
-    gyro_filter[0] = 0.1 * gyro.x + 0.9 * gyro_filter[0];
-    gyro_filter[1] = 0.1 * gyro.y + 0.9 * gyro_filter[1];
-    gyro_filter[2] = 0.1 * gyro.z + 0.9 * gyro_filter[2];
-    accel_filter[0] = 0.1 * accel.x + 0.9 * accel_filter[0];
-    accel_filter[1] = 0.1 * accel.y + 0.9 * accel_filter[1];
-    accel_filter[2] = 0.1 * accel.z + 0.9 * accel_filter[2];
-    accel_filter_sq[0] = 0.1 * accel.x * accel.x + 0.9 * accel_filter_sq[0];
-    accel_filter_sq[1] = 0.1 * accel.y * accel.y + 0.9 * accel_filter_sq[1];
-    accel_filter_sq[2] = 0.1 * accel.z * accel.z + 0.9 * accel_filter_sq[2];
+    gyro_filter = gyro * 0.1 + gyro_filter * 0.9;
+    accel_filter = accel * 0.1 + accel_filter * 0.9;
+    accel_filter_sq = accel.squared() * 0.1 + accel_filter_sq * 0.9;
 
-    Vector3<float> rate_scaled{gyro.x * DEG2RAD, gyro.y * DEG2RAD, gyro.z * DEG2RAD};
+    Vector3<float> rate_scaled = gyro * DEG2RAD;
 
     sys_->kinematics.rate.pitch = rate_scaled.x;
     sys_->kinematics.rate.roll = rate_scaled.y;

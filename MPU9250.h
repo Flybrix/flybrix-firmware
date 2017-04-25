@@ -66,8 +66,8 @@ class MPU9250 : public CallbackProcessor {
 
     // 16-bit raw values, bias correction, factory calibration
     int16_t temperatureCount[1] = {0};
-    int16_t gyroCount[3] = {0, 0, 0}, accelCount[3] = {0, 0, 0};
-    float gyroBias[3] = {0.0, 0.0, 0.0}, accelBias[3] = {0.0, 0.0, 0.0};
+    Vector3<int16_t> gyroCount = {0, 0, 0}, accelCount = {0, 0, 0};
+    Vector3<float> gyroBias = {0.0, 0.0, 0.0}, accelBias = {0.0, 0.0, 0.0};
 
     // buffers for processCallback
     uint8_t data_to_read[14];

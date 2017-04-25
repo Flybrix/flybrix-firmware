@@ -59,6 +59,10 @@ bool AK8963::startMeasurement() {
     return true;
 }
 
+namespace {
+constexpr float RAW_TO_uT = 10. * 4912. / 32760.0;  // +/- 0.15 uT (or 1.5mG) per LSB; range is -32760...32760
+}
+
 void AK8963::triggerCallback() {
     uint8_t c = data_to_read[6];  // ST2 register
     if (!(c & 0x08)) {            // Check if magnetic sensor overflow set, if not then report data
@@ -69,17 +73,13 @@ void AK8963::triggerCallback() {
         registerValues[0] = (int16_t)(((uint16_t)data_to_read[1]) << 8) | (uint16_t)data_to_read[0];  // low byte, high byte
         registerValues[1] = (int16_t)(((uint16_t)data_to_read[3]) << 8) | (uint16_t)data_to_read[2];
         registerValues[2] = (int16_t)(((uint16_t)data_to_read[5]) << 8) | (uint16_t)data_to_read[4];
-        magCount[0] = MAG_XSIGN * registerValues[MAG_XDIR];
-        magCount[1] = MAG_YSIGN * registerValues[MAG_YDIR];
-        magCount[2] = MAG_ZSIGN * registerValues[MAG_ZDIR];
+        magCount.x = MAG_XSIGN * registerValues[MAG_XDIR];
+        magCount.y = MAG_YSIGN * registerValues[MAG_YDIR];
+        magCount.z = MAG_ZSIGN * registerValues[MAG_ZDIR];
         // scale by sensitivity before rotating
-        magCount[0] = (int16_t)((float)magCount[0] * magCalibration[0]);
-        magCount[1] = (int16_t)((float)magCount[1] * magCalibration[1]);
-        magCount[2] = (int16_t)((float)magCount[2] * magCalibration[2]);
-        last_read.x = (float)magCount[0] * mRes - mag_bias.x;
-        last_read.y = (float)magCount[1] * mRes - mag_bias.y;
-        last_read.z = (float)magCount[2] * mRes - mag_bias.z;
-        R.applyTo(last_read);  // rotate to FLYER coords
+        magCount = Vector3<float>(magCount) * magCalibration;
+        last_read = Vector3<float>(magCount) * RAW_TO_uT - Vector3<float>(mag_bias.x, mag_bias.y, mag_bias.z);
+        last_read = R * last_read;  // rotate to FLYER coords
         state->updateStateMag(last_read);
     } else {
         // ERROR: ("ERROR: Magnetometer overflow!");
@@ -100,10 +100,9 @@ void AK8963::configure() {
     i2c->writeByte(AK8963_ADDRESS, AK8963_CNTL1, 0x0F);  // Enter Fuse ROM access mode
     delay(10);
     i2c->readBytes(AK8963_ADDRESS, AK8963_ASAX, 3, &rawData[0]);  // Read the x-, y-, and z-axis sensitivity calibration values
+
     // adjustment formula is taken from the datasheet
-    magCalibration[0] = (float)(rawData[MAG_XDIR] - 128) / 256. + 1.;
-    magCalibration[1] = (float)(rawData[MAG_YDIR] - 128) / 256. + 1.;
-    magCalibration[2] = (float)(rawData[MAG_ZDIR] - 128) / 256. + 1.;
+    magCalibration = Vector3<float>(rawData[MAG_XDIR] - 128, rawData[MAG_XDIR] - 128, rawData[MAG_XDIR] - 128) / 256 + 1;
     i2c->writeByte(AK8963_ADDRESS, AK8963_CNTL1, 0x00);  // Power down magnetometer
     delay(10);
     i2c->writeByte(AK8963_ADDRESS, AK8963_CNTL1, 0x16);  // Set magnetometer to 16bit, 100Hz continuous acquisition
