@@ -12,6 +12,11 @@
 #include "stlFix.h"
 #include "debug.h"
 
+void std::__throw_bad_function_call() {
+    DebugPrintf("SYSTEM ERROR: Unable to call function");
+    exit(1);
+}
+
 void std::__throw_bad_alloc() {
     DebugPrintf("SYSTEM ERROR: Unable to allocate memory");
     exit(1);

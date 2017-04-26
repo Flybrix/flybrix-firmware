@@ -142,7 +142,7 @@ bool MPU9250::startMeasurement() {
     if (dataReadyInterrupt()) {
         ready = false;
         data_to_send[0] = ACCEL_XOUT_H;
-        i2c->addTransfer(MPU9250_ADDRESS, 1, data_to_send, 14, data_to_read, this);
+        i2c->addTransfer(MPU9250_ADDRESS, 1, data_to_send, 14, data_to_read, [this]() { triggerCallback(); });
         return true;
     }
     return false;

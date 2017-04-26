@@ -24,7 +24,7 @@ class State;
 // 2. IC/PCB coordinates: matches FLYER system if the pcb is in standard orientation
 // 3. FLYER coordinates: if the pcb is mounted in a non-standard way the FLYER system is a rotation of the IC/PCB system
 
-class AK8963 : public CallbackProcessor {
+class AK8963 {
    public:  // all in FLYER system
     AK8963(State* state, I2CManager* i2c, const RotationMatrix<float>& R);
 

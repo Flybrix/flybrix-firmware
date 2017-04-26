@@ -36,7 +36,7 @@ union BMP_calibration_union {
     uint8_t raw[sizeof(struct BMP_calibration)];
 };
 
-class BMP280 : public CallbackProcessor {
+class BMP280 {
    public:
     explicit BMP280(I2CManager *i2c);  // base type
 

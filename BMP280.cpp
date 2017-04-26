@@ -73,7 +73,7 @@ boolean BMP280::validateCalibation() {
 bool BMP280::startMeasurement(void) {
     ready = false;
     data_to_send[0] = BMP280_REG_RESULT;
-    i2c->addTransfer(BMP280_ADDR, 1, data_to_send, 6, data_to_read, this);
+    i2c->addTransfer(BMP280_ADDR, 1, data_to_send, 6, data_to_read, [this]() { triggerCallback(); });
     return true;
 }
 

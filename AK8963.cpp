@@ -55,7 +55,7 @@ uint8_t AK8963::getStatusByte() {
 bool AK8963::startMeasurement() {
     ready = false;
     data_to_send[0] = AK8963_XOUT_L;
-    i2c->addTransfer(AK8963_ADDRESS, 1, data_to_send, 7, data_to_read, this);
+    i2c->addTransfer(AK8963_ADDRESS, 1, data_to_send, 7, data_to_read, [this]() { triggerCallback(); });
     return true;
 }
 

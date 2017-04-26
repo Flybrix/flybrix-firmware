@@ -24,7 +24,7 @@ class State;
 // 2. IC/PCB coordinates: matches FLYER system if the pcb is in standard orientation
 // 3. FLYER coordinates: if the pcb is mounted in a non-standard way the FLYER system is a rotation of the IC/PCB system
 
-class MPU9250 : public CallbackProcessor {
+class MPU9250 {
    public:  // all in FLYER system
     MPU9250(State* state, I2CManager* i2c, RotationMatrix<float>& R);
 
