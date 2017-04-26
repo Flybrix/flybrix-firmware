@@ -12,12 +12,11 @@
 #ifndef AK8963_h
 #define AK8963_h
 
+#include <functional>
 #include "Arduino.h"
 #include "i2cManager.h"
 #include "utility/rotation.h"
 #include "utility/vector3.h"
-
-class State;
 
 // we have three coordinate systems here:
 // 1. REGISTER coordinates: native values as read
@@ -25,15 +24,14 @@ class State;
 // 3. FLYER coordinates: if the pcb is mounted in a non-standard way the FLYER system is a rotation of the IC/PCB system
 
 class AK8963 {
-   public:  // all in FLYER system
-    AK8963(State* state, I2CManager* i2c, const RotationMatrix<float>& R);
+   public:
+    AK8963(I2CManager* i2c, const RotationMatrix<float>& R);
 
     void restart();  // calculate bias and prepare for flight
 
     bool ready;
 
-    bool startMeasurement();  // writes values to state (when data is ready)
-    void triggerCallback();   // handles return for getAccelGryo()
+    bool startMeasurement(std::function<void()> on_success);
 
     uint8_t getID();
 
@@ -52,7 +50,8 @@ class AK8963 {
     Vector3<float> last_read;  // milligauss -- (x,y,z)
 
    private:
-    State* state;
+    void triggerCallback(std::function<void()> on_success);
+
     I2CManager* i2c;
     const RotationMatrix<float>& R;
 

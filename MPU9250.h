@@ -12,12 +12,11 @@
 #ifndef MPU9250_h
 #define MPU9250_h
 
+#include <functional>
 #include "Arduino.h"
 #include "i2cManager.h"
 #include "utility/rotation.h"
 #include "utility/vector3.h"
-
-class State;
 
 // we have three coordinate systems here:
 // 1. REGISTER coordinates: native values as read
@@ -25,18 +24,18 @@ class State;
 // 3. FLYER coordinates: if the pcb is mounted in a non-standard way the FLYER system is a rotation of the IC/PCB system
 
 class MPU9250 {
-   public:  // all in FLYER system
-    MPU9250(State* state, I2CManager* i2c, RotationMatrix<float>& R);
+   public:
+    MPU9250(I2CManager* i2c, RotationMatrix<float>& R);
 
     void restart();  // calculate bias and prepare for flight
 
     bool ready;
 
-    void correctBiasValues();  // set bias values from state
-    void forgetBiasValues();   // discard bias values
+    // set bias values from state
+    void correctBiasValues(const Vector3<float>& accel_filter, const Vector3<float>& gyro_filter);
+    void forgetBiasValues();  // discard bias values
 
-    bool startMeasurement();
-    void triggerCallback();  // handles return for getAccelGryo()
+    bool startMeasurement(std::function<void()> on_success);
 
     float getTemp() {
         return (float)temperatureCount[0] / 333.87 + 21.0;
@@ -50,7 +49,8 @@ class MPU9250 {
     Vector3<float> angular_velocity;     // deg/sec    -- (x,y,z)
 
    private:
-    State* state;
+    void triggerCallback(std::function<void()> on_success);
+
     I2CManager* i2c;
     RotationMatrix<float>& R;
 

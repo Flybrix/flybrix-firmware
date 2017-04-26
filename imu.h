@@ -34,7 +34,6 @@ class Imu final {
     AK8963 magnetometer_;
     MPU9250 accel_and_gyro_;
     State& state_;
-    bool do_state_update_{true};
 };
 
 #endif  // IMU_H

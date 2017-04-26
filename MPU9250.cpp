@@ -13,7 +13,6 @@
 #include <stdio.h>
 #include <math.h>
 #include "board.h"
-#include "state.h"
 
 // we have three coordinate systems here:
 // 1. REGISTER coordinates: native values as read
@@ -37,7 +36,7 @@
 #define GYRO_YSIGN 1
 #define GYRO_ZSIGN 1  // verified by experiment
 
-MPU9250::MPU9250(State* state, I2CManager* i2c, RotationMatrix<float>& R) : ready{false}, state{state}, i2c{i2c}, R(R) {
+MPU9250::MPU9250(I2CManager* i2c, RotationMatrix<float>& R) : ready{false}, i2c{i2c}, R(R) {
     pinMode(board::MPU_INTERRUPT, INPUT);
 }
 
@@ -59,11 +58,10 @@ uint8_t MPU9250::getStatusByte() {
     return i2c->readByte(MPU9250_ADDRESS, INT_STATUS);
 }
 
-void MPU9250::correctBiasValues()  // all in FLYER system
-{
-    float recipNorm = invSqrt(state->accel_filter.lengthSq());
+void MPU9250::correctBiasValues(const Vector3<float>& accel_filter, const Vector3<float>& gyro_filter) {
+    float recipNorm = invSqrt(accel_filter.lengthSq());
     /*normalized accel_filter values */
-    Vector3<float> a = state->accel_filter * invSqrt(state->accel_filter.lengthSq());
+    Vector3<float> a = accel_filter * invSqrt(accel_filter.lengthSq());
 
     //
     // Generation of Rotation Matrix from quaternion between [ax,ay,az] and [0,0,-1]
@@ -123,11 +121,11 @@ void MPU9250::correctBiasValues()  // all in FLYER system
     R.fields_[2][2] = 1 - 2 * qx * qx - 2 * qy * qy;
 
     // the bias correction in the IC/PCB coordinates
-    accelBias = state->accel_filter - a;
+    accelBias = accel_filter - a;
 
     // biases are additive corrections -- we were not rotating during calibration so we measured gyro drift
     // construct biases for later manual subtraction
-    gyroBias = state->gyro_filter;
+    gyroBias = gyro_filter;
 }
 
 void MPU9250::forgetBiasValues() {
@@ -138,17 +136,17 @@ void MPU9250::forgetBiasValues() {
 }
 
 // writes values to state in g's and in degrees per second
-bool MPU9250::startMeasurement() {
+bool MPU9250::startMeasurement(std::function<void()> on_success) {
     if (dataReadyInterrupt()) {
         ready = false;
         data_to_send[0] = ACCEL_XOUT_H;
-        i2c->addTransfer(MPU9250_ADDRESS, 1, data_to_send, 14, data_to_read, [this]() { triggerCallback(); });
+        i2c->addTransfer(MPU9250_ADDRESS, 1, data_to_send, 14, data_to_read, [this, on_success]() { triggerCallback(on_success); });
         return true;
     }
     return false;
 }
 
-void MPU9250::triggerCallback() {
+void MPU9250::triggerCallback(std::function<void()> on_success) {
     // convert from REGISTER system to IC/PCB system
     int16_t registerValuesAccel[3];
     // be careful not to misinterpret 2's complement registers
@@ -178,6 +176,8 @@ void MPU9250::triggerCallback() {
     angular_velocity = R * angular_velocity;  // rotate to FLYER coords
 
     ready = true;
+
+    on_success();
 }
 
 void MPU9250::reset() {

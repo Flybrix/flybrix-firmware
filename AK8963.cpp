@@ -12,7 +12,6 @@
 #include <i2c_t3.h>
 #include <stdio.h>
 #include <math.h>
-#include "state.h"
 
 AK8963::MagBias::MagBias() : x{0.0}, y{0.0}, z{0.0} {
 }
@@ -32,7 +31,7 @@ AK8963::MagBias::MagBias() : x{0.0}, y{0.0}, z{0.0} {
 #define MAG_YSIGN 1
 #define MAG_ZSIGN -1
 
-AK8963::AK8963(State* state, I2CManager* i2c, const RotationMatrix<float>& R) : ready{false}, state{state}, i2c{i2c}, R(R) {
+AK8963::AK8963(I2CManager* i2c, const RotationMatrix<float>& R) : ready{false}, i2c{i2c}, R(R) {
 }
 
 uint8_t AK8963::getID() {
@@ -52,10 +51,10 @@ uint8_t AK8963::getStatusByte() {
 }
 
 // writes values to state in milligauss
-bool AK8963::startMeasurement() {
+bool AK8963::startMeasurement(std::function<void()> on_success) {
     ready = false;
     data_to_send[0] = AK8963_XOUT_L;
-    i2c->addTransfer(AK8963_ADDRESS, 1, data_to_send, 7, data_to_read, [this]() { triggerCallback(); });
+    i2c->addTransfer(AK8963_ADDRESS, 1, data_to_send, 7, data_to_read, [this, on_success]() { triggerCallback(on_success); });
     return true;
 }
 
@@ -63,7 +62,7 @@ namespace {
 constexpr float RAW_TO_uT = 10. * 4912. / 32760.0;  // +/- 0.15 uT (or 1.5mG) per LSB; range is -32760...32760
 }
 
-void AK8963::triggerCallback() {
+void AK8963::triggerCallback(std::function<void()> on_success) {
     uint8_t c = data_to_read[6];  // ST2 register
     if (!(c & 0x08)) {            // Check if magnetic sensor overflow set, if not then report data
         // convert from REGISTER system to IC/PCB system
@@ -80,7 +79,7 @@ void AK8963::triggerCallback() {
         magCount = Vector3<float>(magCount) * magCalibration;
         last_read = Vector3<float>(magCount) * RAW_TO_uT - Vector3<float>(mag_bias.x, mag_bias.y, mag_bias.z);
         last_read = R * last_read;  // rotate to FLYER coords
-        state->updateStateMag(last_read);
+        on_success();
     } else {
         // ERROR: ("ERROR: Magnetometer overflow!");
     }
