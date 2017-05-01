@@ -25,7 +25,7 @@
 
 class AK8963 {
    public:
-    AK8963(I2CManager* i2c, const RotationMatrix<float>& R);
+    AK8963(I2CManager& i2c, const RotationMatrix<float>& R);
 
     void restart();  // calculate bias and prepare for flight
 
@@ -52,7 +52,7 @@ class AK8963 {
    private:
     void triggerCallback(std::function<void()> on_success);
 
-    I2CManager* i2c;
+    I2CManager& i2c;
     const RotationMatrix<float>& R;
 
     uint8_t getStatusByte();

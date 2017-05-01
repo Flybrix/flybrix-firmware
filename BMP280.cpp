@@ -11,20 +11,18 @@
 #include <i2c_t3.h>
 #include <stdint.h>
 
-BMP280::BMP280(I2CManager *__i2c) {
-    i2c = __i2c;
-    ready = false;
+BMP280::BMP280(I2CManager& i2c) : ready{false}, i2c(i2c) {
 }
 
 void BMP280::restart() {
     uint8_t settings;
 
     // full reset
-    i2c->writeByte(BMP280_ADDR, 0xE0, 0xB6);
+    i2c.writeByte(BMP280_ADDR, 0xE0, 0xB6);
 
     delay(10);  // wait at least 2 ms for "power-on-reset"
     // load factory calibration
-    i2c->readBytes(BMP280_ADDR, BMP280_FACTORY_CALIBRATION, sizeof(struct BMP_calibration), CALIBRATION.raw);
+    i2c.readBytes(BMP280_ADDR, BMP280_FACTORY_CALIBRATION, sizeof(struct BMP_calibration), CALIBRATION.raw);
     // check to see if calibration values are sensible
     if (!validateCalibation()) {
         // ERROR: ("...WARNING -- CALIBRATION MAY NOT BE RELIABLE!...");
@@ -39,7 +37,7 @@ void BMP280::restart() {
     settings |= OSRS_T_X2;
     settings |= OSRS_P_X16;
     settings |= MODE_NORMAL;
-    i2c->writeByte(BMP280_ADDR, BMP280_REG_CTRL_MEAS, settings);
+    i2c.writeByte(BMP280_ADDR, BMP280_REG_CTRL_MEAS, settings);
 
     //  t_sb[7,6,5] bits in control register 0xF5 -- 000 (0.5ms sleep)
     // filter[4,3,2] bits in control register 0xF5 -- 111 (16)
@@ -48,18 +46,18 @@ void BMP280::restart() {
     settings = 0x0;
     settings |= FILTER_X16;
     settings |= T_SB_0p5ms;
-    i2c->writeByte(BMP280_ADDR, BMP280_REG_CONFIG, settings);
+    i2c.writeByte(BMP280_ADDR, BMP280_REG_CONFIG, settings);
 
     // resulting measurement rate is 26.32 Hz
     delay(250);  // first few values are bad
 }
 
 uint8_t BMP280::getID() {
-    return i2c->readByte(BMP280_ADDR, 0xD0);  // Read WHO_AM_I register for BMP280 --> 0x58
+    return i2c.readByte(BMP280_ADDR, 0xD0);  // Read WHO_AM_I register for BMP280 --> 0x58
 }
 
 uint8_t BMP280::getStatusByte() {
-    return i2c->readByte(BMP280_ADDR, 0xF3);
+    return i2c.readByte(BMP280_ADDR, 0xF3);
     // bit 3 set to ‘1’ whenever a conversion is running and back to ‘0’ when the results have been transferred to the data registers.
     // bit 0 set to ‘1’ when the NVM data are being copied to image registers and back to ‘0’ when the copying is done.
 }
@@ -73,7 +71,7 @@ boolean BMP280::validateCalibation() {
 bool BMP280::startMeasurement(void) {
     ready = false;
     data_to_send[0] = BMP280_REG_RESULT;
-    i2c->addTransfer(BMP280_ADDR, 1, data_to_send, 6, data_to_read, [this]() { triggerCallback(); });
+    i2c.addTransfer(BMP280_ADDR, 1, data_to_send, 6, data_to_read, [this]() { triggerCallback(); });
     return true;
 }
 

@@ -31,11 +31,11 @@ AK8963::MagBias::MagBias() : x{0.0}, y{0.0}, z{0.0} {
 #define MAG_YSIGN 1
 #define MAG_ZSIGN -1
 
-AK8963::AK8963(I2CManager* i2c, const RotationMatrix<float>& R) : ready{false}, i2c{i2c}, R(R) {
+AK8963::AK8963(I2CManager& i2c, const RotationMatrix<float>& R) : ready{false}, i2c(i2c), R(R) {
 }
 
 uint8_t AK8963::getID() {
-    return i2c->readByte(AK8963_ADDRESS, WHO_AM_I_AK8963);  // Read WHO_AM_I register for MPU-9250 --> 0x48
+    return i2c.readByte(AK8963_ADDRESS, WHO_AM_I_AK8963);  // Read WHO_AM_I register for MPU-9250 --> 0x48
 }
 
 void AK8963::restart() {
@@ -43,7 +43,7 @@ void AK8963::restart() {
 }
 
 uint8_t AK8963::getStatusByte() {
-    return i2c->readByte(AK8963_ADDRESS, AK8963_ST1);
+    return i2c.readByte(AK8963_ADDRESS, AK8963_ST1);
     // bit 0 turns to “1” when data is ready in single measurement mode, continuous measurement mode1, 2, external trigger measurement mode or self-test mode. It returns to “0” when any one of ST2
     // register or measurement data register (HXL~HZH) is read.
     // bit 1 turns to “1” when data has been skipped in continuous measurement mode or external trigger measurement mode. It returns to “0” when any one of ST2 register or measurement data register
@@ -54,7 +54,7 @@ uint8_t AK8963::getStatusByte() {
 bool AK8963::startMeasurement(std::function<void()> on_success) {
     ready = false;
     data_to_send[0] = AK8963_XOUT_L;
-    i2c->addTransfer(AK8963_ADDRESS, 1, data_to_send, 7, data_to_read, [this, on_success]() { triggerCallback(on_success); });
+    i2c.addTransfer(AK8963_ADDRESS, 1, data_to_send, 7, data_to_read, [this, on_success]() { triggerCallback(on_success); });
     return true;
 }
 
@@ -87,23 +87,23 @@ void AK8963::triggerCallback(std::function<void()> on_success) {
 }
 
 void AK8963::disable() {
-    i2c->writeByte(AK8963_ADDRESS, AK8963_CNTL1, 0x00);  // Power down magnetometer
+    i2c.writeByte(AK8963_ADDRESS, AK8963_CNTL1, 0x00);  // Power down magnetometer
     delay(100);
 }
 
 void AK8963::configure() {
     // First extract the factory calibration for each magnetometer axis
-    uint8_t rawData[3];                                  // x/y/z gyro calibration data stored here
-    i2c->writeByte(AK8963_ADDRESS, AK8963_CNTL1, 0x00);  // Power down magnetometer
+    uint8_t rawData[3];                                 // x/y/z gyro calibration data stored here
+    i2c.writeByte(AK8963_ADDRESS, AK8963_CNTL1, 0x00);  // Power down magnetometer
     delay(10);
-    i2c->writeByte(AK8963_ADDRESS, AK8963_CNTL1, 0x0F);  // Enter Fuse ROM access mode
+    i2c.writeByte(AK8963_ADDRESS, AK8963_CNTL1, 0x0F);  // Enter Fuse ROM access mode
     delay(10);
-    i2c->readBytes(AK8963_ADDRESS, AK8963_ASAX, 3, &rawData[0]);  // Read the x-, y-, and z-axis sensitivity calibration values
+    i2c.readBytes(AK8963_ADDRESS, AK8963_ASAX, 3, &rawData[0]);  // Read the x-, y-, and z-axis sensitivity calibration values
 
     // adjustment formula is taken from the datasheet
     magCalibration = Vector3<float>(rawData[MAG_XDIR] - 128, rawData[MAG_YDIR] - 128, rawData[MAG_ZDIR] - 128) / 256 + 1;
-    i2c->writeByte(AK8963_ADDRESS, AK8963_CNTL1, 0x00);  // Power down magnetometer
+    i2c.writeByte(AK8963_ADDRESS, AK8963_CNTL1, 0x00);  // Power down magnetometer
     delay(10);
-    i2c->writeByte(AK8963_ADDRESS, AK8963_CNTL1, 0x16);  // Set magnetometer to 16bit, 100Hz continuous acquisition
+    i2c.writeByte(AK8963_ADDRESS, AK8963_CNTL1, 0x16);  // Set magnetometer to 16bit, 100Hz continuous acquisition
     delay(10);
 }

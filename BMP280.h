@@ -38,7 +38,7 @@ union BMP_calibration_union {
 
 class BMP280 {
    public:
-    explicit BMP280(I2CManager *i2c);  // base type
+    explicit BMP280(I2CManager& i2c);  // base type
 
     void restart();
 
@@ -54,7 +54,7 @@ class BMP280 {
     uint32_t p0 = 25600000;  // initial pressure, set to 1 bar by default
 
    private:
-    I2CManager *i2c;
+    I2CManager& i2c;
 
     uint8_t getStatusByte();
 

@@ -25,7 +25,7 @@
 
 class MPU9250 {
    public:
-    MPU9250(I2CManager* i2c, RotationMatrix<float>& R);
+    MPU9250(I2CManager& i2c, RotationMatrix<float>& R);
 
     void restart();  // calculate bias and prepare for flight
 
@@ -51,7 +51,7 @@ class MPU9250 {
    private:
     void triggerCallback(std::function<void()> on_success);
 
-    I2CManager* i2c;
+    I2CManager& i2c;
     RotationMatrix<float>& R;
 
     bool dataReadyInterrupt();  // check interrupt
