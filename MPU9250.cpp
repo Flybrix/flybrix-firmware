@@ -61,7 +61,7 @@ uint8_t MPU9250::getStatusByte() {
 void MPU9250::correctBiasValues(const Vector3<float>& accel_filter, const Vector3<float>& gyro_filter) {
     float recipNorm = invSqrt(accel_filter.lengthSq());
     /*normalized accel_filter values */
-    Vector3<float> a = accel_filter * invSqrt(accel_filter.lengthSq());
+    Vector3<float> a = accel_filter * recipNorm;
 
     //
     // Generation of Rotation Matrix from quaternion between [ax,ay,az] and [0,0,-1]
