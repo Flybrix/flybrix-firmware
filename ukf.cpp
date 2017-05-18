@@ -47,6 +47,9 @@ UKF::UKF() : x_{{0, 0, 0, 0, 0}}, P_{{{{0, 0, 0, 0, 0}}, {{0, 0, 0, 0, 0}}, {{0,
 
 void UKF::predict(float dt, const merwe::Covariance<float, 5>& Q) {
     sigmas_f_ = merwe::calcSigmaPoints(ALPHA, BETA, KAPPA, x_, P_);
+    for (merwe::State<float, 5>& sigma : sigmas_f_) {
+        sigma[StateFields::P_Z] += sigma[StateFields::V_Z] * dt;
+    }
     setScaled(sigmas_f_[0], weights_.mean_center, x_);
     for (size_t i = 1; i < 11; ++i) {
         addScaled(sigmas_f_[i], weights_.mean_offset, x_);
@@ -59,4 +62,8 @@ void UKF::predict(float dt, const merwe::Covariance<float, 5>& Q) {
     for (size_t i = 1; i < 11; ++i) {
         addSelfProduct(sigmas_f_[i], weights_.covariance_offset, P_);
     }
+}
+
+void update(float vx, float vy, float d_tof, float h_bar, float roll, float pitch, const merwe::Covariance<float, 4>& R) {
+    // TODO
 }

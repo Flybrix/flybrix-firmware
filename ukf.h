@@ -25,6 +25,8 @@ class UKF final {
 
     void predict(float dt, const merwe::Covariance<float, 5>& Q);
 
+    void update(float vx, float vy, float d_tof, float h_bar, float roll, float pitch, const merwe::Covariance<float, 4>& R);
+
    private:
     enum StateFields {
         V_X = 0,
