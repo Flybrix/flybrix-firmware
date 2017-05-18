@@ -35,6 +35,13 @@ class UKF final {
         V_Z = 3,
         H_GROUND = 4,
     };
+
+    enum SensorFields {
+        V_U = 0,
+        V_V = 1,
+        D_TOF = 2,
+        H_BAR = 3,
+    };
     using SigmasF = std::array<merwe::State<float, 5>, 11>;
     using SigmasH = std::array<merwe::State<float, 4>, 11>;
     merwe::State<float, 5> x_;
