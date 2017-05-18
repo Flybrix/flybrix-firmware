@@ -15,14 +15,12 @@ std::array<State<T, N>, 2 * N + 1> calcSigmaPoints(T alpha, T beta, T kappa, con
 
 template <typename T>
 struct Weights {
-    T mean_center_;
-    T mean_offset_;
-    T covariance_center_;
-    T covariance_offset_;
+    Weights(size_t N, T alpha, T beta, T kappa);
+    T mean_center;
+    T mean_offset;
+    T covariance_center;
+    T covariance_offset;
 };
-
-template <typename T>
-Weights<T> calcWeights(size_t N, T alpha, T beta, T kappa);
 }
 
 #include "merwePoints_impl.h"

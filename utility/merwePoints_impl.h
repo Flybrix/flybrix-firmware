@@ -33,7 +33,7 @@ Covariance<T, N> cholesky(const Covariance<T, N>& a, T scaling) {
 template <typename T, size_t N>
 std::array<State<T, N>, 2 * N + 1> calcSigmaPoints(T alpha, T beta, T kappa, const State<T, N>& x, const Covariance<T, N>& p) {
     T lambda_plus_n{alpha * alpha * (N + kappa)};
-    const Covariance<T, N> u{cholesky(p, lambda_plus_n)};
+    const Covariance<T, N> u = cholesky(p, lambda_plus_n);
     std::array<State<T, N>, 2 * N + 1> sigmas;
     sigmas[0] = x;
     for (size_t i = 0; i < N; ++i) {
@@ -46,13 +46,11 @@ std::array<State<T, N>, 2 * N + 1> calcSigmaPoints(T alpha, T beta, T kappa, con
 }
 
 template <typename T>
-Weights<T> calcWeights(size_t N, T alpha, T beta, T kappa) {
+Weights<T>::Weights(size_t N, T alpha, T beta, T kappa) {
     T lambda_plus_n{alpha * alpha * (N + kappa)};
-    Weights<T> result;
-    result.mean_offset_ = result.covariance_offset_ = 0.5 / lambda_plus_n;
-    result.mean_center_ = 1 - N / lambda_plus_n;
-    result.covariance_center_ = result.mean_center + 1 - alpha * alpha + beta;
-    return result;
+    mean_offset = covariance_offset = 0.5 / lambda_plus_n;
+    mean_center = 1 - N / lambda_plus_n;
+    covariance_center = mean_center + 1 - alpha * alpha + beta;
 }
 
 }  // namespace merwe
