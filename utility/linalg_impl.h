@@ -56,6 +56,20 @@ Vector<T, FIELDS>& Vector<T, FIELDS>::operator-=(const Vector<T, FIELDS>& v) {
 }
 
 template <typename T, size_t FIELDS>
+void Vector<T, FIELDS>::addScaled(const Vector<T, FIELDS>& v, T scaling) {
+    for (size_t i = 0; i < FIELDS; ++i) {
+        data[i] += v.data[i] * scaling;
+    }
+}
+
+template <typename T, size_t FIELDS>
+void Vector<T, FIELDS>::setScaled(const Vector<T, FIELDS>& v, T scaling) {
+    for (size_t i = 0; i < FIELDS; ++i) {
+        data[i] = v.data[i] * scaling;
+    }
+}
+
+template <typename T, size_t FIELDS>
 Vector<T, FIELDS> operator+(const Vector<T, FIELDS>& u, const Vector<T, FIELDS>& v) {
     Vector<T, FIELDS> result{u};
     result += v;

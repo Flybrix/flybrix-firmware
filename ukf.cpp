@@ -6,21 +6,6 @@ namespace {
 constexpr float ALPHA = 0.01;
 constexpr float BETA = 2;
 constexpr float KAPPA = -2;
-
-template <typename T, size_t N>
-inline void setScaled(const merwe::State<T, N>& in, T scale, merwe::State<T, N>& out) {
-    for (size_t i = 0; i < N; ++i) {
-        out[i] = in[i] * scale;
-    }
-}
-
-template <typename T, size_t N>
-inline void addScaled(const merwe::State<T, N>& in, T scale, merwe::State<T, N>& out) {
-    for (size_t i = 0; i < N; ++i) {
-        out[i] += in[i] * scale;
-    }
-}
-
 }  // namespace
 
 UKF::UKF() : weights_(5, ALPHA, BETA, KAPPA) {
@@ -36,10 +21,12 @@ void UKF::predict(float dt, const merwe::Covariance<float, 5>& Q) {
     for (merwe::State<float, 5>& sigma : sigmas_f_) {
         sigma[StateFields::P_Z] += sigma[StateFields::V_Z] * dt;
     }
-    setScaled(sigmas_f_[0], weights_.mean_center, x_);
+
+    x_.setScaled(sigmas_f_[0], weights_.mean_center);
     for (size_t i = 1; i < 11; ++i) {
-        addScaled(sigmas_f_[i], weights_.mean_offset, x_);
+        x_.addScaled(sigmas_f_[i], weights_.mean_offset);
     }
+
     P_ = Q;
     Vector<float, 5> delta_f{sigmas_f_[0] - x_};
     P_.addCorrelation(delta_f, delta_f, weights_.covariance_center);
@@ -75,9 +62,9 @@ void UKF::update(float vu, float vv, float d_tof, float h_bar, float roll, float
 
     merwe::State<float, 4> z_mean;
 
-    setScaled(sigmas_h_[0], weights_.mean_center, z_mean);
+    z_mean.setScaled(sigmas_h_[0], weights_.mean_center);
     for (size_t i = 1; i < 11; ++i) {
-        addScaled(sigmas_h_[i], weights_.mean_offset, z_mean);
+        z_mean.addScaled(sigmas_h_[i], weights_.mean_offset);
     }
 
     merwe::Covariance<float, 4> P_z{R};

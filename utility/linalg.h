@@ -12,6 +12,9 @@ struct Vector {
     Vector<T, FIELDS>& operator+=(const Vector<T, FIELDS>& v);
     Vector<T, FIELDS>& operator-=(const Vector<T, FIELDS>& v);
 
+    void addScaled(const Vector<T, FIELDS>& v, T scaling);
+    void setScaled(const Vector<T, FIELDS>& v, T scaling);
+
     T operator[](size_t field) const {
         return data[field];
     }
