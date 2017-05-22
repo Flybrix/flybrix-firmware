@@ -194,7 +194,7 @@ static inline void solveLowerTriangleEquationSystem(const Matrix<T, ROWS, ROWS>&
 }
 
 template <typename T, size_t ROWS>
-void invertRootable(Matrix<T, ROWS, ROWS>& v) {
+Matrix<T, ROWS, ROWS> invertRootable(const Matrix<T, ROWS, ROWS>& v) {
     const Matrix<T, ROWS, ROWS> l{cholesky<T, ROWS>(v, 1)};
     Matrix<T, ROWS, ROWS> l_inv_t;
 
