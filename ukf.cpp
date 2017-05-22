@@ -49,7 +49,7 @@ void UKF::predict(float dt, const merwe::Covariance<float, 5>& Q) {
     }
 }
 
-void UKF::update(float vx, float vy, float d_tof, float h_bar, float roll, float pitch, const merwe::Covariance<float, 4>& R) {
+void UKF::update(float vu, float vv, float d_tof, float h_bar, float roll, float pitch, const merwe::Covariance<float, 4>& R) {
     float cr = cos(roll);
     float cp = cos(pitch);
     float sr = sin(roll);
@@ -66,6 +66,13 @@ void UKF::update(float vx, float vy, float d_tof, float h_bar, float roll, float
         sigmas_h_[i][SensorFields::D_TOF] = (pz - h) / height_divider;
         sigmas_h_[i][SensorFields::H_BAR] = pz;
     }
+
+    merwe::State<float, 4> z;
+    z[SensorFields::V_U] = vu;
+    z[SensorFields::V_V] = vu;
+    z[SensorFields::D_TOF] = d_tof;
+    z[SensorFields::H_BAR] = h_bar;
+
     merwe::State<float, 4> z_mean;
 
     setScaled(sigmas_h_[0], weights_.mean_center, z_mean);
@@ -74,15 +81,19 @@ void UKF::update(float vx, float vy, float d_tof, float h_bar, float roll, float
     }
 
     merwe::Covariance<float, 4> P_z{R};
+    Matrix<float, 5, 4> y_z_cov;
+
     const merwe::State<float, 4> delta_h{sigmas_h_[0] - z_mean};
     P_z.addCorrelation(delta_h, delta_h, weights_.covariance_center);
+    y_z_cov.addCorrelation(sigmas_f_[0] - x_, delta_h, weights_.covariance_center);
 
     for (size_t i = 1; i < 11; ++i) {
         const merwe::State<float, 4> delta_h{sigmas_h_[i] - z_mean};
         P_z.addCorrelation(delta_h, delta_h, weights_.covariance_offset);
+        y_z_cov.addCorrelation(sigmas_f_[i] - x_, delta_h, weights_.covariance_center);
     }
-    // TODO
-    // Calculate P_z^-1
-    // Calculate K
-    // Calculate x & P
+    Matrix<float, 5, 4> K{y_z_cov * invertRootable(P_z)};
+    x_ += K * (z - z_mean);
+    Matrix<float, 5, 4> K_P_z{K * P_z};
+    P_ -= multMatrixAndTransposeMatrix(K_P_z, K);
 }
