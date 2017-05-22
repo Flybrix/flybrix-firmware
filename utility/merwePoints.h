@@ -3,12 +3,14 @@
 
 #include <array>
 
+#include "linalg.h"
+
 namespace merwe {
 template <typename T, size_t N>
-using State = std::array<T, N>;
+using State = Vector<T, N>;
 
 template <typename T, size_t N>
-using Covariance = std::array<std::array<T, N>, N>;
+using Covariance = Matrix<T, N, N>;
 
 template <typename T, size_t N>
 std::array<State<T, N>, 2 * N + 1> calcSigmaPoints(T alpha, T beta, T kappa, const State<T, N>& x, const Covariance<T, N>& p);
