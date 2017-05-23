@@ -170,9 +170,11 @@ template <typename T, size_t ROWS, size_t COLS>
 Vector<T, ROWS> operator*(const Matrix<T, ROWS, COLS>& u, const Vector<T, COLS>& v) {
     Vector<T, ROWS> result;
     for (size_t i = 0; i < ROWS; ++i) {
+        T sum{0};
         for (size_t j = 0; j < COLS; ++j) {
-            result[i] = u(i, j) * v[j];
+            sum += u(i, j) * v[j];
         }
+        result[i] = sum;
     }
     return result;
 }
@@ -220,7 +222,7 @@ Matrix<T, ROWS, ROWS> invertRootable(const Matrix<T, ROWS, ROWS>& v) {
         solveLowerTriangleEquationSystem(l, l_inv_t.data + i * ROWS);
     }
 
-    return multMatrixAndTransposeMatrix(l_inv_t, l_inv_t, v);
+    return multMatrixAndTransposeMatrix(l_inv_t, l_inv_t);
 }
 
 template <typename T, size_t ROWS, size_t COLS>

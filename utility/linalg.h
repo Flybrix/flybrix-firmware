@@ -60,7 +60,7 @@ template <typename T, size_t ROWS>
 Matrix<T, ROWS, ROWS> cholesky(const Matrix<T, ROWS, ROWS>& v, T scaling);
 
 template <typename T, size_t ROWS>
-Matrix<T, ROWS, ROWS> invertRootable(Matrix<T, ROWS, ROWS>& v);
+Matrix<T, ROWS, ROWS> invertRootable(const Matrix<T, ROWS, ROWS>& v);
 
 template <typename T, size_t ROWS, size_t COLS, size_t COLS_OTH>
 Matrix<T, ROWS, COLS_OTH> operator*(const Matrix<T, ROWS, COLS>& u, const Matrix<T, COLS, COLS_OTH>& v);
