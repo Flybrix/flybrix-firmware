@@ -36,7 +36,7 @@ void UKF::predict(float dt, const merwe::Covariance<float, 5>& Q) {
     }
 }
 
-void UKF::update(float vu, float vv, float d_tof, float h_bar, float roll, float pitch, const merwe::Covariance<float, 4>& R) {
+void UKF::update(Measurement vu, Measurement vv, Measurement d_tof, Measurement h_bar, float roll, float pitch) {
     float cr = cos(roll);
     float cp = cos(pitch);
     float sr = sin(roll);
@@ -55,10 +55,10 @@ void UKF::update(float vu, float vv, float d_tof, float h_bar, float roll, float
     }
 
     merwe::State<float, 4> z;
-    z[SensorFields::V_U] = vu;
-    z[SensorFields::V_V] = vu;
-    z[SensorFields::D_TOF] = d_tof;
-    z[SensorFields::H_BAR] = h_bar;
+    z[SensorFields::V_U] = vu.value;
+    z[SensorFields::V_V] = vu.value;
+    z[SensorFields::D_TOF] = d_tof.value;
+    z[SensorFields::H_BAR] = h_bar.value;
 
     merwe::State<float, 4> z_mean;
 
@@ -67,7 +67,11 @@ void UKF::update(float vu, float vv, float d_tof, float h_bar, float roll, float
         z_mean.addScaled(sigmas_h_[i], weights_.mean_offset);
     }
 
-    merwe::Covariance<float, 4> P_z{R};
+    merwe::Covariance<float, 4> P_z;
+    P_z(SensorFields::V_U, SensorFields::V_U) = vu.variance;
+    P_z(SensorFields::V_V, SensorFields::V_V) = vu.variance;
+    P_z(SensorFields::D_TOF, SensorFields::D_TOF) = d_tof.variance;
+    P_z(SensorFields::H_BAR, SensorFields::H_BAR) = h_bar.variance;
     Matrix<float, 5, 4> y_z_cov;
 
     const merwe::State<float, 4> delta_h{sigmas_h_[0] - z_mean};

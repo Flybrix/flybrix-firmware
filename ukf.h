@@ -5,6 +5,11 @@
 
 class UKF final {
    public:
+    struct Measurement {
+        float value;
+        float variance;
+    };
+
     UKF();
 
     float vx() const {
@@ -25,7 +30,7 @@ class UKF final {
 
     void predict(float dt, const merwe::Covariance<float, 5>& Q);
 
-    void update(float vu, float vv, float d_tof, float h_bar, float roll, float pitch, const merwe::Covariance<float, 4>& R);
+    void update(Measurement vu, Measurement vv, Measurement d_tof, Measurement h_bar, float roll, float pitch);
 
    private:
     enum StateFields {
