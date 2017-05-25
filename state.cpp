@@ -22,7 +22,7 @@
 State::Parameters::Parameters() : state_estimation{1.0, 0.01}, enable{0.001, 30.0} {
 }
 
-State::State(Systems* sys) : localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, FilterType::Madgwick, parameters.state_estimation, STATE_BARO_VARIANCE), sys_{sys} {
+State::State(Systems* sys) : localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, Ahrs::Type::Madgwick, parameters.state_estimation, STATE_BARO_VARIANCE), sys_{sys} {
 }
 
 bool State::stable(void) const {
@@ -46,7 +46,7 @@ void State::resetState() {
     localization.setTime(0.0f);
     sys_->kinematics = Kinematics();
     sys_->bmp.p0 = sys_->bmp.pressure;  // reset filter to current value
-    localization = Localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, FilterType::Madgwick, parameters.state_estimation, STATE_BARO_VARIANCE);
+    localization = Localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, Ahrs::Type::Madgwick, parameters.state_estimation, STATE_BARO_VARIANCE);
 }
 
 float State::mixRadians(float w1, float a1, float a2) {
@@ -72,12 +72,12 @@ void State::updateStateIMU(uint32_t currentTime, const Vector3<float>& accel, co
 
     localization.ProcessMeasurementIMU(currentTime, rate_scaled, accel);
 
-    const float* q = localization.getAhrsQuaternion();
-    float r11 = 2.0f * (q[2] * q[3] + q[1] * q[0]);
-    float r12 = q[1] * q[1] + q[2] * q[2] - q[3] * q[3] - q[0] * q[0];
-    float r21 = -2.0f * (q[2] * q[0] - q[1] * q[3]);
-    float r31 = 2.0f * (q[3] * q[0] + q[1] * q[2]);
-    float r32 = q[1] * q[1] - q[2] * q[2] - q[3] * q[3] + q[0] * q[0];
+    q = localization.getAhrsQuaternion();
+    float r11 = 2.0f * (q.y * q.z + q.x * q.w);
+    float r12 = q.x * q.x + q.y * q.y - q.z * q.z - q.w * q.w;
+    float r21 = -2.0f * (q.y * q.w - q.x * q.z);
+    float r31 = 2.0f * (q.z * q.w + q.x * q.y);
+    float r32 = q.x * q.x - q.y * q.y - q.z * q.z + q.w * q.w;
     sys_->kinematics.angle.pitch = -atan2(r11, r12);
     sys_->kinematics.angle.roll = asin(r21);
     sys_->kinematics.angle.yaw = -atan2(r31, r32);

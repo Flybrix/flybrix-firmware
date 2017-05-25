@@ -1,24 +1,14 @@
 #ifndef SE_LOCALIZATION_H_
 #define SE_LOCALIZATION_H_
 
+#include "ahrs.h"
 #include "utility/vector3.h"
-
-struct IMUState {
-    float gyro_drift[3];
-    float gravity_filter_weight;
-    float gravity;
-    float q[4];
-    float fb_i[3];
-};
-
-/* Filter types */
-enum class FilterType { Madgwick = 0, Mahony = 1 };
 
 class Localization {
    public:
-    Localization(float deltaTime, FilterType ahrsType, const float* ahrsParameters, float elevationVariance);
+    Localization(float deltaTime, Ahrs::Type ahrsType, const float* ahrsParameters, float elevationVariance);
 
-    Localization(float q0, float q1, float q2, float q3, float deltaTime, FilterType ahrsType, const float* ahrsParameters, float elevationVariance);
+    Localization(float q0, float q1, float q2, float q3, float deltaTime, Ahrs::Type ahrsType, const float* ahrsParameters, float elevationVariance);
 
     void ProcessMeasurementElevation(unsigned int time, float elevation);
 
@@ -34,21 +24,19 @@ class Localization {
 
     void setGyroDriftEstimate(float x, float y, float z);
 
-    const float* getAhrsQuaternion() const;
+    const Quaternion<float>& getAhrsQuaternion() const;
 
     float getElevation() const;
 
    private:
-    IMUState imuState;
+    Ahrs ahrs_;
+    Vector3<float> gyro_drift_;
+    float gravity_force_;
     float z[3];
     float zCovar[9];
-    float magLastMeas[3];
-    bool hasMagMeas;
 
-    float deltaTime;
     const float* ahrsParameters;
     float elevationVariance;
-    FilterType ahrsType;
     unsigned int timeNow;
 };
 

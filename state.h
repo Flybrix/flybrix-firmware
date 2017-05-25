@@ -15,6 +15,7 @@
 #include <cstdint>
 #include "localization.h"
 #include "utility/vector3.h"
+#include "utility/quaternion.h"
 
 struct Systems;
 
@@ -37,8 +38,7 @@ class State {
     void updateStatePT(uint32_t currentTime);
     void updateStateMag(const Vector3<float>& data);
 
-    // const float* q; //quaternion storage for logging
-    float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+    Quaternion<float> q;  // quaternion storage for logging
 
     struct __attribute__((packed)) Parameters {
         Parameters();

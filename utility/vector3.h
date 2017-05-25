@@ -17,6 +17,13 @@ struct __attribute__((packed)) Vector3 {
     Number y;
     Number z;
 
+    Vector3<Number>& operator*=(Number scale) {
+        x *= scale;
+        y *= scale;
+        z *= scale;
+        return *this;
+    }
+
     Vector3<Number> operator*(Number scale) const {
         return {x * scale, y * scale, z * scale};
     }
@@ -27,6 +34,13 @@ struct __attribute__((packed)) Vector3 {
 
     Vector3<Number> operator*(const Vector3<Number>& v) const {
         return {x * v.x, y * v.y, z * v.z};
+    }
+
+    Vector3<Number>& operator+=(const Vector3<Number>& op) {
+        x += op.x;
+        y += op.y;
+        z += op.z;
+        return *this;
     }
 
     Vector3<Number> operator+(const Vector3<Number>& op) const {
