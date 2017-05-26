@@ -30,12 +30,14 @@ void Ahrs::update(uint32_t timestamp) {
         return;
     }
 
+    if (timestamp <= last_update_timestamp_) {
+        last_update_timestamp_ = timestamp;
+        return;
+    }
+
     float dt = (timestamp - last_update_timestamp_) / 1000000.0f;
     last_update_timestamp_ = timestamp;
 
-    if (dt <= 0.0f) {
-        return;
-    }
     if (dt > max_delta_time_) {
         dt = max_delta_time_;
     }

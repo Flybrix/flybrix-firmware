@@ -2,6 +2,7 @@
 #define SE_LOCALIZATION_H_
 
 #include "ahrs.h"
+#include "ukf.h"
 #include "utility/vector3.h"
 
 class Localization {
@@ -10,19 +11,21 @@ class Localization {
 
     Localization(float q0, float q1, float q2, float q3, float deltaTime, Ahrs::Type ahrsType, const float* ahrsParameters, float elevationVariance);
 
-    void ProcessMeasurementElevation(unsigned int time, float elevation);
+    void ProcessMeasurementElevation(float elevation);
 
-    void ProcessMeasurementPT(unsigned int time, float p_sl, float p, float t);
+    void ProcessMeasurementPT(float p_sl, float p, float t);
 
-    void ProcessMeasurementIMU(unsigned int time, const Vector3<float>& gyroscope, const Vector3<float>& accelerometer);
+    void ProcessMeasurementIMU(uint32_t time, const Vector3<float>& gyroscope, const Vector3<float>& accelerometer);
 
     void ProcessMeasurementMagnetometer(const Vector3<float>& magnetometer);
 
-    void setTime(unsigned int time);
+    void setTime(uint32_t time);
 
     void setGravityEstimate(float gravity);
 
     void setGyroDriftEstimate(float x, float y, float z);
+
+    void updateFilter(uint32_t time);
 
     const Quaternion<float>& getAhrsQuaternion() const;
 
@@ -30,14 +33,19 @@ class Localization {
 
    private:
     Ahrs ahrs_;
+    UKF ukf_;
     Vector3<float> gyro_drift_;
+    UKF::Measurement vu_;
+    UKF::Measurement vv_;
+    UKF::Measurement d_tof_;
+    UKF::Measurement h_bar_;
+    bool has_measurement_{false};
     float gravity_force_;
-    float z[3];
-    float zCovar[9];
+    float max_delta_time_;
 
     const float* ahrsParameters;
-    float elevationVariance;
-    unsigned int timeNow;
+    float elevation_variance_;
+    uint32_t timeNow;
 };
 
 #endif /* end of include guard: SE_LOCALIZATION_H_ */

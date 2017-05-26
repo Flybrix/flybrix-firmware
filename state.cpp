@@ -83,8 +83,12 @@ void State::updateStateIMU(uint32_t currentTime, const Vector3<float>& accel, co
     sys_->kinematics.angle.yaw = -atan2(r31, r32);
 }
 
-void State::updateStatePT(uint32_t currentTime) {
-    localization.ProcessMeasurementPT(currentTime, STATE_P_SCALE * sys_->bmp.p0, STATE_P_SCALE * sys_->bmp.pressure, STATE_T_SCALE * sys_->bmp.temperature);
+void State::readStatePT() {
+    localization.ProcessMeasurementPT(STATE_P_SCALE * sys_->bmp.p0, STATE_P_SCALE * sys_->bmp.pressure, STATE_T_SCALE * sys_->bmp.temperature);
+}
+
+void State::updateFilter(uint32_t time) {
+    localization.updateFilter(time);
     sys_->kinematics.altitude = localization.getElevation();
 }
 

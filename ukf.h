@@ -1,13 +1,15 @@
 #ifndef UKF_H
 #define UKF_H
 
+#include <cmath>
+
 #include "utility/merwePoints.h"
 
 class UKF final {
    public:
     struct Measurement {
-        float value;
-        float variance;
+        float value{0.0f};
+        float variance{HUGE_VALF};
     };
 
     UKF();
@@ -28,7 +30,26 @@ class UKF final {
         return x_[StateFields::P_Z];
     }
 
-    void predict(float dt, const merwe::Covariance<float, 5>& Q);
+    void setVelocityProcessNoiseVariance(float v) {
+        Q_(StateFields::V_X, StateFields::V_X) = v;
+        Q_(StateFields::V_Y, StateFields::V_Y) = v;
+        Q_(StateFields::V_Z, StateFields::V_Z) = v;
+    }
+
+    void setElevationProcessNoiseVariance(float v) {
+        Q_(StateFields::P_Z, StateFields::P_Z) = v;
+    }
+
+    void setElevationVelocityProcessNoiseCovariance(float v) {
+        Q_(StateFields::V_Z, StateFields::P_Z) = v;
+        Q_(StateFields::P_Z, StateFields::V_Z) = v;
+    }
+
+    void setGroundHeightProcessNoiseVariance(float v) {
+        Q_(StateFields::H_GROUND, StateFields::H_GROUND) = v;
+    }
+
+    void predict(float dt);
 
     void update(Measurement vu, Measurement vv, Measurement d_tof, Measurement h_bar, float roll, float pitch);
 
@@ -49,6 +70,7 @@ class UKF final {
     };
     using SigmasF = std::array<merwe::State<float, 5>, 11>;
     using SigmasH = std::array<merwe::State<float, 4>, 11>;
+    merwe::Covariance<float, 5> Q_;
     merwe::State<float, 5> x_;
     merwe::Covariance<float, 5> P_;
     SigmasF sigmas_f_;

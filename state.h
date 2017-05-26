@@ -35,8 +35,9 @@ class State {
 
     void resetState();
     void updateStateIMU(uint32_t currentTime, const Vector3<float>& accel, const Vector3<float>& gyro);
-    void updateStatePT(uint32_t currentTime);
+    void readStatePT();
     void updateStateMag(const Vector3<float>& data);
+    void updateFilter(uint32_t time);
 
     Quaternion<float> q;  // quaternion storage for logging
 

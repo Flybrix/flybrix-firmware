@@ -42,6 +42,8 @@ struct Matrix {
     Matrix<T, ROWS, COLS>& operator+=(const Matrix<T, ROWS, COLS>& v);
     Matrix<T, ROWS, COLS>& operator-=(const Matrix<T, ROWS, COLS>& v);
     Matrix<T, ROWS, COLS>& operator*=(const Matrix<T, COLS, COLS>& v);
+    Matrix<T, ROWS, COLS>& operator*=(T v);
+    Matrix<T, ROWS, COLS> operator*(T v) const;
 
     T operator()(size_t row, size_t col) const {
         return data[row * COLS + col];

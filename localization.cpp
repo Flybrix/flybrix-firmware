@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include "kalman.h"
 
 #define SE_ACC_VARIANCE 0.01f
 
@@ -21,29 +20,47 @@ float calculateElevation(float p_sl, float p, float t) {
 }
 }
 
-Localization::Localization(float deltaTime, Ahrs::Type ahrsType, const float* ahrsParameters, float elevationVariance)
-    : Localization(1.0f, 0.0f, 0.0f, 0.0f, deltaTime, ahrsType, ahrsParameters, elevationVariance) {
+Localization::Localization(float deltaTime, Ahrs::Type ahrsType, const float* ahrsParameters, float elevation_variance)
+    : Localization(1.0f, 0.0f, 0.0f, 0.0f, deltaTime, ahrsType, ahrsParameters, elevation_variance) {
 }
 
-Localization::Localization(float q0, float q1, float q2, float q3, float deltaTime, Ahrs::Type ahrsType, const float* ahrsParameters, float elevationVariance)
-    : z{0.0, 0.0, 0.0}, zCovar{1e30f, 0.0f, 0.0f, 0.0f, 0.01f, 0.0f, 0.0f, 0.0f, 0.01f}, ahrsParameters(ahrsParameters), elevationVariance(elevationVariance) {
+Localization::Localization(float q0, float q1, float q2, float q3, float deltaTime, Ahrs::Type ahrsType, const float* ahrsParameters, float elevation_variance)
+    : max_delta_time_{deltaTime * 4}, ahrsParameters(ahrsParameters), elevation_variance_(elevation_variance) {
     ahrs_.pose() = Quaternion<float>(q0, q1, q2, q3);
-    ahrs_.setType(ahrsType).setParameters(ahrsParameters[0], ahrsParameters[1]).setMaxDeltaTime(deltaTime);
+    ahrs_.setType(ahrsType).setParameters(ahrsParameters[0], ahrsParameters[1]).setMaxDeltaTime(max_delta_time_);
     setTime(0);
     setGravityEstimate(9.81f);
 }
 
-void Localization::ProcessMeasurementElevation(unsigned int time, float elevation) {
-    se_kalman_predict((time - timeNow) / 1000000.0f, z, zCovar);
+void Localization::ProcessMeasurementElevation(float elevation) {
+    h_bar_.value = elevation;
+    h_bar_.variance = elevation_variance_;
+    has_measurement_ = true;
+}
+
+void Localization::ProcessMeasurementPT(float p_sl, float p, float t) {
+    ProcessMeasurementElevation(calculateElevation(p_sl, p, t));
+}
+
+void Localization::updateFilter(uint32_t time) {
+    if (!has_measurement_) {
+        return;
+    }
+    if (time <= timeNow) {
+        timeNow = time;
+        return;
+    }
+    float dt{(time - timeNow) / 1000000.0f};
+    if (dt > max_delta_time_) {
+        dt = max_delta_time_;
+    }
     timeNow = time;
-    se_kalman_correct(z, zCovar, SE_STATE_P_Z, elevation, elevationVariance);
+
+    ukf_.predict(dt);
+    ukf_.update(vu_, vv_, d_tof_, h_bar_, 0, 0);  // TODO: use pitch and roll
 }
 
-void Localization::ProcessMeasurementPT(unsigned int time, float p_sl, float p, float t) {
-    ProcessMeasurementElevation(time, calculateElevation(p_sl, p, t));
-}
-
-void Localization::ProcessMeasurementIMU(unsigned int time, const Vector3<float>& gyroscope, const Vector3<float>& accelerometer) {
+void Localization::ProcessMeasurementIMU(uint32_t time, const Vector3<float>& gyroscope, const Vector3<float>& accelerometer) {
     ahrs_.setParameters(ahrsParameters[0], ahrsParameters[1]);
 
     ahrs_.setGyroscope(gyroscope - gyro_drift_);
@@ -56,7 +73,7 @@ void Localization::ProcessMeasurementMagnetometer(const Vector3<float>& magnetom
     ahrs_.setMagnetometer(magnetometer);
 }
 
-void Localization::setTime(unsigned int time) {
+void Localization::setTime(uint32_t time) {
     timeNow = time;
     ahrs_.setTimestamp(time);
 }
@@ -74,5 +91,5 @@ const Quaternion<float>& Localization::getAhrsQuaternion() const {
 }
 
 float Localization::getElevation() const {
-    return z[0];
+    return ukf_.elevation();
 }

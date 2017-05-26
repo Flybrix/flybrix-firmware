@@ -151,6 +151,21 @@ Matrix<T, ROWS, COLS>& Matrix<T, ROWS, COLS>::operator*=(const Matrix<T, COLS, C
     return *this;
 }
 
+template <typename T, size_t ROWS, size_t COLS>
+Matrix<T, ROWS, COLS>& Matrix<T, ROWS, COLS>::operator*=(T v) {
+    for (size_t i = 0; i < ROWS * COLS; ++i) {
+        data[i] *= v;
+    }
+    return *this;
+}
+
+template <typename T, size_t ROWS, size_t COLS>
+Matrix<T, ROWS, COLS> Matrix<T, ROWS, COLS>::operator*(T v) const {
+    Matrix<T, ROWS, COLS> tmp{*this};
+    tmp *= v;
+    return tmp;
+}
+
 template <typename T, size_t ROWS, size_t COLS, size_t COLS_OTH>
 Matrix<T, ROWS, COLS_OTH> operator*(const Matrix<T, ROWS, COLS>& u, const Matrix<T, COLS, COLS_OTH>& v) {
     Matrix<T, ROWS, COLS_OTH> result;

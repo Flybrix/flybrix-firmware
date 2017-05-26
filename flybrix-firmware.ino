@@ -176,11 +176,11 @@ bool ProcessTask<30>::Run() {
 template <>
 bool ProcessTask<100>::Run() {
     if (sys.bmp.ready) {
-        sys.state.updateStatePT(micros());
+        sys.state.readStatePT();
         sys.bmp.startMeasurement();
-    } else {
-        return false;
     }
+
+    sys.state.updateFilter(micros());
 
     sys.conf.Read();  // Respond to commands from the Configurator chrome extension
 

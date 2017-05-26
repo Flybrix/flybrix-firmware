@@ -14,9 +14,13 @@ UKF::UKF() : weights_(5, ALPHA, BETA, KAPPA) {
     P_(StateFields::V_Z, StateFields::V_Z) = 100;
     P_(StateFields::P_Z, StateFields::P_Z) = 10000;
     P_(StateFields::H_GROUND, StateFields::H_GROUND) = 10000;
+    setVelocityProcessNoiseVariance(0.64);
+    setElevationProcessNoiseVariance(1);
+    setElevationVelocityProcessNoiseCovariance(0.5);
+    setGroundHeightProcessNoiseVariance(0.25);
 }
 
-void UKF::predict(float dt, const merwe::Covariance<float, 5>& Q) {
+void UKF::predict(float dt) {
     sigmas_f_ = merwe::calcSigmaPoints(ALPHA, BETA, KAPPA, x_, P_);
     for (merwe::State<float, 5>& sigma : sigmas_f_) {
         sigma[StateFields::P_Z] += sigma[StateFields::V_Z] * dt;
@@ -27,7 +31,7 @@ void UKF::predict(float dt, const merwe::Covariance<float, 5>& Q) {
         x_.addScaled(sigmas_f_[i], weights_.mean_offset);
     }
 
-    P_ = Q;
+    P_ = Q_ * dt;
     Vector<float, 5> delta_f{sigmas_f_[0] - x_};
     P_.addCorrelation(delta_f, delta_f, weights_.covariance_center);
     for (size_t i = 1; i < 11; ++i) {
