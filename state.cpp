@@ -73,14 +73,9 @@ void State::updateStateIMU(uint32_t currentTime, const Vector3<float>& accel, co
     localization.ProcessMeasurementIMU(currentTime, rate_scaled, accel);
 
     q = localization.getAhrsQuaternion();
-    float r11 = 2.0f * (q.y * q.z + q.x * q.w);
-    float r12 = q.x * q.x + q.y * q.y - q.z * q.z - q.w * q.w;
-    float r21 = -2.0f * (q.y * q.w - q.x * q.z);
-    float r31 = 2.0f * (q.z * q.w + q.x * q.y);
-    float r32 = q.x * q.x - q.y * q.y - q.z * q.z + q.w * q.w;
-    sys_->kinematics.angle.pitch = -atan2(r11, r12);
-    sys_->kinematics.angle.roll = asin(r21);
-    sys_->kinematics.angle.yaw = -atan2(r31, r32);
+    sys_->kinematics.angle.pitch = q.pitch();
+    sys_->kinematics.angle.roll = q.roll();
+    sys_->kinematics.angle.yaw = q.yaw();
 }
 
 void State::readStatePT() {

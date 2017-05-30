@@ -57,7 +57,7 @@ void Localization::updateFilter(uint32_t time) {
     timeNow = time;
 
     ukf_.predict(dt);
-    ukf_.update(vu_, vv_, d_tof_, h_bar_, 0, 0);  // TODO: use pitch and roll
+    ukf_.update(vu_, vv_, d_tof_, h_bar_, ahrs_.pose().pitch(), ahrs_.pose().roll());
 }
 
 void Localization::ProcessMeasurementIMU(uint32_t time, const Vector3<float>& gyroscope, const Vector3<float>& accelerometer) {
