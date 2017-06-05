@@ -43,6 +43,13 @@ struct __attribute__((packed)) Vector3 {
         return *this;
     }
 
+    Vector3<Number>& operator-=(const Vector3<Number>& op) {
+        x -= op.x;
+        y -= op.y;
+        z -= op.z;
+        return *this;
+    }
+
     Vector3<Number> operator+(const Vector3<Number>& op) const {
         return {x + op.x, y + op.y, z + op.z};
     }
@@ -57,6 +64,10 @@ struct __attribute__((packed)) Vector3 {
 
     Vector3<Number> operator-(Number v) const {
         return {x - v, y - v, z - v};
+    }
+
+    bool isZero() const {
+        return x == 0 && y == 0 && z == 0;
     }
 
     Number lengthSq() const {
