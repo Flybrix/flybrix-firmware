@@ -99,12 +99,10 @@ void se_madgwick_ahrs_update_imu_with_mag(const Vector3<float>& g, Vector3<float
      */
     if (!((a.x == 0.0f) && (a.y == 0.0f) && (a.z == 0.0f))) {
         /* Normalize accelerometer measurement */
-        recipNorm = _inv_sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
-        a *= recipNorm;
+        a *= _inv_sqrt(a.lengthSq());
 
         /* Normalize magnetometer measurement */
-        recipNorm = _inv_sqrt(m.x * m.x + m.y * m.y + m.z * m.z);
-        m *= recipNorm;
+        m *= _inv_sqrt(m.lengthSq());
 
         /* Auxiliary variables to avoid repeated arithmetic */
         _2q0mx = 2.0f * q.w * m.x;
@@ -194,8 +192,7 @@ void se_madgwick_ahrs_update_imu(const Vector3<float>& g, Vector3<float> a, floa
 */
     if (!((a.x == 0.0f) && (a.y == 0.0f) && (a.z == 0.0f))) {
         // Normalize accelerometer measurement
-        recipNorm = _inv_sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
-        a *= recipNorm;
+        a *= _inv_sqrt(a.lengthSq());
 
         // Auxiliary variables to avoid repeated arithmetic
         _2q0 = 2.0f * q.w;
@@ -268,12 +265,10 @@ void se_mahony_ahrs_update_imu_with_mag(Vector3<float> g, Vector3<float> a, Vect
      */
     if (!((a.x == 0.0f) && (a.y == 0.0f) && (a.z == 0.0f))) {
         /* Normalize accelerometer measurement */
-        recipNorm = _inv_sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
-        a *= recipNorm;
+        a *= _inv_sqrt(a.lengthSq());
 
         /* Normalize magnetometer measurement */
-        recipNorm = _inv_sqrt(m.x * m.x + m.y * m.y + m.z * m.z);
-        m *= recipNorm;
+        m *= _inv_sqrt(m.lengthSq());
 
         /* Auxiliary variables to avoid repeated arithmetic */
         q0q0 = q.w * q.w;
@@ -355,8 +350,7 @@ void se_mahony_ahrs_update_imu(Vector3<float> g, Vector3<float> a, float delta_t
 */
     if (!((a.x == 0.0f) && (a.y == 0.0f) && (a.z == 0.0f))) {
         /* Normalize accelerometer measurement */
-        recipNorm = _inv_sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
-        a *= recipNorm;
+        a *= _inv_sqrt(a.lengthSq());
 
         /*
 * Estimated direction of gravity and vector perpendicular to magnetic flux
