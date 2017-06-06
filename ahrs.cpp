@@ -2,8 +2,6 @@
 
 #include <cmath>
 
-#include <cstdio>
-
 void se_mahony_ahrs_update_imu_with_mag(Vector3<float> g, Vector3<float> a, Vector3<float> m, float delta_time, float ki_2, float kp_2, Vector3<float> fb_i, Quaternion<float>& q);
 
 void se_mahony_ahrs_update_imu(Vector3<float> g, Vector3<float> a, float delta_time, float ki_2, float kp_2, Vector3<float> fb_i, Quaternion<float>& q);
@@ -18,13 +16,15 @@ inline void normalize(T& v) {
 
 inline Quaternion<float> madgwickStepA(const Quaternion<float>& q, Vector3<float> a) {
     normalize(a);
+    // q* * [0 gx gy gz] * q; g = [0 0 1]
     Vector3<float> fa{
         2.f * (q.x * q.z - q.w * q.y),        // X
         2.f * (q.w * q.x + q.y * q.z),        // Y
         2.f * (0.5f - q.x * q.x - q.y * q.y)  // Z
     };
+    // Subtract accelerometer measure from local frame
     fa -= a;
-    printf("%f %f %f\n", fa.x, fa.y, fa.z);
+    // Multiply with transposed Jacobian
     return Quaternion<float>{
         -2.f * q.y * fa.x + 2.f * q.x * fa.y,                     // w
         2.f * q.z * fa.x + 2.f * q.w * fa.y - 4.f * q.x * fa.z,   // x
