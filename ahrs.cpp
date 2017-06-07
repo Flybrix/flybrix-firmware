@@ -302,7 +302,7 @@ float _inv_sqrt(float x) {
     i = 0x5f3759df - (i >> 1);
     y = *(float*)&i;
     y = y * (1.5f - (halfx * y * y));
-    return (float)y;
+    return fabs((float)y);
 }
 
 #else

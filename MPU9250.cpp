@@ -11,7 +11,7 @@
 #include "MPU9250.h"
 #include <i2c_t3.h>
 #include <stdio.h>
-#include <math.h>
+#include <cmath>
 #include "board.h"
 
 // we have three coordinate systems here:
@@ -297,5 +297,5 @@ float MPU9250::invSqrt(float x) {
     i = 0x5f3759df - (i >> 1);
     y = *(float*)&i;
     y = y * (1.5f - (halfx * y * y));
-    return y;
+    return abs(y);
 }
