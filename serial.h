@@ -25,6 +25,7 @@ struct Systems;
 struct Kinematics;
 struct PowerMonitor;
 struct CommandVector;
+struct CommandSources;
 struct ControlVectors;
 
 using CobsPayloadGeneric = CobsPayload<1000>;  // impacts memory use only; packet size should be <= client packet size
@@ -85,6 +86,7 @@ class SerialComm {
     PilotCommand& pilot_;
     PowerMonitor& pwr_;
     CommandVector& command_vector_;
+    CommandSources& command_sources_;
     ControlVectors& control_vectors_;
 
     uint16_t send_state_delay{1001};  // anything over 1000 turns off state messages

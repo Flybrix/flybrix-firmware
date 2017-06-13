@@ -73,6 +73,7 @@ class PilotCommand {
     R415X receiver_;
     StateFlag& flag_;
     CommandVector& command_vector_;
+    CommandSources& command_sources_;
 
     Airframe airframe_;
     ControlState control_state_{ControlState::AwaitingAuxDisable};

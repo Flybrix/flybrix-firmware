@@ -15,7 +15,7 @@
 #include "commandVector.h"
 #include "stateFlag.h"
 
-PilotCommand::PilotCommand(Systems& systems) : state_(systems.state), imu_(systems.imu), flag_(systems.flag), command_vector_(systems.command_vector) {
+PilotCommand::PilotCommand(Systems& systems) : state_(systems.state), imu_(systems.imu), flag_(systems.flag), command_vector_(systems.command_vector), command_sources_(systems.command_sources) {
     setControlState(ControlState::AwaitingAuxDisable);
 }
 
@@ -140,7 +140,10 @@ void PilotCommand::processCommands() {
     if (command_vector_.source != CommandVector::Source::Bluetooth) {
         if (!bluetooth_tolerance_.tick()) {
             // since we haven't seen bluetooth commands for more than 1 second, try the R415X
-            command_vector_ = receiver_.getCommandData();
+            // if it's an accepted source
+            if (command_sources_.accepts(CommandVector::Source::Radio)) {
+                command_vector_ = receiver_.getCommandData();
+            }
         }
     } else {
         // we allow bluetooth a generous 1s before we give up

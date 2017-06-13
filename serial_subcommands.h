@@ -32,6 +32,7 @@ enum SerialComm::Commands : uint8_t {
     REQ_PARTIAL_EEPROM_DATA,
     REQ_CARD_RECORDING_STATE,
     SET_PARTIAL_TEMPORARY_CONFIG,
+    SET_COMMAND_SOURCES,
     END_OF_COMMANDS,
 };
 
@@ -167,6 +168,9 @@ DO_SUBCOMMAND(SET_SERIAL_RC) {
     if (!input.ParseInto(enabled, throttle, pitch, roll, yaw, auxmask)) {
         return false;
     }
+    if (!command_sources_.accepts(CommandVector::Source::Bluetooth)) {
+        return true;
+    }
     if (enabled) {
         command_vector_.source = CommandVector::Source::Bluetooth;
         command_vector_.parseAuxMask(auxmask);
@@ -259,6 +263,15 @@ DO_SUBCOMMAND(SET_PARTIAL_TEMPORARY_CONFIG) {
         return false;
     }
     tmp_config.applyTo(systems_);
+    return true;
+}
+
+DO_SUBCOMMAND(SET_COMMAND_SOURCES) {
+    uint8_t sources;
+    if (!input.ParseInto(sources)) {
+        return false;
+    }
+    command_sources_.update(sources);
     return true;
 }
 

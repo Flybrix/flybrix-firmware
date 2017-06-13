@@ -37,6 +37,7 @@ struct Systems {
     Kinematics kinematics;
     ControlVectors control_vectors;
     CommandVector command_vector;
+    CommandSources command_sources;
 
     I2CManager i2c;
     State state;

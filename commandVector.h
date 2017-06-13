@@ -4,10 +4,11 @@
 #include <cstdint>
 
 struct CommandVector final {
-    enum class Source {
-        None,
-        Radio,
-        Bluetooth,
+    enum class Source : uint8_t {
+        None = 0,
+        Radio = 1,
+        Bluetooth = 2,
+        Autopilot = 4,
     };
 
     enum class AUX : uint8_t {
@@ -44,6 +45,20 @@ struct CommandVector final {
     uint8_t auxMask() const {
         return uint8_t(aux1) | (uint8_t(aux2) << 3);
     }
+};
+
+class CommandSources final {
+   public:
+    void update(uint8_t sources) {
+        sources_ = sources;
+    }
+
+    bool accepts(CommandVector::Source source) const {
+        return sources_ & uint8_t(source);
+    }
+
+   private:
+    uint8_t sources_{255};
 };
 
 #endif /* COMMAND_VECTOR_H */
