@@ -64,13 +64,13 @@ void Localization::ProcessMeasurementIMU(uint32_t time, const Vector3<float>& gy
     ahrs_.setParameters(ahrsParameters[0], ahrsParameters[1]);
 
     ahrs_.setGyroscope(gyroscope - gyro_drift_);
-    ahrs_.setAccelerometer(accelerometer * 9.81f);
+    ahrs_.setAccelerometer(accelerometer * -9.81f);
 
     ahrs_.update(time);
 }
 
 void Localization::ProcessMeasurementMagnetometer(const Vector3<float>& magnetometer) {
-    ahrs_.setMagnetometer(magnetometer);
+    ahrs_.setMagnetometer(magnetometer * -1.0f);
 }
 
 void Localization::setTime(uint32_t time) {
