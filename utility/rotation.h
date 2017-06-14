@@ -4,8 +4,17 @@
 #include "vector3.h"
 
 template <typename Number>
-struct RotationMatrix {
+class RotationMatrix final {
+   public:
     RotationMatrix() : fields_{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}} {
+    }
+
+    const Number& operator()(size_t i, size_t j) const {
+        return fields_[i][j];
+    }
+
+    Number& operator()(size_t i, size_t j) {
+        return fields_[i][j];
     }
 
     Vector3<Number> operator*(const Vector3<Number>& vector) const {
@@ -20,6 +29,7 @@ struct RotationMatrix {
         };
     }
 
+   private:
     Number fields_[3][3];
 };
 

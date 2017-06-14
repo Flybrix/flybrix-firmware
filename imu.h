@@ -23,14 +23,10 @@ class Imu final {
     bool startInertialMeasurement();
     bool startMagnetFieldMeasurement();
 
-    Vector3<float> magnet_field() const;
-    Vector3<float> linear_acceleration() const;
-    Vector3<float> angular_velocity() const;
-
     AK8963::MagBias& magnetometer_bias();
 
    private:
-    RotationMatrix<float> pcb_to_world_;
+    RotationMatrix<float> sensor_to_flyer_;
     AK8963 magnetometer_;
     MPU9250 accel_and_gyro_;
     State& state_;

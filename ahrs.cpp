@@ -1,21 +1,15 @@
 #include "ahrs.h"
 
 #include <cmath>
+#include "quickmath.h"
 
 void se_mahony_ahrs_update_imu_with_mag(Vector3<float> g, Vector3<float> a, Vector3<float> m, float delta_time, float ki_2, float kp_2, Vector3<float> fb_i, Quaternion<float>& q);
 
 void se_mahony_ahrs_update_imu(Vector3<float> g, Vector3<float> a, float delta_time, float ki_2, float kp_2, Vector3<float> fb_i, Quaternion<float>& q);
 
-float _inv_sqrt(float x);
-
 namespace {
-template <typename T>
-inline void normalize(T& v) {
-    v *= _inv_sqrt(v.lengthSq());
-}
-
 inline Quaternion<float> madgwickStepA(const Quaternion<float>& q, Vector3<float> a) {
-    normalize(a);
+    quick::normalize(a);
     // q* * [0 gx gy gz] * q; g = [0 0 1]
     Vector3<float> fa{
         2.f * (q.x * q.z - q.w * q.y),        // X
@@ -37,12 +31,12 @@ inline Quaternion<float> madgwickStepM(const Quaternion<float>& q, Vector3<float
     if (m.isZero()) {
         return Quaternion<float>{0, 0, 0, 0};
     }
-    normalize(m);
+    quick::normalize(m);
     Quaternion<float> h = q * m * q.conj();
     if (h.isZero()) {
         return Quaternion<float>{0, 0, 0, 0};
     }
-    float b1{2 / _inv_sqrt(h.x * h.x + h.y * h.y)};
+    float b1{2 / quick::invSqrt(h.x * h.x + h.y * h.y)};
     float b2{2 * h.z};
     Vector3<float> fm{
         b1 * (0.5f - q.y * q.y - q.z * q.z) + b2 * (q.x * q.z - q.w * q.y),  // X
@@ -63,10 +57,10 @@ inline Quaternion<float> madgwick(Quaternion<float> q, float beta, float dt, con
         return q;
     }
     Quaternion<float> step = madgwickStepA(q, a) + madgwickStepM(q, m);
-    normalize(step);
+    quick::normalize(step);
     Quaternion<float> q_dot = q * (g * 0.5) - step * beta;
     q += q_dot * dt;
-    normalize(q);
+    quick::normalize(q);
     return q;
 }
 
@@ -124,7 +118,6 @@ void Ahrs::update(uint32_t timestamp) {
 /* IMU algorithm update */
 
 void se_mahony_ahrs_update_imu_with_mag(Vector3<float> g, Vector3<float> a, Vector3<float> m, float delta_time, float ki_2, float kp_2, Vector3<float> fb_i, Quaternion<float>& q) {
-    float recipNorm;
     float q0q0, q0q1, q0q2, q0q3, q1q1, q1q2, q1q3, q2q2, q2q3, q3q3;
     float hx, hy, bx, bz;
     float halfvx, halfvy, halfvz, halfwx, halfwy, halfwz;
@@ -146,10 +139,10 @@ void se_mahony_ahrs_update_imu_with_mag(Vector3<float> g, Vector3<float> a, Vect
      */
     if (!((a.x == 0.0f) && (a.y == 0.0f) && (a.z == 0.0f))) {
         /* Normalize accelerometer measurement */
-        a *= _inv_sqrt(a.lengthSq());
+        quick::normalize(a);
 
         /* Normalize magnetometer measurement */
-        m *= _inv_sqrt(m.lengthSq());
+        quick::normalize(m);
 
         /* Auxiliary variables to avoid repeated arithmetic */
         q0q0 = q.w * q.w;
@@ -212,15 +205,10 @@ void se_mahony_ahrs_update_imu_with_mag(Vector3<float> g, Vector3<float> a, Vect
     q.z += qa * g.z + qb * g.y - qc * g.x;
 
     /* Normalize quaternion */
-    recipNorm = _inv_sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z);
-    q.w *= recipNorm;
-    q.x *= recipNorm;
-    q.y *= recipNorm;
-    q.z *= recipNorm;
+    quick::normalize(q);
 }
 
 void se_mahony_ahrs_update_imu(Vector3<float> g, Vector3<float> a, float delta_time, float ki_2, float kp_2, Vector3<float> fb_i, Quaternion<float>& q) {
-    float recipNorm;
     float halfvx, halfvy, halfvz;
     float halfex, halfey, halfez;
     float qa, qb, qc;
@@ -231,7 +219,7 @@ void se_mahony_ahrs_update_imu(Vector3<float> g, Vector3<float> a, float delta_t
 */
     if (!((a.x == 0.0f) && (a.y == 0.0f) && (a.z == 0.0f))) {
         /* Normalize accelerometer measurement */
-        a *= _inv_sqrt(a.lengthSq());
+        quick::normalize(a);
 
         /*
 * Estimated direction of gravity and vector perpendicular to magnetic flux
@@ -281,34 +269,5 @@ void se_mahony_ahrs_update_imu(Vector3<float> g, Vector3<float> a, float delta_t
     q.z += qa * g.z + qb * g.y - qc * g.x;
 
     // Normalize quaternion
-    recipNorm = _inv_sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z);
-    q.w *= recipNorm;
-    q.x *= recipNorm;
-    q.y *= recipNorm;
-    q.z *= recipNorm;
+    quick::normalize(q);
 }
-
-#ifndef SE_NON_IEEE_STANDARD_FLOATS
-
-/*
- * Fast inverse square-root
- * See: http://en.wikipedia.org/wiki/Fast_inverse_square_root
- */
-
-float _inv_sqrt(float x) {
-    float halfx = 0.5f * (float)x;
-    float y = (float)x;
-    long i = *(long*)&y;
-    i = 0x5f3759df - (i >> 1);
-    y = *(float*)&i;
-    y = y * (1.5f - (halfx * y * y));
-    return fabs((float)y);
-}
-
-#else
-
-float _inv_sqrt(float x) {
-    return 1.0f / sqrt(x);
-}
-
-#endif

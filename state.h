@@ -30,6 +30,10 @@ class State {
     Vector3<float> accel_filter{0.0, 0.0, 0.0}, accel_filter_sq{0.0, 0.0, 0.0};  // for stability variance calculation
     Vector3<float> gyro_filter{0.0, 0.0, 0.0};                                   // for gyro drift correction
 
+    Vector3<float> accel{0.0, 0.0, 0.0};
+    Vector3<float> gyro{0.0, 0.0, 0.0};
+    Vector3<float> mag{0.0, 0.0, 0.0};
+
     bool stable() const;
     bool upright() const;
 

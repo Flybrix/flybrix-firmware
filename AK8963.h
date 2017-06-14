@@ -15,7 +15,6 @@
 #include <functional>
 #include "Arduino.h"
 #include "i2cManager.h"
-#include "utility/rotation.h"
 #include "utility/vector3.h"
 
 // we have three coordinate systems here:
@@ -25,13 +24,14 @@
 
 class AK8963 {
    public:
-    AK8963(I2CManager& i2c, const RotationMatrix<float>& R);
+    AK8963(I2CManager& i2c);
 
     void restart();  // calculate bias and prepare for flight
 
     bool ready;
 
-    bool startMeasurement(std::function<void()> on_success);
+    // Callback: magnet field strength in milligauss -- (x,y,z)
+    bool startMeasurement(std::function<void(Vector3<float>)> on_success);
 
     uint8_t getID();
 
@@ -47,13 +47,10 @@ class AK8963 {
 
     static_assert(sizeof(MagBias) == 3 * 4, "Data is not packed");
 
-    Vector3<float> last_read;  // milligauss -- (x,y,z)
-
    private:
-    void triggerCallback(std::function<void()> on_success);
+    void triggerCallback(std::function<void(Vector3<float>)> on_success);
 
     I2CManager& i2c;
-    const RotationMatrix<float>& R;
 
     uint8_t getStatusByte();
 

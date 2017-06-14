@@ -3,6 +3,7 @@
 
 #include <cmath>
 
+#include "rotation.h"
 #include "vector3.h"
 
 template <typename Number>
@@ -53,6 +54,22 @@ struct Quaternion {
         y -= q.y;
         z -= q.z;
         return *this;
+    }
+
+    RotationMatrix<Number> toRotation() const {
+        RotationMatrix<Number> m;
+        m(0, 0) = 1 - 2 * (y * y + z * z);
+        m(0, 1) = 2 * (x * y - w * z);
+        m(0, 2) = 2 * (w * y + x * z);
+
+        m(1, 0) = 2 * (w * z + x * y);
+        m(1, 1) = 1 - 2 * (x * x + z * z);
+        m(1, 2) = 2 * (y * z - w * x);
+
+        m(2, 0) = 2 * (x * z - w * y);
+        m(2, 1) = 2 * (w * x + y * z);
+        m(2, 2) = 1 - 2 * (x * x + y * y);
+        return m;
     }
 
     Number w;

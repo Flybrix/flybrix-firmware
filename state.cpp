@@ -60,6 +60,8 @@ float State::mixRadians(float w1, float a1, float a2) {
 
 void State::updateStateIMU(uint32_t currentTime, const Vector3<float>& accel, const Vector3<float>& gyro) {
     // update IIRs (@500Hz)
+    this->accel = accel;
+    this->gyro = gyro;
     gyro_filter = gyro * 0.1 + gyro_filter * 0.9;
     accel_filter = accel * 0.1 + accel_filter * 0.9;
     accel_filter_sq = accel.squared() * 0.1 + accel_filter_sq * 0.9;
@@ -88,5 +90,6 @@ void State::updateFilter(uint32_t time) {
 }
 
 void State::updateStateMag(const Vector3<float>& data) {
+    this->mag = data;
     localization.ProcessMeasurementMagnetometer(data);
 }

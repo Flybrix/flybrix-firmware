@@ -15,7 +15,6 @@
 #include <functional>
 #include "Arduino.h"
 #include "i2cManager.h"
-#include "utility/rotation.h"
 #include "utility/vector3.h"
 
 // we have three coordinate systems here:
@@ -25,7 +24,7 @@
 
 class MPU9250 {
    public:
-    MPU9250(I2CManager& i2c, RotationMatrix<float>& R);
+    MPU9250(I2CManager& i2c);
 
     void restart();  // calculate bias and prepare for flight
 
@@ -35,7 +34,10 @@ class MPU9250 {
     void correctBiasValues(const Vector3<float>& accel_filter, const Vector3<float>& gyro_filter);
     void forgetBiasValues();  // discard bias values
 
-    bool startMeasurement(std::function<void()> on_success);
+    // Callback parameters:
+    // linear acceleration in g's -- (x,y,z)
+    // angular velocity in deg/sec -- (x,y,z)
+    bool startMeasurement(std::function<void(Vector3<float>, Vector3<float>)> on_success);
 
     float getTemp() {
         return (float)temperatureCount[0] / 333.87 + 21.0;
@@ -45,14 +47,10 @@ class MPU9250 {
 
     void setFilters(uint8_t gyrofilter, uint8_t accelfilter);
 
-    Vector3<float> linear_acceleration;  // g's        -- (x,y,z)
-    Vector3<float> angular_velocity;     // deg/sec    -- (x,y,z)
-
    private:
-    void triggerCallback(std::function<void()> on_success);
+    void triggerCallback(std::function<void(Vector3<float>, Vector3<float>)> on_success);
 
     I2CManager& i2c;
-    RotationMatrix<float>& R;
 
     bool dataReadyInterrupt();  // check interrupt
     uint8_t getStatusByte();
@@ -60,7 +58,6 @@ class MPU9250 {
     void reset();
     void configure();  // set up filters and resolutions for flight
 
-    float invSqrt(float x);
     const float aRes = 8.0 / 32768.0;     // +/- 8g
     const float gRes = 1000.0 / 32768.0;  // +/- 1000 deg/s
 

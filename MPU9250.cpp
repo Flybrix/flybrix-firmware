@@ -36,7 +36,7 @@
 #define GYRO_YSIGN 1
 #define GYRO_ZSIGN 1  // verified by experiment
 
-MPU9250::MPU9250(I2CManager& i2c, RotationMatrix<float>& R) : ready{false}, i2c(i2c), R(R) {
+MPU9250::MPU9250(I2CManager& i2c) : ready{false}, i2c(i2c) {
     pinMode(board::MPU_INTERRUPT, INPUT);
 }
 
@@ -59,69 +59,8 @@ uint8_t MPU9250::getStatusByte() {
 }
 
 void MPU9250::correctBiasValues(const Vector3<float>& accel_filter, const Vector3<float>& gyro_filter) {
-    float recipNorm = invSqrt(accel_filter.lengthSq());
-    /*normalized accel_filter values */
-    Vector3<float> a = accel_filter * recipNorm;
-
-    //
-    // Generation of Rotation Matrix from quaternion between [ax,ay,az] and [0,0,-1]
-    // http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors
-    // u = <0,0-1> v = <ax, ay, az>
-    // norm_u_norm_v = 1;
-
-    //  float real_part = norm_u_norm_v + dot(u, v);
-    float qw, qx, qy;  //, qz;
-    float r = 1.0f - a.z;
-
-    if (r < 1.e-6f) {
-        /* If u and v are exactly opposite, rotate 180 degrees
-         * around an arbitrary orthogonal axis. Axis normalisation
-         * can happen later, when we normalise the quaternion. */
-        /*
-            r = 0.0f;
-            w = abs(u.x) > abs(u.z) ? vec3(-u.y, u.x, 0.f)
-                                    : vec3(0.f, -u.z, u.y);
-            //0 > 1 is false so we use the false output
-        */
-        qw = 0;
-        qx = 0;
-        qy = 1;
-        // qz = 0;
-    } else {
-        /* Otherwise, build quaternion the standard way. */
-        // w = cross(u, v);
-        // A x B = (a2b3 - a3b2, a3b1 - a1b3, a1b2 - a2b1);
-        // a1 and a2 = 0, a3 = -1, b1 = ax, b2=ay, b3 = az
-        //(ay, -ax, 0);
-        qw = r;
-        qx = a.y;
-        qy = -a.x;
-        // qz = 0;
-
-        recipNorm = invSqrt(qw * qw + qx * qx + qy * qy);
-        qw *= recipNorm;
-        qx *= recipNorm;
-        qy *= recipNorm;
-    }
-
-    // http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToMatrix/
-    // note: qz = 0.
-    // we also want this to be the inverse/transpose to take us from ax ay az back to 0 0 -1
-
-    R.fields_[0][0] = 1 - 2 * qy * qy;
-    R.fields_[1][0] = 2 * qx * qy;
-    R.fields_[2][0] = 2 * qy * qw;
-
-    R.fields_[0][1] = 2 * qx * qy;
-    R.fields_[1][1] = 1 - 2 * qx * qx;
-    R.fields_[2][1] = -2 * qx * qw;
-
-    R.fields_[0][2] = -2 * qy * qw;
-    R.fields_[1][2] = 2 * qx * qw;
-    R.fields_[2][2] = 1 - 2 * qx * qx - 2 * qy * qy;
-
     // the bias correction in the IC/PCB coordinates
-    accelBias = accel_filter - a;
+    accelBias = accel_filter;
 
     // biases are additive corrections -- we were not rotating during calibration so we measured gyro drift
     // construct biases for later manual subtraction
@@ -131,12 +70,10 @@ void MPU9250::correctBiasValues(const Vector3<float>& accel_filter, const Vector
 void MPU9250::forgetBiasValues() {
     gyroBias = Vector3<float>();
     accelBias = Vector3<float>();
-    // set R to identity
-    R = RotationMatrix<float>();
 }
 
 // writes values to state in g's and in degrees per second
-bool MPU9250::startMeasurement(std::function<void()> on_success) {
+bool MPU9250::startMeasurement(std::function<void(Vector3<float>, Vector3<float>)> on_success) {
     if (dataReadyInterrupt()) {
         ready = false;
         data_to_send[0] = ACCEL_XOUT_H;
@@ -146,7 +83,7 @@ bool MPU9250::startMeasurement(std::function<void()> on_success) {
     return false;
 }
 
-void MPU9250::triggerCallback(std::function<void()> on_success) {
+void MPU9250::triggerCallback(std::function<void(Vector3<float>, Vector3<float>)> on_success) {
     // convert from REGISTER system to IC/PCB system
     int16_t registerValuesAccel[3];
     // be careful not to misinterpret 2's complement registers
@@ -169,15 +106,9 @@ void MPU9250::triggerCallback(std::function<void()> on_success) {
     gyroCount.y = GYRO_YSIGN * registerValuesGyro[GYRO_YDIR];
     gyroCount.z = GYRO_ZSIGN * registerValuesGyro[GYRO_ZDIR];
 
-    linear_acceleration = Vector3<float>(accelCount) * aRes - accelBias;
-    linear_acceleration = R * linear_acceleration;  // rotate to FLYER coords
-
-    angular_velocity = Vector3<float>(gyroCount) * gRes - gyroBias;
-    angular_velocity = R * angular_velocity;  // rotate to FLYER coords
-
     ready = true;
 
-    on_success();
+    on_success(Vector3<float>(accelCount) * aRes - accelBias, Vector3<float>(gyroCount) * gRes - gyroBias);
 }
 
 void MPU9250::reset() {
@@ -288,14 +219,4 @@ void MPU9250::configure() {
     // i2c.writeByte(MPU9250_ADDRESS, INT_PIN_CFG, 0x22); // clear interrupt by reading INT_STATUS
     i2c.writeByte(MPU9250_ADDRESS, INT_PIN_CFG, 0x32);  // clear interrupt by any read operation
     i2c.writeByte(MPU9250_ADDRESS, INT_ENABLE, 0x01);   // Enable data ready (bit 0) interrupt
-}
-
-float MPU9250::invSqrt(float x) {
-    float halfx = 0.5f * x;
-    float y = x;
-    long i = *(long*)&y;
-    i = 0x5f3759df - (i >> 1);
-    y = *(float*)&i;
-    y = y * (1.5f - (halfx * y * y));
-    return fabs(y);
 }
