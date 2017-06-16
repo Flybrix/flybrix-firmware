@@ -31,7 +31,7 @@ void Imu::correctBiasValues() {
     Vector3<float> a{state_.accel_filter};
     quick::normalize(a);
 
-    if (a.z < -1.0f + 1e-6f) {
+    if (a.z > 1.0f - 1e-6f) {
         /* If u and v are antiparallel, perform 180 degree rotation around X. */
         sensor_to_flyer_ = RotationMatrix<float>();
         sensor_to_flyer_(1, 1) = -1.0f;
@@ -40,11 +40,17 @@ void Imu::correctBiasValues() {
         /* Otherwise, build quaternion the standard way. */
         // w = sqrt(a.lengthSq() * b.lengthSq()) + a . b = 1 + a . b
         // [x, y, z] = a x b
-        // a . [0 0 1] = az
-        // a x [0 0 1] = [ay -ax 0]
-        Quaternion<float> q(1 + a.z, a.y, -a.x, 0.0f);
+        // a . [0 0 -1] = -az
+        // a x [0 0 -1] = [-ay ax 0]
+        Quaternion<float> q(1 - a.z, -a.y, a.x, 0.0f);
         quick::normalize(q);
         sensor_to_flyer_ = q.toRotation();
+    }
+
+    for (size_t i = 0; i < 3; ++i) {
+        for (size_t j = 0; j < 3; ++j) {
+            sensor_to_flyer_(i, j) = -sensor_to_flyer_(i, j);
+        }
     }
 
     accel_and_gyro_.correctBiasValues(state_.accel_filter - a, state_.gyro_filter);
