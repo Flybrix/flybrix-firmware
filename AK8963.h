@@ -33,6 +33,8 @@ class AK8963 {
     // Callback: magnet field strength in milligauss -- (x,y,z)
     bool startMeasurement(std::function<void(Vector3<float>)> on_success);
 
+    void setCalibrating(bool calibrating);
+
     uint8_t getID();
 
     struct __attribute__((packed)) MagBias {
@@ -58,10 +60,10 @@ class AK8963 {
     void configure();
     void disable();
 
-    // 16-bit raw values, bias correction, factory calibration
-    Vector3<int16_t> magCount{0, 0, 0};
     // bias is stored in MagBias
     Vector3<float> magCalibration{0.0, 0.0, 0.0};
+    bool calibrating_{false};
+    float radius_squared_{0.0f};
 
     // buffers for processCallback
     uint8_t data_to_read[7];

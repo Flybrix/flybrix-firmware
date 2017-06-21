@@ -20,6 +20,10 @@ class Imu final {
     void correctBiasValues();
     void forgetBiasValues();
 
+    void setMagnetometerCalibrating(bool calibrating) {
+        magnetometer_.setCalibrating(calibrating);
+    }
+
     bool startInertialMeasurement();
     bool startMagnetFieldMeasurement();
 

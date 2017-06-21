@@ -10,8 +10,7 @@
 
 #include "AK8963.h"
 #include <i2c_t3.h>
-#include <stdio.h>
-#include <math.h>
+#include <cmath>
 
 AK8963::MagBias::MagBias() : x{0.0}, y{0.0}, z{0.0} {
 }
@@ -58,6 +57,10 @@ bool AK8963::startMeasurement(std::function<void(Vector3<float>)> on_success) {
     return true;
 }
 
+void AK8963::setCalibrating(bool calibrating) {
+    calibrating_ = calibrating;
+}
+
 namespace {
 constexpr float RAW_TO_uT = 10. * 4912. / 32760.0;  // +/- 0.15 uT (or 1.5mG) per LSB; range is -32760...32760
 }
@@ -72,12 +75,26 @@ void AK8963::triggerCallback(std::function<void(Vector3<float>)> on_success) {
         registerValues[0] = (int16_t)(((uint16_t)data_to_read[1]) << 8) | (uint16_t)data_to_read[0];  // low byte, high byte
         registerValues[1] = (int16_t)(((uint16_t)data_to_read[3]) << 8) | (uint16_t)data_to_read[2];
         registerValues[2] = (int16_t)(((uint16_t)data_to_read[5]) << 8) | (uint16_t)data_to_read[4];
-        magCount.x = MAG_XSIGN * registerValues[MAG_XDIR];
-        magCount.y = MAG_YSIGN * registerValues[MAG_YDIR];
-        magCount.z = MAG_ZSIGN * registerValues[MAG_ZDIR];
+        // 16-bit raw values
+        Vector3<int16_t> magCount{
+            MAG_XSIGN * registerValues[MAG_XDIR],  // X
+            MAG_YSIGN * registerValues[MAG_YDIR],  // Y
+            MAG_ZSIGN * registerValues[MAG_ZDIR]   // Z
+        };
         // scale by sensitivity before rotating
         magCount = Vector3<float>(magCount) * magCalibration;
-        on_success(Vector3<float>(magCount) * RAW_TO_uT - Vector3<float>(mag_bias.x, mag_bias.y, mag_bias.z));
+        Vector3<float> measurement = Vector3<float>(magCount) * RAW_TO_uT;
+        Vector3<float> bias{mag_bias.x, mag_bias.y, mag_bias.z};
+        if (calibrating_) {
+            float length = std::sqrt(radius_squared_ / (1e-6 + measurement.lengthSq()));
+            bias += (measurement - bias) * (1 - length) / 2;
+            mag_bias.x = bias.x;
+            mag_bias.y = bias.y;
+            mag_bias.z = bias.z;
+        }
+        measurement -= bias;
+        radius_squared_ = measurement.lengthSq();
+        on_success(measurement);
     } else {
         // ERROR: ("ERROR: Magnetometer overflow!");
     }
