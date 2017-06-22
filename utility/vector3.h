@@ -77,6 +77,14 @@ struct __attribute__((packed)) Vector3 {
     Vector3<Number> squared() const {
         return *this * *this;
     }
+
+    Vector3<Number> projectOntoPlane(const Vector3<Number>& normal) const {
+        return *this - projectOntoOrd(normal);
+    }
+
+    Vector3<Number> projectOntoOrd(const Vector3<Number>& v) const {
+        return v * dot(*this, v);
+    }
 };
 
 template <typename Number>
