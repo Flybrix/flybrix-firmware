@@ -15,8 +15,6 @@ RotationMatrix<float> RotationEstimator::estimate() const {
     }
     Vector3<float> up = states_[(uint8_t)RotationEstimator::Pose::Flat].measurement;
     quick::normalize(up);
-    Vector3<float> forward = states_[(uint8_t)RotationEstimator::Pose::PitchForward].measurement.projectOntoPlane(up);
-    Vector3<float> back = states_[(uint8_t)RotationEstimator::Pose::PitchBack].measurement.projectOntoPlane(up);
     Vector3<float> right = states_[(uint8_t)RotationEstimator::Pose::RollRight].measurement.projectOntoPlane(up);
     Vector3<float> left = states_[(uint8_t)RotationEstimator::Pose::RollLeft].measurement.projectOntoPlane(up);
 
@@ -24,11 +22,15 @@ RotationMatrix<float> RotationEstimator::estimate() const {
         return answer;
     }
 
+    quick::normalize(left);
+
+    Vector3<float> forward = states_[(uint8_t)RotationEstimator::Pose::PitchForward].measurement.projectOntoPlane(up).projectOntoPlane(left);
+    Vector3<float> back = states_[(uint8_t)RotationEstimator::Pose::PitchBack].measurement.projectOntoPlane(up).projectOntoPlane(left);
+
     if (dot(forward, back) > 0.0f) {
         return answer;
     }
 
-    quick::normalize(left);
     quick::normalize(back);
 
     answer(0, 0) = left.x;
