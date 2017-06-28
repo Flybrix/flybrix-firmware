@@ -1,6 +1,6 @@
 #include "rotationEstimator.h"
 
-#include "../flybrix-firmware/quickmath.h"
+#include "quickmath.h"
 
 void RotationEstimator::updateGravity(Pose pose, const Vector3<float>& value) {
     states_[(uint8_t)pose].measurement = value;
