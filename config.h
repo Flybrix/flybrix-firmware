@@ -23,6 +23,7 @@
 #include "R415X.h"
 #include "airframe.h"
 #include "control.h"
+#include "imu.h"
 #include "led.h"
 #include "state.h"
 #include "version.h"
@@ -43,18 +44,6 @@ struct __attribute__((packed)) ConfigID {
 };
 
 static_assert(sizeof(ConfigID) == 4, "Data is not packed");
-
-struct __attribute__((packed)) PcbTransform {
-    PcbTransform();
-    bool verify() const {
-        return true;
-    }
-    float orientation[3];  // pitch/roll/yaw in standard flyer coordinate system
-                           // --> applied in that order!
-    float translation[3];  // translation in standard flyer coordinate system
-};
-
-static_assert(sizeof(PcbTransform) == 3 * 2 * 4, "Data is not packed");
 
 struct Config {
     enum Field : uint16_t {

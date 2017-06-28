@@ -61,6 +61,10 @@ void Imu::forgetBiasValues() {
     accel_and_gyro_.forgetBiasValues();
 }
 
+void Imu::parseConfig() {
+    sensor_to_flyer_ = RotationMatrix<float>(pcb_transform.orientation.x, pcb_transform.orientation.y, pcb_transform.orientation.z);
+}
+
 bool Imu::startInertialMeasurement() {
     if (!accel_and_gyro_.ready) {
         return false;

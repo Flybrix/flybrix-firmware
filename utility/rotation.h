@@ -1,6 +1,7 @@
 #ifndef ROTATION_H
 #define ROTATION_H
 
+#include <cmath>
 #include "vector3.h"
 
 template <typename Number>
@@ -8,6 +9,8 @@ class RotationMatrix final {
    public:
     RotationMatrix() : fields_{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}} {
     }
+
+    RotationMatrix(Number pitch, Number roll, Number yaw);
 
     const Number& operator()(size_t i, size_t j) const {
         return fields_[i][j];
@@ -32,5 +35,27 @@ class RotationMatrix final {
    private:
     Number fields_[3][3];
 };
+
+template <typename Number>
+RotationMatrix<Number>::RotationMatrix(Number pitch, Number roll, Number yaw) {
+    Number cx{std::cos(pitch)};
+    Number sx{std::sin(pitch)};
+    Number cy{std::cos(roll)};
+    Number sy{std::sin(roll)};
+    Number cz{std::cos(yaw)};
+    Number sz{std::sin(yaw)};
+
+    fields_[0][0] = cz * cy;
+    fields_[0][1] = cz * sy * sx - sz * cx;
+    fields_[0][2] = cz * sy * cx + sz * sx;
+
+    fields_[1][0] = sz * cy;
+    fields_[1][1] = sz * sy * sx + cz * cx;
+    fields_[1][2] = sz * sy * cx - cz * sx;
+
+    fields_[2][0] = -sy;
+    fields_[2][1] = cy * sx;
+    fields_[2][2] = cy * cx;
+}
 
 #endif  // ROTATION_H

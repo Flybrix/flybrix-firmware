@@ -55,7 +55,6 @@ struct Systems {
     DeviceName name;
 
     Version version;
-    PcbTransform pcb_transform;
 
     void parseConfig();
 };

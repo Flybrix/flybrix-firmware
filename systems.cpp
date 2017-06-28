@@ -26,5 +26,6 @@ Systems::Systems()
 
 void Systems::parseConfig() {
     led.parseConfig();
+    imu.parseConfig();
     control.parseConfig();
 }

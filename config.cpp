@@ -9,12 +9,6 @@
 #include "systems.h"
 #include "eepromcursor.h"
 
-PcbTransform::PcbTransform()          // Default settings
-    : orientation{0.0f, 0.0f, 0.0f},  // pitch, roll, yaw; applied in that order
-      translation{0.0f, 0.0f, 0.0f}   // x, y, z in mm
-{
-}
-
 // Default Config ID
 ConfigID::ConfigID() : ConfigID{0} {
 }
@@ -36,7 +30,7 @@ inline decltype(std::get<field>(Config::Data())) & systemMapping(Systems& sys);
 
 MAP_SYSTEM(VERSION, Version, version);
 MAP_SYSTEM(ID, ConfigID, id);
-MAP_SYSTEM(PCB, PcbTransform, pcb_transform);
+MAP_SYSTEM(PCB, PcbTransform, imu.pcb_transform);
 MAP_SYSTEM(MIX_TABLE, Airframe::MixTable, pilot.mix_table())
 MAP_SYSTEM(MAG_BIAS, AK8963::MagBias, imu.magnetometer_bias())
 MAP_SYSTEM(CHANNEL, R415X::ChannelProperties, pilot.receiver().channel)
