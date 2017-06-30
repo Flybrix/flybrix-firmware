@@ -34,9 +34,9 @@ class RotationMatrix final {
 
     Vector3<Number> pry() const {
         return {
-            std::atan2(fields_[1][0], fields_[0][0]),                                                              // Pitch
+            std::atan2(fields_[2][1], fields_[2][2]),                                                              // Pitch
             std::atan2(-fields_[2][0], std::sqrt(fields_[2][1] * fields_[2][1] + fields_[2][2] * fields_[2][2])),  // Roll
-            std::atan2(fields_[2][1], fields_[2][2])                                                               // Yaw
+            std::atan2(fields_[1][0], fields_[0][0])                                                               // Yaw
         };
     }
 
