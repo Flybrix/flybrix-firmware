@@ -30,34 +30,10 @@ void Imu::restart() {
 void Imu::correctBiasValues() {
     Vector3<float> a{state_.accel_filter};
     quick::normalize(a);
-
-    if (a.z > 1.0f - 1e-6f) {
-        /* If u and v are antiparallel, perform 180 degree rotation around X. */
-        sensor_to_flyer_ = RotationMatrix<float>();
-        sensor_to_flyer_(1, 1) = -1.0f;
-        sensor_to_flyer_(2, 2) = -1.0f;
-    } else {
-        /* Otherwise, build quaternion the standard way. */
-        // w = sqrt(a.lengthSq() * b.lengthSq()) + a . b = 1 + a . b
-        // [x, y, z] = a x b
-        // a . [0 0 -1] = -az
-        // a x [0 0 -1] = [-ay ax 0]
-        Quaternion<float> q(1 - a.z, -a.y, a.x, 0.0f);
-        quick::normalize(q);
-        sensor_to_flyer_ = q.toRotation();
-    }
-
-    for (size_t i = 0; i < 3; ++i) {
-        for (size_t j = 0; j < 3; ++j) {
-            sensor_to_flyer_(i, j) = -sensor_to_flyer_(i, j);
-        }
-    }
-
     accel_and_gyro_.correctBiasValues(state_.accel_filter - a, state_.gyro_filter);
 }
 
 void Imu::forgetBiasValues() {
-    sensor_to_flyer_ = RotationMatrix<float>();
     accel_and_gyro_.forgetBiasValues();
 }
 
@@ -70,8 +46,12 @@ bool Imu::startInertialMeasurement() {
         return false;
     }
 
-    return accel_and_gyro_.startMeasurement(
-        [this](Vector3<float> linear_acceleration, Vector3<float> angular_velocity) { state_.updateStateIMU(micros(), sensor_to_flyer_ * linear_acceleration, sensor_to_flyer_ * angular_velocity); });
+    return accel_and_gyro_.startMeasurement([this](Vector3<float> linear_acceleration, Vector3<float> angular_velocity) {
+        if (calibrate_rotation_) {
+            rotation_estimator_.updateGravity(calibration_pose_, linear_acceleration);
+        }
+        state_.updateStateIMU(micros(), sensor_to_flyer_ * linear_acceleration, sensor_to_flyer_ * angular_velocity);
+    });
 }
 
 bool Imu::startMagnetFieldMeasurement() {

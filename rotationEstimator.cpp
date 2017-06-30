@@ -6,6 +6,13 @@ void RotationEstimator::updateGravity(Pose pose, const Vector3<float>& value) {
     states_[(uint8_t)pose].measurement = value;
     states_[(uint8_t)pose].handled = true;
 }
+
+void RotationEstimator::clear() {
+    for (RotationEstimator::State& state : states_) {
+        state.handled = false;
+    }
+}
+
 RotationMatrix<float> RotationEstimator::estimate() const {
     RotationMatrix<float> answer;
     for (const RotationEstimator::State& state : states_) {

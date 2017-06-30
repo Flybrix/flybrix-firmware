@@ -5,6 +5,7 @@
 #include "MPU9250.h"
 #include "utility/rotation.h"
 #include "utility/vector3.h"
+#include "rotationEstimator.h"
 
 class State;
 class I2CManager;
@@ -36,6 +37,16 @@ class Imu final {
         magnetometer_.setCalibrating(calibrating);
     }
 
+    void setAccelerometerCalibrating(bool calibrating, RotationEstimator::Pose pose) {
+        if (calibrate_rotation_ && !calibrating) {
+            sensor_to_flyer_ = rotation_estimator_.estimate();
+            pcb_transform.orientation = sensor_to_flyer_.pry();
+            rotation_estimator_.clear();
+        }
+        calibrate_rotation_ = calibrating;
+        calibration_pose_ = pose;
+    }
+
     bool startInertialMeasurement();
     bool startMagnetFieldMeasurement();
 
@@ -44,6 +55,9 @@ class Imu final {
     PcbTransform pcb_transform;
 
    private:
+    bool calibrate_rotation_{false};
+    RotationEstimator::Pose calibration_pose_{RotationEstimator::Pose::Flat};
+    RotationEstimator rotation_estimator_;
     RotationMatrix<float> sensor_to_flyer_;
     AK8963 magnetometer_;
     MPU9250 accel_and_gyro_;

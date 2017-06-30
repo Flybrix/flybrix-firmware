@@ -16,6 +16,8 @@ class RotationEstimator final {
     };
 
     void updateGravity(Pose pose, const Vector3<float>& value);
+    void clear();
+
     RotationMatrix<float> estimate() const;
 
    private:
