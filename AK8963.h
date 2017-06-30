@@ -38,13 +38,10 @@ class AK8963 {
     uint8_t getID();
 
     struct __attribute__((packed)) MagBias {
-        MagBias();
         bool verify() const {
             return true;
         }
-        float x;  // Bx (milligauss)
-        float y;  // By (milligauss)
-        float z;  // Bz (milligauss)
+        Vector3<float> offset;  // B (milligauss)
     } mag_bias;
 
     static_assert(sizeof(MagBias) == 3 * 4, "Data is not packed");

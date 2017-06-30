@@ -12,9 +12,6 @@
 #include <i2c_t3.h>
 #include <cmath>
 
-AK8963::MagBias::MagBias() : x{0.0}, y{0.0}, z{0.0} {
-}
-
 // we have three coordinate systems here:
 // 1. REGISTER coordinates: native values as read
 // 2. IC/PCB coordinates: matches FLYER system if the pcb is in standard orientation
@@ -84,15 +81,11 @@ void AK8963::triggerCallback(std::function<void(Vector3<float>)> on_success) {
         // scale by sensitivity before rotating
         magCount = Vector3<float>(magCount) * magCalibration;
         Vector3<float> measurement = Vector3<float>(magCount) * RAW_TO_uT;
-        Vector3<float> bias{mag_bias.x, mag_bias.y, mag_bias.z};
         if (calibrating_) {
             float length = std::sqrt(radius_squared_ / (1e-6 + measurement.lengthSq()));
-            bias += (measurement - bias) * (1 - length) / 2;
-            mag_bias.x = bias.x;
-            mag_bias.y = bias.y;
-            mag_bias.z = bias.z;
+            mag_bias.offset += (measurement - mag_bias.offset) * (1 - length) / 2;
         }
-        measurement -= bias;
+        measurement -= mag_bias.offset;
         radius_squared_ = measurement.lengthSq();
         on_success(measurement);
     } else {
