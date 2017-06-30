@@ -80,7 +80,7 @@ class SerialComm {
     Systems& systems_;
     LED& led_;
     const BMP280& bmp_;
-    const Imu& imu_;
+    Imu& imu_;
     StateFlag& flag_;
     Kinematics& kinematics_;
     PilotCommand& pilot_;

@@ -33,6 +33,7 @@ enum SerialComm::Commands : uint8_t {
     REQ_CARD_RECORDING_STATE,
     SET_PARTIAL_TEMPORARY_CONFIG,
     SET_COMMAND_SOURCES,
+    SET_CALIBRATION,
     END_OF_COMMANDS,
 };
 
@@ -272,6 +273,35 @@ DO_SUBCOMMAND(SET_COMMAND_SOURCES) {
         return false;
     }
     command_sources_.update(sources);
+    return true;
+}
+
+DO_SUBCOMMAND(SET_CALIBRATION) {
+    uint8_t enabled;
+    uint8_t mode;
+    if (!input.ParseInto(enabled, mode)) {
+        return false;
+    }
+    if (mode > 5) {
+        return false;
+    }
+    if (mode == 0) {
+        imu_.setMagnetometerCalibrating(enabled);
+        imu_.setAccelerometerCalibrating(false, RotationEstimator::Pose::Flat);
+    } else {
+        imu_.setMagnetometerCalibrating(false);
+        imu_.setAccelerometerCalibrating(enabled, RotationEstimator::Pose(mode - 1));
+    }
+
+    if (!enabled) {
+        // Store config in permanent storage when calibration stops
+        Config tmp_config(systems_);
+        if (!tmp_config.verify()) {
+            return false;
+        }
+        tmp_config.writeTo(EEPROMCursor());
+    }
+
     return true;
 }
 
