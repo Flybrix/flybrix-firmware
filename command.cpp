@@ -6,11 +6,9 @@
 
 #include "command.h"
 
-#include "airframe.h"
 #include "systems.h"
 #include "state.h"
 #include "imu.h"
-#include "R415X.h"
 #include "cardManagement.h"
 #include "commandVector.h"
 #include "stateFlag.h"

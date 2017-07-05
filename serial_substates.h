@@ -3,6 +3,7 @@
 
 #include "serial_impl.h"
 
+#include "BMP280.h"
 #include "power.h"
 #include "commandVector.h"
 #include "kinematics.h"

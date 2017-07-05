@@ -12,9 +12,9 @@
 #define serial_h
 
 #include <Arduino.h>
-#include "BMP280.h"
 #include "cobs.h"
 
+class BMP280;
 class PilotCommand;
 class Control;
 class LED;

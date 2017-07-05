@@ -6,6 +6,7 @@
 
 #include "serial.h"
 
+#include "BMP280.h"
 #include "command.h"
 #include "control.h"
 #include "led.h"
