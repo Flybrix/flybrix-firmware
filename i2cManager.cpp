@@ -9,6 +9,12 @@
 #include "i2cManager.h"
 #include <i2c_t3.h>
 
+I2CManager i2c_;
+
+I2CManager& i2c() {
+    return i2c_;
+}
+
 I2CTransfer& I2CManager::TransferQueue::front() const {
     return firstItem->item;
 }

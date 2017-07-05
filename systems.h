@@ -39,7 +39,6 @@ struct Systems {
     CommandVector command_vector;
     CommandSources command_sources;
 
-    I2CManager i2c;
     State state;
     LED led;
 

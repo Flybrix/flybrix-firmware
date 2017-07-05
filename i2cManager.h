@@ -54,4 +54,6 @@ class I2CManager {
 
 };  // class I2CManager
 
+I2CManager& i2c();
+
 #endif

@@ -14,7 +14,6 @@
 
 #include <functional>
 #include "Arduino.h"
-#include "i2cManager.h"
 #include "utility/vector3.h"
 
 // we have three coordinate systems here:
@@ -24,7 +23,7 @@
 
 class MPU9250 {
    public:
-    MPU9250(I2CManager& i2c);
+    MPU9250();
 
     void restart();  // calculate bias and prepare for flight
 
@@ -49,8 +48,6 @@ class MPU9250 {
 
    private:
     void triggerCallback(std::function<void(Vector3<float>, Vector3<float>)> on_success);
-
-    I2CManager& i2c;
 
     bool dataReadyInterrupt();  // check interrupt
     uint8_t getStatusByte();

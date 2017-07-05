@@ -13,7 +13,6 @@
 #define BMP280_h
 
 #include "Arduino.h"
-#include "i2cManager.h"
 
 struct __attribute__((packed)) BMP_calibration {
     uint16_t dig_T1;    // 0x88 / 0x89 dig_T1 unsigned short
@@ -38,7 +37,7 @@ union BMP_calibration_union {
 
 class BMP280 {
    public:
-    explicit BMP280(I2CManager& i2c);  // base type
+    BMP280();  // base type
 
     void restart();
 
@@ -54,8 +53,6 @@ class BMP280 {
     uint32_t p0 = 25600000;  // initial pressure, set to 1 bar by default
 
    private:
-    I2CManager& i2c;
-
     uint8_t getStatusByte();
 
     BMP_calibration_union CALIBRATION;

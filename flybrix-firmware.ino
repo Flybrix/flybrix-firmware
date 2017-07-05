@@ -72,9 +72,9 @@ void setup() {
         sys.flag.clear(Status::BMP_FAIL);
         // state is unhappy without an initial pressure
         sys.bmp.startMeasurement();     // important; otherwise we'll never set ready!
-        sys.i2c.update();               // write data
+        i2c().update();                 // write data
         delay(2);                       // wait for data to arrive
-        sys.i2c.update();               // read data
+        i2c().update();                 // read data
         sys.bmp.p0 = sys.bmp.pressure;  // initialize reference pressure
     } else {
         sys.led.update();
@@ -115,11 +115,11 @@ uint32_t RunProcess(uint32_t start);
 void loop() {
     sys.state.loopCount++;
 
-    sys.i2c.update();  // manages a queue of requests for mpu, mag, bmp
+    i2c().update();  // manages a queue of requests for mpu, mag, bmp
 
     sys.imu.startInertialMeasurement();
 
-    sys.i2c.update();
+    i2c().update();
 
     if (!sys.pilot.isOverridden()) {  // user isn't changing motor levels using Configurator
         sys.control_vectors = sys.control.calculateControlVectors(sys.kinematics, sys.command_vector);
@@ -127,19 +127,19 @@ void loop() {
     sys.pilot.applyControl(sys.control_vectors);
 
     RunProcess<1000>(micros());
-    sys.i2c.update();
+    i2c().update();
     RunProcess<100>(micros());
-    sys.i2c.update();
+    i2c().update();
     RunProcess<40>(micros());
-    sys.i2c.update();
+    i2c().update();
     RunProcess<35>(micros());
-    sys.i2c.update();
+    i2c().update();
     RunProcess<30>(micros());
-    sys.i2c.update();
+    i2c().update();
     RunProcess<10>(micros());
-    sys.i2c.update();
+    i2c().update();
     RunProcess<1>(micros());
-    sys.i2c.update();
+    i2c().update();
 }
 
 template <uint32_t f>

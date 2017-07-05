@@ -8,7 +8,6 @@
 #include "rotationEstimator.h"
 
 class State;
-class I2CManager;
 
 struct __attribute__((packed)) PcbTransform {
     bool verify() const {
@@ -23,7 +22,7 @@ static_assert(sizeof(PcbTransform) == 3 * 2 * 4, "Data is not packed");
 
 class Imu final {
    public:
-    Imu(State& state, I2CManager& i2c);
+    explicit Imu(State& state);
 
     bool hasCorrectIDs();
 

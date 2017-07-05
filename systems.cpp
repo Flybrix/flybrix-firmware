@@ -14,8 +14,7 @@
 Systems::Systems()
     : state{this},
       led{flag},
-      bmp{i2c},  // pressure sensor object
-      imu{state, i2c},
+      imu{state},
       pilot{*this},
       control{Control::PIDParameters()},
       // listen for configuration inputs

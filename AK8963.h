@@ -14,7 +14,6 @@
 
 #include <functional>
 #include "Arduino.h"
-#include "i2cManager.h"
 #include "utility/vector3.h"
 
 // we have three coordinate systems here:
@@ -24,11 +23,9 @@
 
 class AK8963 {
    public:
-    AK8963(I2CManager& i2c);
-
     void restart();  // calculate bias and prepare for flight
 
-    bool ready;
+    bool ready{false};
 
     // Callback: magnet field strength in milligauss -- (x,y,z)
     bool startMeasurement(std::function<void(Vector3<float>)> on_success);
@@ -48,8 +45,6 @@ class AK8963 {
 
    private:
     void triggerCallback(std::function<void(Vector3<float>)> on_success);
-
-    I2CManager& i2c;
 
     uint8_t getStatusByte();
 
