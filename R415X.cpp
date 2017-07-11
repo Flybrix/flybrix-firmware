@@ -105,9 +105,9 @@ extern "C" void ftm1_isr(void) {
     startPulse = stopPulse;  // Save time at pulse start
 }
 
-bool R415X::ErrorTracker::check(const CommandVector& command_vector) {
-    bool armed{command_vector.aux1 == CommandVector::AUX::Low};
-    bool nonzero_throttle{command_vector.throttle > 0};
+bool R415X::ErrorTracker::check(const RcCommand& command) {
+    bool armed{command.aux1 == RcCommand::AUX::Low};
+    bool nonzero_throttle{command.throttle > 0};
     bool is_legal{armed || nonzero_throttle};
     if (was_legal_ && !was_flying_) {
         is_legal = true;
@@ -121,8 +121,8 @@ void R415X::ErrorTracker::reportFailure() {
     was_legal_ = false;
 }
 
-CommandVector R415X::getCommandData() {
-    CommandVector command;
+RcState R415X::query() {
+    RcState rc_state;
     cli();  // disable interrupts
 
     // if R415X is working, we should never see anything less than 900!
@@ -130,9 +130,9 @@ CommandVector R415X::getCommandData() {
         if (RX[i] < 900) {
             // tell state that R415X is not ready and return
             sei();  // enable interrupts
-            command.source = CommandVector::Source::None;
+            rc_state.status = RcStatus::Timeout;
             error_tracker_.reportFailure();
-            return command;
+            return rc_state;
         }
     }
 
@@ -163,9 +163,9 @@ CommandVector R415X::getCommandData() {
     sei();  // enable interrupts
 
     // Translate PPMChannel data into the four command level and aux mask
-    command.source = CommandVector::Source::Radio;
+    rc_state.status = RcStatus::Ok;
 
-    command.parseBools(AUX1.isLow(), AUX1.isMid(), AUX1.isHigh(), AUX2.isLow(), AUX2.isMid(), AUX2.isHigh());
+    rc_state.command.parseBools(AUX1.isLow(), AUX1.isMid(), AUX1.isHigh(), AUX2.isLow(), AUX2.isMid(), AUX2.isHigh());
 
     // in some cases it is impossible to get a ppm channel to be close enought to the midpoint (~1500 usec) because the controller trim is too coarse to correct a small error
     // we get around this by creating a small dead zone around the midpoint of signed channel, specified in usec units
@@ -175,14 +175,14 @@ CommandVector R415X::getCommandData() {
 
     uint16_t throttle_threshold = ((throttle.max - throttle.min) / 10) + throttle.min;  // keep bottom 10% of throttle stick to mean 'off'
 
-    command.throttle = constrain((throttle.val - throttle_threshold) * 4095 / (throttle.max - throttle_threshold), 0, 4095);
-    command.pitch = constrain((1 - 2 * ((channel.inversion >> 1) & 1)) * (pitch.val - pitch.mid) * 4095 / (pitch.max - pitch.min), -2047, 2047);
-    command.roll = constrain((1 - 2 * ((channel.inversion >> 2) & 1)) * (roll.val - roll.mid) * 4095 / (roll.max - roll.min), -2047, 2047);
-    command.yaw = constrain((1 - 2 * ((channel.inversion >> 3) & 1)) * (yaw.val - yaw.mid) * 4095 / (yaw.max - yaw.min), -2047, 2047);
+    rc_state.command.throttle = constrain((throttle.val - throttle_threshold) * 4095 / (throttle.max - throttle_threshold), 0, 4095);
+    rc_state.command.pitch = constrain((1 - 2 * ((channel.inversion >> 1) & 1)) * (pitch.val - pitch.mid) * 4095 / (pitch.max - pitch.min), -2047, 2047);
+    rc_state.command.roll = constrain((1 - 2 * ((channel.inversion >> 2) & 1)) * (roll.val - roll.mid) * 4095 / (roll.max - roll.min), -2047, 2047);
+    rc_state.command.yaw = constrain((1 - 2 * ((channel.inversion >> 3) & 1)) * (yaw.val - yaw.mid) * 4095 / (yaw.max - yaw.min), -2047, 2047);
 
-    if (!error_tracker_.check(command)) {
-        command.source = CommandVector::Source::None;
+    if (!error_tracker_.check(rc_state.command)) {
+        rc_state.status = RcStatus::Timeout;
     }
 
-    return command;
+    return rc_state;
 }

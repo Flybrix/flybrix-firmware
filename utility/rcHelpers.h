@@ -2,6 +2,7 @@
 #define RC_HELPERS_H
 
 #include <cstdint>
+#include <tuple>
 
 #include "ticker.h"
 
@@ -46,18 +47,34 @@ struct RcState final {
     RcCommand command;
 };
 
+class RcSources final {
+   public:
+    void update(uint8_t sources) {
+        sources_ = sources;
+    }
+
+    bool accepts(uint8_t source) const {
+        return sources_ & source;
+    }
+
+   private:
+    uint8_t sources_{255};
+};
+
 template <typename Tsrc>
 class RcTracker final {
    public:
-    RcTracker(Tsrc& source) : source_{source} {
+    RcTracker(Tsrc& source) : source_(source) {
     }
 
     RcState query() {
-        RcState state{source_.query()};
+        RcState state(source_.query());
         if (state.status == RcStatus::Ok) {
             tolerance_.reset(Tsrc::refresh_delay_tolerance);
+            cache_ = state.command;
         } else {
             state.status = tolerance_.tick() ? RcStatus::Waiting : RcStatus::Timeout;
+            state.command = cache_;
         }
         return state;
     }
@@ -66,17 +83,18 @@ class RcTracker final {
 
    private:
     Tsrc& source_;
+    RcCommand cache_;
     Ticker<uint8_t> tolerance_;
 };
 
 template <typename... Tsrcs>
 class RcMux final {
    public:
-    RcMux(Tsrcs&... sources) : sources_{sources...} {
+    RcMux(const RcSources& filter, Tsrcs&... sources) : filter_{filter}, sources_{sources...} {
     }
 
-    RcStatus query() {
-        RcState state{queryHelper()};
+    RcState query() {
+        RcState state(queryHelper());
         if (invalid_count_ <= 0) {
             invalid_count_ = 0;
             valid_ = true;
@@ -92,7 +110,6 @@ class RcMux final {
     }
 
    private:
-    using Sources = std::tuple<RcTracker<Tsrcs>...>;
     template <std::size_t I = 0>
     inline typename std::enable_if<I == sizeof...(Tsrcs), RcState>::type queryHelper() {
         invalid_count_ += 1;
@@ -102,14 +119,15 @@ class RcMux final {
     template <std::size_t I = 0>
     inline typename std::enable_if<(I < sizeof...(Tsrcs)), RcState>::type queryHelper() {
         RcState state = std::get<I>(sources_).query();
-        if (state.status != RcStatus::Timeout) {
-            invalid_count_ -= std::tuple_element<I, Sources>::recovery_rate;
+        if (state.status != RcStatus::Timeout && filter_.accepts(1 << I)) {
+            invalid_count_ -= std::get<I>(sources_).recovery_rate;
             return state;
         }
-        return queryHelper<I + 1, Tsrcs...>();
+        return queryHelper<I + 1>();
     }
 
-    Sources sources_;
+    const RcSources& filter_;
+    std::tuple<RcTracker<Tsrcs>...> sources_;
     bool valid_{true};
     int16_t invalid_count_{0};
 };

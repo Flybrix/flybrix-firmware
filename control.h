@@ -18,7 +18,7 @@
 
 class PID;
 class Kinematics;
-struct CommandVector;
+struct RcCommand;
 
 class Control {
    public:
@@ -27,7 +27,7 @@ class Control {
     explicit Control(const PIDParameters& config);
     void parseConfig();
 
-    ControlVectors calculateControlVectors(const Kinematics& feedback, const CommandVector& setpoint);
+    ControlVectors calculateControlVectors(const Kinematics& feedback, const RcCommand& setpoint);
 
     struct __attribute__((packed)) PIDParameters {
         PIDParameters();

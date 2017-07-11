@@ -13,9 +13,7 @@
 #define R415X_h
 
 #include "Arduino.h"
-#include "commandVector.h"
-
-struct CommandVector;
+#include "utility/rcHelpers.h"
 
 class PPMchannel {
    public:
@@ -66,7 +64,10 @@ class PPMchannel {
 class R415X {
    public:
     R415X();
-    CommandVector getCommandData();
+    RcState query();
+
+    static constexpr uint8_t recovery_rate{1};
+    static constexpr uint8_t refresh_delay_tolerance{1};
 
     struct __attribute__((packed)) ChannelProperties {
         ChannelProperties();
@@ -88,7 +89,7 @@ class R415X {
     // happens only when R415X switches to default
     class ErrorTracker final {
        public:
-        bool check(const CommandVector& command_vector);
+        bool check(const RcCommand&);
         void reportFailure();
 
        private:

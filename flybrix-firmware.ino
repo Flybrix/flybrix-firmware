@@ -195,7 +195,7 @@ bool ProcessTask<35>::Run() {
 
 template <>
 bool ProcessTask<40>::Run() {
-    sys.pilot.processCommands();
+    sys.command_vector = sys.pilot.processCommands(sys.rc_mux.query());
 
     sys.pwr.updateLevels();  // read all ADCs
 

@@ -13,16 +13,12 @@
 #include "commandVector.h"
 #include "stateFlag.h"
 
-PilotCommand::PilotCommand(Systems& systems) : state_(systems.state), imu_(systems.imu), flag_(systems.flag), command_vector_(systems.command_vector), command_sources_(systems.command_sources) {
+PilotCommand::PilotCommand(Systems& systems) : state_(systems.state), imu_(systems.imu), flag_(systems.flag) {
     setControlState(ControlState::AwaitingAuxDisable);
 }
 
 Airframe::MixTable& PilotCommand::mix_table() {
     return airframe_.mix_table;
-}
-
-R415X& PilotCommand::receiver() {
-    return receiver_;
 }
 
 void PilotCommand::override(bool override) {
@@ -134,51 +130,20 @@ void PilotCommand::disableMotors() {
     sdcard::closeFile();
 }
 
-void PilotCommand::processCommands() {
-    if (command_vector_.source != CommandVector::Source::Bluetooth) {
-        if (!bluetooth_tolerance_.tick()) {
-            // since we haven't seen bluetooth commands for more than 1 second, try the R415X
-            // if it's an accepted source
-            if (command_sources_.accepts(CommandVector::Source::Radio)) {
-                command_vector_ = receiver_.getCommandData();
-            }
-        }
-    } else {
-        // we allow bluetooth a generous 1s before we give up
-        // as soon as we start receiving bluetooth, reset the watchdog
-        bluetooth_tolerance_.reset(40);
-    }
+RcCommand PilotCommand::processCommands(RcState&& rc_state) {
+    bool timeout{rc_state.status == RcStatus::Timeout};
 
-    bool has_data{command_vector_.source != CommandVector::Source::None};
-
-    switch (command_vector_.source) {
-        case CommandVector::Source::Radio:
-            --invalid_count;
-            break;
-        case CommandVector::Source::Bluetooth:
-            // We tolerate bluetooth working as bad as 1 in 10 times
-            invalid_count -= 20;
-            break;
-        default:
-            ++invalid_count;
-    }
-
-    // mark the command data as used so we don't use it again
-    command_vector_.source = CommandVector::Source::None;
-
-    if (invalid_count > 80) {
-        invalid_count = 80;
+    if (timeout) {
         if (!isOverridden()) {
             setControlState(ControlState::FailRx);
         }
-    } else if (invalid_count < 0) {
-        invalid_count = 0;
+    } else {
         if (control_state_ == ControlState::FailRx) {
             setControlState(ControlState::AwaitingAuxDisable);
         }
     }
 
-    bool attempting_to_enable{command_vector_.aux1 == CommandVector::AUX::Low};
+    bool attempting_to_enable{rc_state.command.aux1 == RcCommand::AUX::Low};
 
     switch (control_state_) {
         case ControlState::Overridden: {
@@ -192,7 +157,7 @@ void PilotCommand::processCommands() {
         case ControlState::ThrottleLocked: {
             if (!attempting_to_enable) {
                 setControlState(ControlState::Disabled);
-            } else if (command_vector_.throttle == 0) {
+            } else if (rc_state.command.throttle == 0) {
                 setControlState(ControlState::Enabled);
             }
         } break;
@@ -206,7 +171,7 @@ void PilotCommand::processCommands() {
             }
         } break;
         case ControlState::FailRx: {
-            command_vector_.throttle *= 0.99;
+            rc_state.command.throttle *= 0.99;
         } break;
     }
 
@@ -216,14 +181,16 @@ void PilotCommand::processCommands() {
         disableMotors();
     }
 
-    if (has_data) {
-        if (throttle_hold_off_.tick() || command_vector_.throttle == 0 || control_state_ == ControlState::ThrottleLocked) {
-            command_vector_.throttle = 0;
-            command_vector_.pitch = 0;
-            command_vector_.roll = 0;
-            command_vector_.yaw = 0;
+    if (!timeout) {
+        if (throttle_hold_off_.tick() || rc_state.command.throttle == 0 || control_state_ == ControlState::ThrottleLocked) {
+            rc_state.command.throttle = 0;
+            rc_state.command.pitch = 0;
+            rc_state.command.roll = 0;
+            rc_state.command.yaw = 0;
         }
     }
+
+    return rc_state.command;
 }
 
 void PilotCommand::setControlState(ControlState state) {

@@ -15,8 +15,8 @@
 #include <Arduino.h>
 
 #include "airframe.h"
-#include "R415X.h"
 
+#include "utility/rcHelpers.h"
 #include "utility/ticker.h"
 
 struct Systems;
@@ -29,7 +29,7 @@ class Imu;
 class PilotCommand {
    public:
     explicit PilotCommand(Systems& systems);
-    void processCommands();
+    RcCommand processCommands(RcState&&);
     void processMotorEnablingIteration();
     void disableMotors();
     void override(bool override);
@@ -49,7 +49,6 @@ class PilotCommand {
     }
 
     Airframe::MixTable& mix_table();
-    R415X& receiver();
 
    private:
     enum class ControlState {
@@ -70,15 +69,11 @@ class PilotCommand {
 
     State& state_;
     Imu& imu_;
-    R415X receiver_;
     StateFlag& flag_;
-    CommandVector& command_vector_;
-    CommandSources& command_sources_;
 
     Airframe airframe_;
     ControlState control_state_{ControlState::AwaitingAuxDisable};
     Ticker<uint8_t> throttle_hold_off_;  // hold controls low for some time after enabling
-    Ticker<uint8_t> bluetooth_tolerance_;
     int16_t invalid_count{0};
     uint16_t enable_attempts_{0};  // increment when we're in the STATUS_ENABLING state
     bool idle_{false};

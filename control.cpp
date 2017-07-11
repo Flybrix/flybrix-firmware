@@ -7,7 +7,7 @@
 #include "control.h"
 #include "debug.h"
 #include "kinematics.h"
-#include "commandVector.h"
+#include "utility/rcHelpers.h"
 
 #define BYPASS_THRUST_MASTER 1 << 0
 #define BYPASS_PITCH_MASTER 1 << 1
@@ -111,7 +111,7 @@ float radToDeg(float v) {
     return v * 57.2957795f;
 }
 
-ControlVectors Control::calculateControlVectors(const Kinematics& feedback, const CommandVector& setpoint) {
+ControlVectors Control::calculateControlVectors(const Kinematics& feedback, const RcCommand& setpoint) {
     thrust_pid.setMasterInput(feedback.altitude);
     thrust_pid.setSlaveInput(0.0f);  // feedback.ClimbRate
     pitch_pid.setMasterInput(radToDeg(feedback.angle.pitch));

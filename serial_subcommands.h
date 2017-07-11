@@ -169,18 +169,10 @@ DO_SUBCOMMAND(SET_SERIAL_RC) {
     if (!input.ParseInto(enabled, throttle, pitch, roll, yaw, auxmask)) {
         return false;
     }
-    if (!command_sources_.accepts(CommandVector::Source::Bluetooth)) {
-        return true;
-    }
     if (enabled) {
-        command_vector_.source = CommandVector::Source::Bluetooth;
-        command_vector_.parseAuxMask(auxmask);
-        command_vector_.throttle = throttle;
-        command_vector_.pitch = pitch;
-        command_vector_.roll = roll;
-        command_vector_.yaw = yaw;
+        serial_rc_.update(auxmask, throttle, pitch, roll, yaw);
     } else {
-        command_vector_.clearBluetoothState();
+        serial_rc_.clear();
     }
     return true;
 }

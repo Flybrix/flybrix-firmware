@@ -25,6 +25,7 @@
 #include "kinematics.h"
 #include "controlVectors.h"
 #include "commandVector.h"
+#include "utility/rcHelpers.h"
 
 struct Systems {
     Systems();
@@ -34,11 +35,15 @@ struct Systems {
 
     Kinematics kinematics;
     ControlVectors control_vectors;
-    CommandVector command_vector;
-    CommandSources command_sources;
+    RcCommand command_vector;
+    RcSources command_sources;
 
     State state;
     LED led;
+
+    SerialRc serial_rc;
+    R415X radio_receiver;
+    RcMux<SerialRc, R415X> rc_mux;
 
     BMP280 bmp;
     Imu imu;

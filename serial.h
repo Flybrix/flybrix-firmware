@@ -13,6 +13,7 @@
 
 #include <Arduino.h>
 #include "cobs.h"
+#include "utility/rcHelpers.h"
 
 class BMP280;
 class PilotCommand;
@@ -24,15 +25,40 @@ class Imu;
 struct Systems;
 struct Kinematics;
 struct PowerMonitor;
-struct CommandVector;
-struct CommandSources;
 struct ControlVectors;
+struct RcSources;
 
 using CobsPayloadGeneric = CobsPayload<1000>;  // impacts memory use only; packet size should be <= client packet size
 
 static constexpr uint32_t FLAG(uint8_t field) {
     return uint32_t{1} << field;
 }
+
+class SerialRc final {
+   public:
+    RcState query() {
+        RcStatus status = fresh_ ? RcStatus::Ok : RcStatus::Timeout;
+        fresh_ = false;
+        return {status, command_};
+    }
+    void update(uint8_t auxmask, uint16_t throttle, uint16_t pitch, uint16_t roll, uint16_t yaw) {
+        command_.parseAuxMask(auxmask);
+        command_.throttle = throttle;
+        command_.pitch = pitch;
+        command_.roll = roll;
+        command_.yaw = yaw;
+        fresh_ = true;
+    }
+    void clear() {
+        fresh_ = false;
+    }
+    static constexpr uint8_t recovery_rate{20};
+    static constexpr uint8_t refresh_delay_tolerance{40};
+
+   private:
+    bool fresh_{false};
+    RcCommand command_;
+};
 
 class SerialComm {
    public:
@@ -85,8 +111,9 @@ class SerialComm {
     Kinematics& kinematics_;
     PilotCommand& pilot_;
     PowerMonitor& pwr_;
-    CommandVector& command_vector_;
-    CommandSources& command_sources_;
+    RcCommand& command_vector_;
+    RcSources& command_sources_;
+    SerialRc& serial_rc_;
     ControlVectors& control_vectors_;
 
     uint16_t send_state_delay{1001};  // anything over 1000 turns off state messages
