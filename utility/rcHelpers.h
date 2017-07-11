@@ -47,7 +47,7 @@ struct RcState final {
     RcCommand command;
 };
 
-class RcSources final {
+class RcFilter final {
    public:
     void update(uint8_t sources) {
         sources_ = sources;
@@ -64,7 +64,10 @@ class RcSources final {
 template <typename Tsrc>
 class RcTracker final {
    public:
-    RcTracker(Tsrc& source) : source_(source) {
+    RcTracker() {
+    }
+
+    explicit RcTracker(Tsrc&& source) : source_(source) {
     }
 
     RcState query() {
@@ -81,8 +84,9 @@ class RcTracker final {
 
     static constexpr uint8_t recovery_rate = Tsrc::recovery_rate;
 
+    Tsrc source_;
+
    private:
-    Tsrc& source_;
     RcCommand cache_;
     Ticker<uint8_t> tolerance_;
 };
@@ -90,7 +94,10 @@ class RcTracker final {
 template <typename... Tsrcs>
 class RcMux final {
    public:
-    RcMux(const RcSources& filter, Tsrcs&... sources) : filter_{filter}, sources_{sources...} {
+    RcMux() {
+    }
+
+    RcMux(Tsrcs&... sources) : sources_{sources...} {
     }
 
     RcState query() {
@@ -107,6 +114,15 @@ class RcMux final {
             state.status = RcStatus::Timeout;
         }
         return state;
+    }
+
+    template <std::size_t N>
+    inline typename std::tuple_element<N, std::tuple<Tsrcs...>>::type& source() {
+        return std::get<N>(sources_).source_;
+    }
+
+    void setFilter(uint8_t filter) {
+        filter_.update(filter);
     }
 
    private:
@@ -126,7 +142,7 @@ class RcMux final {
         return queryHelper<I + 1>();
     }
 
-    const RcSources& filter_;
+    RcFilter filter_;
     std::tuple<RcTracker<Tsrcs>...> sources_;
     bool valid_{true};
     int16_t invalid_count_{0};

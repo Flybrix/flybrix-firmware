@@ -264,7 +264,7 @@ DO_SUBCOMMAND(SET_COMMAND_SOURCES) {
     if (!input.ParseInto(sources)) {
         return false;
     }
-    command_sources_.update(sources);
+    rc_mux_.setFilter(sources);
     return true;
 }
 

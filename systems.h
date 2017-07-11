@@ -36,13 +36,10 @@ struct Systems {
     Kinematics kinematics;
     ControlVectors control_vectors;
     RcCommand command_vector;
-    RcSources command_sources;
 
     State state;
     LED led;
 
-    SerialRc serial_rc;
-    R415X radio_receiver;
     RcMux<SerialRc, R415X> rc_mux;
 
     BMP280 bmp;
@@ -57,6 +54,14 @@ struct Systems {
     DeviceName name;
 
     Version version;
+
+    SerialRc& serialRc() {
+        return rc_mux.source<0>();
+    }
+
+    R415X& radioReceiver() {
+        return rc_mux.source<1>();
+    }
 
     void parseConfig();
 };

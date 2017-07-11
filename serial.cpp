@@ -67,8 +67,8 @@ SerialComm::SerialComm(Systems& systems, const volatile uint16_t* ppm)
       pilot_(systems.pilot),
       pwr_(systems.pwr),
       command_vector_(systems.command_vector),
-      command_sources_(systems.command_sources),
-      serial_rc_(systems.serial_rc),
+      rc_mux_(systems.rc_mux),
+      serial_rc_(systems.serialRc()),
       control_vectors_(systems.control_vectors) {
 }
 

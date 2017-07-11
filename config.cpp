@@ -33,7 +33,7 @@ MAP_SYSTEM(ID, ConfigID, id);
 MAP_SYSTEM(PCB, PcbTransform, imu.pcb_transform);
 MAP_SYSTEM(MIX_TABLE, Airframe::MixTable, pilot.mix_table())
 MAP_SYSTEM(MAG_BIAS, AK8963::MagBias, imu.magnetometer_bias())
-MAP_SYSTEM(CHANNEL, R415X::ChannelProperties, radio_receiver.channel)
+MAP_SYSTEM(CHANNEL, R415X::ChannelProperties, radioReceiver().channel)
 MAP_SYSTEM(PID_PARAMETERS, Control::PIDParameters, control.pid_parameters)
 MAP_SYSTEM(STATE_PARAMETERS, State::Parameters, state.parameters)
 MAP_SYSTEM(LED_STATES, LED::States, led.states)

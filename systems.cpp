@@ -14,7 +14,6 @@
 Systems::Systems()
     : state{this},
       led{flag},
-      rc_mux{command_sources, serial_rc, radio_receiver},
       imu{state},
       pilot{*this},
       control{Control::PIDParameters()},

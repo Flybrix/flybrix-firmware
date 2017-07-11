@@ -14,6 +14,7 @@
 #include <Arduino.h>
 #include "cobs.h"
 #include "utility/rcHelpers.h"
+#include "R415X.h"
 
 class BMP280;
 class PilotCommand;
@@ -112,7 +113,7 @@ class SerialComm {
     PilotCommand& pilot_;
     PowerMonitor& pwr_;
     RcCommand& command_vector_;
-    RcSources& command_sources_;
+    RcMux<SerialRc, R415X>& rc_mux_;
     SerialRc& serial_rc_;
     ControlVectors& control_vectors_;
 
