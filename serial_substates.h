@@ -5,7 +5,6 @@
 
 #include "BMP280.h"
 #include "power.h"
-#include "commandVector.h"
 #include "kinematics.h"
 #include "stateFlag.h"
 #include "imu.h"

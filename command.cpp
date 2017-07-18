@@ -10,7 +10,6 @@
 #include "state.h"
 #include "imu.h"
 #include "cardManagement.h"
-#include "commandVector.h"
 #include "stateFlag.h"
 
 PilotCommand::PilotCommand(Systems& systems) : state_(systems.state), imu_(systems.imu), flag_(systems.flag) {

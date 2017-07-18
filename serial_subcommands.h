@@ -3,7 +3,6 @@
 
 #include "serial_impl.h"
 
-#include "commandVector.h"
 #include "command.h"
 
 enum SerialComm::Commands : uint8_t {

@@ -24,7 +24,6 @@
 #include "stateFlag.h"
 #include "kinematics.h"
 #include "controlVectors.h"
-#include "commandVector.h"
 #include "utility/rcHelpers.h"
 
 struct Systems {
