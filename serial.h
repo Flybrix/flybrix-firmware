@@ -96,9 +96,9 @@ class SerialComm {
     template <uint8_t I>
     inline void readSubstate(CobsPayloadGeneric& payload) const;
 
-   private:
-    void ProcessData(CobsReaderBuffer& data_input);
+    void ProcessData(CobsReaderBuffer& data_input, bool allow_response);
 
+   private:
     uint16_t PacketSize(uint32_t mask) const;
 
     const State& state_;

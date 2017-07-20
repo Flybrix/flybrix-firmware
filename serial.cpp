@@ -77,11 +77,11 @@ void SerialComm::Read() {
         CobsReaderBuffer* buffer{readSerial()};
         if (buffer == nullptr)
             return;
-        ProcessData(*buffer);
+        ProcessData(*buffer, true);
     }
 }
 
-void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
+void SerialComm::ProcessData(CobsReaderBuffer& data_input, bool allow_response) {
     MessageType code;
     uint32_t mask;
 
@@ -95,7 +95,7 @@ void SerialComm::ProcessData(CobsReaderBuffer& data_input) {
     uint32_t ack_data{0};
     doSubcommands(*this, data_input, mask, ack_data);
 
-    if (mask & FLAG(REQ_RESPONSE)) {
+    if (allow_response && (mask & FLAG(REQ_RESPONSE))) {
         SendResponse(mask, ack_data);
     }
 }
