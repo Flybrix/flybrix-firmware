@@ -126,7 +126,7 @@ void SerialComm::SendDebugString(const String& string, MessageType type) const {
 
 void SerialComm::SendState(uint32_t mask, bool redirect_to_sd_card) const {
     // No need to build the message if we are not writing to the card
-    if (redirect_to_sd_card && !sdcard::isOpen())
+    if (redirect_to_sd_card && sdcard::getState() != sdcard::State::WriteStates)
         return;
     if (!mask)
         mask = state_mask;

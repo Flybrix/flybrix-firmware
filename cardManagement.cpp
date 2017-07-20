@@ -24,6 +24,8 @@
 
 namespace sdcard {
 namespace {
+State card_state{State::Closed};
+
 SdFat sd;
 bool locked = false;
 
@@ -46,6 +48,14 @@ bool openSD() {
 SdBaseFile binFile;
 uint32_t bgnBlock, endBlock;
 uint8_t* cache;
+
+struct SenseCloseIIFE {
+    ~SenseCloseIIFE() {
+        if (!binFile.isOpen()) {
+            card_state = State::Closed;
+        }
+    };
+};
 
 uint32_t block_number = 0;
 
@@ -111,6 +121,7 @@ uint8_t* WritingBuffer::popBlock() {
 }
 
 bool openFileHelper(const char* filename) {
+    SenseCloseIIFE close_iife;
     binFile.close();
     if (!binFile.createContiguous(sd.vwd(), filename, 512 * FILE_BLOCK_COUNT))
         return false;
@@ -141,9 +152,11 @@ bool openFileHelper(const char* filename) {
 }
 
 bool openFile(const char* base_name) {
-    if (!openSD())
+    SenseCloseIIFE close_iife;
+    if (card_state != State::Closed) {
         return false;
-    if (binFile.isOpen())
+    }
+    if (!openSD())
         return false;
     char file_dir[64];
     char filename[64];
@@ -158,8 +171,12 @@ bool openFile(const char* base_name) {
         // Look for the first non-existing filename of the format /<A>_<B>_<C>/<base_name>_<idx>.bin
         if (!sd.exists(filename)) {
             bool success = openFileHelper(filename);
-            if (!success)
+            if (success) {
+                card_state = sdcard::State::WriteStates;
+            } else {
                 DebugPrintf("Failed to open file %s on SD card!", filename);
+            }
+
             return success;
         }
     }
@@ -179,14 +196,14 @@ void openFile() {
     openFile("st");
 }
 
-bool isOpen() {
-    return binFile.isOpen();
+State getState() {
+    return card_state;
 }
 
 void write(const uint8_t* data, size_t length) {
     if (!openSD())
         return;
-    if (!binFile.isOpen())
+    if (card_state != State::WriteStates && card_state != State::WriteCommands)
         return;
     if (block_number == FILE_BLOCK_COUNT)
         return;
@@ -202,12 +219,15 @@ void write(const uint8_t* data, size_t length) {
 }
 
 void closeFile() {
+    SenseCloseIIFE close_iife;
+    if (card_state == State::Closed) {
+        return;
+    }
     if (locked)
         return;
     if (!openSD())
         return;
-    if (!binFile.isOpen())
-        return;
+
     if (!sd.card()->writeStop()) {
         DebugPrint("Write stop failed");
         return;

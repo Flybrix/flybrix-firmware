@@ -183,14 +183,22 @@ DO_SUBCOMMAND(SET_CARD_RECORDING) {
     }
     bool shouldRecordToCard = recording_flags & 1;
     bool shouldLock = recording_flags & 2;
+
     sdcard::setLock(false);
+    bool success{false};
     if (shouldRecordToCard) {
-        sdcard::openFile();
+        if (sdcard::getState() == sdcard::State::Closed) {
+            sdcard::openFile();
+            success = true;
+        }
     } else {
-        sdcard::closeFile();
+        if (sdcard::getState() == sdcard::State::WriteStates) {
+            sdcard::closeFile();
+            success = true;
+        }
     }
     sdcard::setLock(shouldLock);
-    return true;
+    return success;
 }
 
 DO_SUBCOMMAND(SET_PARTIAL_EEPROM_DATA) {
@@ -235,7 +243,7 @@ DO_SUBCOMMAND(REQ_CARD_RECORDING_STATE) {
     WriteProtocolHead(SerialComm::MessageType::Command, FLAG(SET_SD_WRITE_DELAY) | FLAG(SET_CARD_RECORDING), payload);
     payload.Append(sd_card_state_delay);
     uint8_t flags = 0;
-    if (sdcard::isOpen()) {
+    if (sdcard::getState() == sdcard::State::WriteStates) {
         flags |= 1;
     }
     if (sdcard::isLocked()) {

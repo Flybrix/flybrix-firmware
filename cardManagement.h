@@ -14,13 +14,25 @@
 #include <Arduino.h>
 
 namespace sdcard {
+
+enum class State {
+    Closed,
+    WriteStates,
+    WriteCommands,
+    ReadCommands,
+};
+
 // Card startup takes a long time to perform
+//
+// Any SD card operation requires establishing a connection to it.
+// Establishing that connection causes lag.
+// Run this at boot to prevent lag later on.
 void startup();
 
 // Opening and clearing the file takes a long time to perform
 void openFile();
 
-bool isOpen();
+State getState();
 
 void write(const uint8_t* data, size_t length);
 
