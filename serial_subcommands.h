@@ -184,20 +184,20 @@ DO_SUBCOMMAND(SET_CARD_RECORDING) {
     bool shouldRecordToCard = recording_flags & 1;
     bool shouldLock = recording_flags & 2;
 
-    sdcard::setLock(false);
+    sdcard::writing::setLock(false);
     bool success{false};
     if (shouldRecordToCard) {
         if (sdcard::getState() == sdcard::State::Closed) {
-            sdcard::openFile();
+            sdcard::writing::open();
             success = true;
         }
     } else {
         if (sdcard::getState() == sdcard::State::WriteStates) {
-            sdcard::closeFile();
+            sdcard::writing::close();
             success = true;
         }
     }
-    sdcard::setLock(shouldLock);
+    sdcard::writing::setLock(shouldLock);
     return success;
 }
 
@@ -246,7 +246,7 @@ DO_SUBCOMMAND(REQ_CARD_RECORDING_STATE) {
     if (sdcard::getState() == sdcard::State::WriteStates) {
         flags |= 1;
     }
-    if (sdcard::isLocked()) {
+    if (sdcard::writing::isLocked()) {
         flags |= 2;
     }
     payload.Append(flags);

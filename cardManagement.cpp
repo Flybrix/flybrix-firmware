@@ -27,7 +27,6 @@ namespace {
 State card_state{State::Closed};
 
 SdFat sd;
-bool locked = false;
 
 bool openSDHardwarePort() {
 #ifdef SKIP_SD
@@ -44,18 +43,35 @@ bool openSD() {
     static bool sd_open{openSDHardwarePort()};
     return sd_open;
 }
+}
+
+void startup() {
+    openSD();
+}
+
+State getState() {
+    return card_state;
+}
+
+namespace writing {
+namespace {
 
 SdBaseFile binFile;
-uint32_t bgnBlock, endBlock;
-uint8_t* cache;
+
+bool isWriting() {
+    return card_state == State::WriteStates || card_state == State::WriteCommands;
+}
 
 struct SenseCloseIIFE {
     ~SenseCloseIIFE() {
-        if (!binFile.isOpen()) {
+        if (!binFile.isOpen() && isWriting()) {
             card_state = State::Closed;
         }
     };
 };
+
+uint32_t bgnBlock, endBlock;
+uint8_t* cache;
 
 uint32_t block_number = 0;
 
@@ -182,13 +198,11 @@ bool openFile(const char* base_name) {
     }
     return false;
 }
-}  // namespace
 
-void startup() {
-    openSD();
+bool locked = false;
 }
 
-void openFile() {
+void open() {
     if (locked)
         return;
     if (!openSD())
@@ -196,14 +210,10 @@ void openFile() {
     openFile("st");
 }
 
-State getState() {
-    return card_state;
-}
-
 void write(const uint8_t* data, size_t length) {
     if (!openSD())
         return;
-    if (card_state != State::WriteStates && card_state != State::WriteCommands)
+    if (!isWriting())
         return;
     if (block_number == FILE_BLOCK_COUNT)
         return;
@@ -218,9 +228,9 @@ void write(const uint8_t* data, size_t length) {
     block_number++;
 }
 
-void closeFile() {
+void close() {
     SenseCloseIIFE close_iife;
-    if (card_state == State::Closed) {
+    if (!isWriting()) {
         return;
     }
     if (locked)
@@ -250,4 +260,58 @@ void setLock(bool enable) {
 bool isLocked() {
     return locked;
 }
+}
+
+namespace reading {
+namespace {
+File read_file;
+
+bool isReading() {
+    return card_state == State::ReadCommands;
+}
+
+struct SenseCloseIIFE {
+    ~SenseCloseIIFE() {
+        if (!read_file.isOpen() && isReading()) {
+            card_state = State::Closed;
+        }
+    };
+};
+}
+
+void open() {
+    if (!openSD()) {
+        return;
+    }
+    if (read_file) {
+        return;
+    }
+    read_file = sd.open("commands.bin");
+    if (!read_file) {
+        return;
+    }
+    card_state = State::ReadCommands;
+}
+
+void close() {
+    SenseCloseIIFE close_iife;
+    if (!isReading()) {
+        return;
+    }
+    if (!openSD()) {
+        return;
+    }
+    read_file.close();
+    DebugPrint("File closing successful");
+}
+
+bool hasMore() {
+    return read_file.available();
+}
+
+char read() {
+    return read_file.read();
+}
+}
+
 }  // namespace sdcard

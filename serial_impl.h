@@ -18,7 +18,7 @@ template <std::size_t N>
 inline void WriteToOutput(CobsPayload<N>& payload, bool use_logger = false) {
     auto package = payload.Encode();
     if (use_logger) {
-        sdcard::write(package.data, package.length);
+        sdcard::writing::write(package.data, package.length);
     } else {
         writeSerial(package.data, package.length);
     }

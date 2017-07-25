@@ -99,7 +99,7 @@ void PilotCommand::processMotorEnablingIterationHelper() {
             setControlState(ControlState::FailStability);
         } else {
             setControlState(ControlState::ThrottleLocked);
-            sdcard::openFile();
+            sdcard::writing::open();
             airframe_.enableMotors();
         }
         return;
@@ -126,7 +126,7 @@ bool PilotCommand::canRequestEnabling() const {
 void PilotCommand::disableMotors() {
     airframe_.disableMotors();
     setControlState(ControlState::Disabled);
-    sdcard::closeFile();
+    sdcard::writing::close();
 }
 
 RcCommand PilotCommand::processCommands(RcState&& rc_state) {
