@@ -24,6 +24,7 @@
 #include "stateFlag.h"
 #include "kinematics.h"
 #include "controlVectors.h"
+#include "autopilot.h"
 #include "utility/rcHelpers.h"
 
 struct Systems {
@@ -47,6 +48,7 @@ struct Systems {
     PilotCommand pilot;
     Control control;
     SerialComm conf;
+    Autopilot autopilot;
 
     ConfigID id;
 

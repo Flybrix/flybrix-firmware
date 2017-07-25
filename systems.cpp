@@ -19,6 +19,7 @@ Systems::Systems()
       control{Control::PIDParameters()},
       // listen for configuration inputs
       conf{*this, RX},
+      autopilot{conf},
       id{0} {
     Config().applyTo(*this);
 }
