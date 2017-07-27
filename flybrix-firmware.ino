@@ -103,6 +103,8 @@ void setup() {
     // Perform intial check for an SD card
     sdcard::startup();
 
+    sys.autopilot.start(micros());
+
     sys.flag.clear(Status::BOOT);
     sys.led.update();
 }
@@ -183,6 +185,7 @@ bool ProcessTask<100>::Run() {
     sys.state.updateFilter(micros());
 
     sys.conf.Read();  // Respond to commands from the Configurator chrome extension
+    sys.autopilot.run(micros());
 
     return true;
 }
