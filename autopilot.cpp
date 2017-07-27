@@ -24,6 +24,7 @@ void Autopilot::run(uint32_t now) {
         }
         // 0 means timestamp, otherwise it is a command
         if (sdcard::reading::read()) {
+            readCobs();
         } else {
             uint8_t a = sdcard::reading::read();
             uint8_t b = sdcard::reading::read();

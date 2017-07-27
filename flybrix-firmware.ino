@@ -103,10 +103,10 @@ void setup() {
     // Perform intial check for an SD card
     sdcard::startup();
 
-    sys.autopilot.start(micros());
-
     sys.flag.clear(Status::BOOT);
     sys.led.update();
+
+    sys.autopilot.start(micros());
 }
 
 uint32_t low_battery_counter = 0;
