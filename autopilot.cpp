@@ -30,7 +30,7 @@ void Autopilot::run(uint32_t now) {
             uint8_t b = sdcard::reading::read();
             uint8_t c = sdcard::reading::read();
             uint8_t d = sdcard::reading::read();
-            wait_until_ = (a << 24) + (b << 16) + (c << 8) + d;
+            wait_until_ = (d << 24) + (c << 16) + (b << 8) + a;
         }
     }
     running_ = false;
