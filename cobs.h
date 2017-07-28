@@ -57,6 +57,18 @@ class CobsReader final {
     }
 
     template <class T>
+    bool PeekInto(T& data) {
+        if (!CanContain<T>())
+            return false;
+        uint8_t* v_begin{(uint8_t*)&data};
+        uint8_t* v_end{v_begin + sizeof(T)};
+        const uint8_t* buffer_pointer{buffer + output_start};
+        while (v_begin < v_end)
+            *v_begin++ = *buffer_pointer++;
+        return true;
+    }
+
+    template <class T>
     bool ParseInto(T& data) {
         if (!CanContain<T>())
             return false;

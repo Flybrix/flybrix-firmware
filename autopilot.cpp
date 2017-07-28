@@ -22,16 +22,7 @@ void Autopilot::run(uint32_t now) {
         if (wait_until_ > now - start_time_) {
             return;
         }
-        // 0 means timestamp, otherwise it is a command
-        if (sdcard::reading::read()) {
-            readCobs();
-        } else {
-            uint8_t a = sdcard::reading::read();
-            uint8_t b = sdcard::reading::read();
-            uint8_t c = sdcard::reading::read();
-            uint8_t d = sdcard::reading::read();
-            wait_until_ = (d << 24) + (c << 16) + (b << 8) + a;
-        }
+        readCobs();
     }
     running_ = false;
 }
@@ -40,8 +31,20 @@ void Autopilot::readCobs() {
     while (sdcard::reading::hasMore()) {
         data_input.AppendToBuffer(sdcard::reading::read());
         if (data_input.IsDone()) {
-            serial_.ProcessData(data_input, false);
+            handleCobs();
             break;
         }
+    }
+}
+
+void Autopilot::handleCobs() {
+    SerialComm::MessageType command;
+    if (!data_input.PeekInto(command)) {
+        return;
+    }
+    if (SerialComm::MessageType::AutopilotWait == command) {
+        data_input.ParseInto(command, wait_until_);
+    } else {
+        serial_.ProcessData(data_input, false);
     }
 }

@@ -70,6 +70,7 @@ class SerialComm {
         Timelog = 2,
         DebugString = 3,
         HistoryData = 4,
+        AutopilotWait = 254,
     };
 
     enum Commands : uint8_t;

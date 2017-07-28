@@ -14,6 +14,7 @@ class Autopilot final {
 
    private:
     void readCobs();
+    void handleCobs();
 
     bool running_{false};
     uint32_t start_time_{0};
