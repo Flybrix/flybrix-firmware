@@ -15,7 +15,7 @@
 #include <i2c_t3.h>
 
 #define BETA
-#define BOARD_ADC_REF ADC_REF_3V3 //ADC_REF_1V2
+#define BOARD_ADC_REF ADC_REFERENCE::REF_3V3  // ADC_REF_1V2
 
 namespace board {
 #ifdef ALPHA

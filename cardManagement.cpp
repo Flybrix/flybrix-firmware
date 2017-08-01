@@ -12,7 +12,6 @@
 
 #include <SPI.h>
 #include <SdFat.h>
-#include <SdFatUtil.h>
 #include <cstdio>
 #include "board.h"
 #include "debug.h"
@@ -32,6 +31,9 @@ bool openSDHardwarePort() {
 #ifdef SKIP_SD
     return false;
 #else
+    SPI.setMOSI(7);
+    SPI.setMISO(8);
+    SPI.setSCK(14);
     bool opened = sd.begin(board::spi::SD_CARD, SPI_FULL_SPEED);
     if (!opened)
         DebugPrint("Failed to open connection to SD card!");
