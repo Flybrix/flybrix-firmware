@@ -3,6 +3,7 @@
 
 #include "serial_impl.h"
 
+#include "autopilot.h"
 #include "command.h"
 
 enum SerialComm::Commands : uint8_t {
@@ -33,6 +34,7 @@ enum SerialComm::Commands : uint8_t {
     SET_PARTIAL_TEMPORARY_CONFIG,
     SET_COMMAND_SOURCES,
     SET_CALIBRATION,
+    SET_AUTOPILOT,
     END_OF_COMMANDS,
 };
 
@@ -299,6 +301,21 @@ DO_SUBCOMMAND(SET_CALIBRATION) {
             return false;
         }
         tmp_config.writeTo(EEPROMCursor());
+    }
+
+    return true;
+}
+
+DO_SUBCOMMAND(SET_AUTOPILOT) {
+    uint8_t enabled;
+    if (!input.ParseInto(enabled)) {
+        return false;
+    }
+
+    if (enabled) {
+        autopilot_.start(micros());
+    } else {
+        autopilot_.stop();
     }
 
     return true;

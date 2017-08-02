@@ -11,6 +11,7 @@ class Autopilot final {
     explicit Autopilot(SerialComm& serial);
     void start(uint32_t now);
     void run(uint32_t now);
+    void stop();
 
    private:
     void readCobs();

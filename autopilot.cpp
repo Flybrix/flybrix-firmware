@@ -27,6 +27,11 @@ void Autopilot::run(uint32_t now) {
     running_ = false;
 }
 
+void Autopilot::stop() {
+    running_ = false;
+    sdcard::reading::close();
+}
+
 void Autopilot::readCobs() {
     while (sdcard::reading::hasMore()) {
         data_input.AppendToBuffer(sdcard::reading::read());

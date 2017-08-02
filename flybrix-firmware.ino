@@ -105,8 +105,6 @@ void setup() {
 
     sys.flag.clear(Status::BOOT);
     sys.led.update();
-
-    sys.autopilot.start(micros());
 }
 
 uint32_t low_battery_counter = 0;

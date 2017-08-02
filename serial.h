@@ -23,6 +23,7 @@ class LED;
 class State;
 class StateFlag;
 class Imu;
+class Autopilot;
 struct Systems;
 struct Kinematics;
 struct PowerMonitor;
@@ -116,6 +117,7 @@ class SerialComm {
     RcCommand& command_vector_;
     RcMux<SerialRc, R415X>& rc_mux_;
     SerialRc& serial_rc_;
+    Autopilot& autopilot_;
     ControlVectors& control_vectors_;
 
     uint16_t send_state_delay{1001};  // anything over 1000 turns off state messages
