@@ -13,7 +13,7 @@
 #define AK8963_h
 
 #include <functional>
-#include "Arduino.h"
+#include <Arduino.h>
 #include "utility/vector3.h"
 
 // we have three coordinate systems here:
@@ -48,6 +48,8 @@ class AK8963 {
 
     uint8_t getStatusByte();
 
+    void calibrate(const Vector3<float>& measurement);
+
     void reset();
     void configure();
     void disable();
@@ -55,7 +57,8 @@ class AK8963 {
     // bias is stored in MagBias
     Vector3<float> magCalibration{0.0, 0.0, 0.0};
     bool calibrating_{false};
-    float radius_squared_{0.0f};
+    Vector3<float> min_reading_;
+    Vector3<float> max_reading_;
 
     // buffers for processCallback
     uint8_t data_to_read[7];

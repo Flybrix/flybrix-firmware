@@ -10,7 +10,6 @@
 
 #include "AK8963.h"
 #include <i2c_t3.h>
-#include <cmath>
 #include "i2cManager.h"
 
 // we have three coordinate systems here:
@@ -53,11 +52,29 @@ bool AK8963::startMeasurement(std::function<void(Vector3<float>)> on_success) {
 }
 
 void AK8963::setCalibrating(bool calibrating) {
+    if (calibrating && !calibrating_) {
+        min_reading_ = {1e30, 1e30, 1e30};
+        max_reading_ = {-1e30, -1e30, -1e30};
+    }
     calibrating_ = calibrating;
 }
 
 namespace {
 constexpr float RAW_TO_uT = 10. * 4912. / 32760.0;  // +/- 0.15 uT (or 1.5mG) per LSB; range is -32760...32760
+}
+
+void AK8963::calibrate(const Vector3<float>& measurement) {
+    if (!calibrating_) {
+        return;
+    }
+
+    min_reading_.x = min(min_reading_.x, measurement.x);
+    min_reading_.y = min(min_reading_.y, measurement.y);
+    min_reading_.z = min(min_reading_.z, measurement.z);
+    max_reading_.x = max(max_reading_.x, measurement.x);
+    max_reading_.y = max(max_reading_.y, measurement.y);
+    max_reading_.z = max(max_reading_.z, measurement.z);
+    mag_bias.offset = (min_reading_ + max_reading_) / 2.0f;
 }
 
 void AK8963::triggerCallback(std::function<void(Vector3<float>)> on_success) {
@@ -79,12 +96,8 @@ void AK8963::triggerCallback(std::function<void(Vector3<float>)> on_success) {
         // scale by sensitivity before rotating
         magCount = Vector3<float>(magCount) * magCalibration;
         Vector3<float> measurement = Vector3<float>(magCount) * RAW_TO_uT;
-        if (calibrating_) {
-            float length = std::sqrt(radius_squared_ / (1e-6 + measurement.lengthSq()));
-            mag_bias.offset += (measurement - mag_bias.offset) * (1 - length) / 2;
-        }
+        calibrate(measurement);
         measurement -= mag_bias.offset;
-        radius_squared_ = measurement.lengthSq();
         on_success(measurement);
     } else {
         // ERROR: ("ERROR: Magnetometer overflow!");
