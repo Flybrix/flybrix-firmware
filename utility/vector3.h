@@ -92,6 +92,11 @@ Number dot(const Vector3<Number>& a, const Vector3<Number>& b) {
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
+template <typename Number>
+Vector3<Number> cross(const Vector3<Number>& a, const Vector3<Number>& b) {
+    return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
+}
+
 static_assert(sizeof(Vector3<float>) == 12, "Vector3 data is not packed");
 
 #endif  // VECTOR3_H

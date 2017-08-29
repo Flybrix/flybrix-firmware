@@ -1,5 +1,6 @@
 #include "rotationEstimator.h"
 
+#include "debug.h"
 #include "quickmath.h"
 
 void RotationEstimator::updateGravity(Pose pose, const Vector3<float>& value) {
@@ -17,15 +18,18 @@ RotationMatrix<float> RotationEstimator::estimate() const {
     RotationMatrix<float> answer;
     for (const RotationEstimator::State& state : states_) {
         if (!state.handled) {
+            DebugPrint("Calibration requires all five poses to be handled");
             return answer;
         }
     }
     Vector3<float> up = states_[(uint8_t)RotationEstimator::Pose::Flat].measurement;
     quick::normalize(up);
+
     Vector3<float> right = states_[(uint8_t)RotationEstimator::Pose::RollRight].measurement.projectOntoPlane(up);
     Vector3<float> left = states_[(uint8_t)RotationEstimator::Pose::RollLeft].measurement.projectOntoPlane(up);
 
     if (dot(right, left) > 0.0f) {
+        DebugPrint("Right and left roll need to be performed in opposite directions");
         return answer;
     }
 
@@ -35,10 +39,18 @@ RotationMatrix<float> RotationEstimator::estimate() const {
     Vector3<float> back = states_[(uint8_t)RotationEstimator::Pose::PitchBack].measurement.projectOntoPlane(up).projectOntoPlane(left);
 
     if (dot(forward, back) > 0.0f) {
+        DebugPrint("Forward and back pitch need to be performed in opposite directions");
         return answer;
     }
 
     quick::normalize(back);
+
+    Vector3<float> cross_up = cross(left, back);
+
+    if (dot(cross(left, back), up) <= 0.0f) {
+        DebugPrint("Roll and pitch directions were not properly lined up");
+        return answer;
+    }
 
     answer(0, 0) = left.x;
     answer(1, 0) = left.y;
