@@ -68,12 +68,25 @@ void AK8963::calibrate(const Vector3<float>& measurement) {
         return;
     }
 
-    min_reading_.x = min(min_reading_.x, measurement.x);
-    min_reading_.y = min(min_reading_.y, measurement.y);
-    min_reading_.z = min(min_reading_.z, measurement.z);
-    max_reading_.x = max(max_reading_.x, measurement.x);
-    max_reading_.y = max(max_reading_.y, measurement.y);
-    max_reading_.z = max(max_reading_.z, measurement.z);
+    if (min_reading_.x < measurement.x) {
+        min_reading_.x = measurement.x;
+    }
+    if (min_reading_.y < measurement.y) {
+        min_reading_.y = measurement.y;
+    }
+    if (min_reading_.z < measurement.z) {
+        min_reading_.z = measurement.z;
+    }
+    if (max_reading_.x > measurement.x) {
+        max_reading_.x = measurement.x;
+    }
+    if (max_reading_.y > measurement.y) {
+        max_reading_.y = measurement.y;
+    }
+    if (max_reading_.z > measurement.z) {
+        max_reading_.z = measurement.z;
+    }
+
     mag_bias.offset = (min_reading_ + max_reading_) / 2.0f;
 }
 
