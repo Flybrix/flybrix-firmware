@@ -23,6 +23,7 @@
 #include "R415X.h"
 #include "airframe.h"
 #include "control.h"
+#include "velocityControl.h"
 #include "imu.h"
 #include "led.h"
 #include "state.h"
@@ -57,9 +58,11 @@ struct Config {
         STATE_PARAMETERS,
         LED_STATES,
         DEVICE_NAME,
+        VELOCITY_PID_PARAMETERS,
     };
 
-    using Data = std::tuple<Version, ConfigID, PcbTransform, Airframe::MixTable, AK8963::MagBias, R415X::ChannelProperties, Control::PIDParameters, State::Parameters, LED::States, DeviceName>;
+    using Data = std::tuple<Version, ConfigID, PcbTransform, Airframe::MixTable, AK8963::MagBias, R415X::ChannelProperties, Control::PIDParameters, State::Parameters, LED::States, DeviceName,
+                            VelocityControl::PIDParameters>;
 
     Config();
     explicit Config(Systems& sys);
@@ -88,10 +91,10 @@ struct Config {
 
 static_assert(sizeof(Config) ==
                   sizeof(Version) + sizeof(ConfigID) + sizeof(PcbTransform) + sizeof(Airframe::MixTable) + sizeof(AK8963::MagBias) + sizeof(R415X::ChannelProperties) + sizeof(State::Parameters) +
-                      sizeof(Control::PIDParameters) + sizeof(LED::States) + sizeof(DeviceName),
+                      sizeof(Control::PIDParameters) + sizeof(LED::States) + sizeof(DeviceName) + sizeof(VelocityControl::PIDParameters),
               "Data is not packed");
 
-static_assert(sizeof(Config) == 644, "Data does not have expected size");
+static_assert(sizeof(Config) == 729, "Data does not have expected size");
 
 Config readEEPROM();
 bool isEmptyEEPROM();

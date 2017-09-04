@@ -15,6 +15,7 @@
 #include "command.h"
 #include "config.h"
 #include "control.h"
+#include "velocityControl.h"
 #include "led.h"
 #include "power.h"
 #include "serial.h"
@@ -47,6 +48,7 @@ struct Systems {
     PowerMonitor pwr;
     PilotCommand pilot;
     Control control;
+    VelocityControl velocity_control;
     SerialComm conf;
     Autopilot autopilot;
 

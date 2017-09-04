@@ -122,7 +122,7 @@ void loop() {
     i2c().update();
 
     if (!sys.pilot.isOverridden()) {  // user isn't changing motor levels using Configurator
-        sys.control_vectors = sys.control.calculateControlVectors(sys.kinematics, sys.command_vector);
+        sys.control_vectors = sys.control.calculateControlVectors(sys.kinematics, sys.velocity_control.calculateControlVectors(sys.state.getVelocity(), sys.command_vector));
     }
     sys.pilot.applyControl(sys.control_vectors);
 

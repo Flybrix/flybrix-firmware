@@ -93,3 +93,7 @@ const Quaternion<float>& Localization::getAhrsQuaternion() const {
 float Localization::getElevation() const {
     return ukf_.elevation();
 }
+
+Vector3<float> Localization::getVelocity() const {
+    return {ukf_.vx(), ukf_.vy(), ukf_.vz()};
+}

@@ -16,7 +16,6 @@
 #include "cascadedPID.h"
 #include "controlVectors.h"
 
-class PID;
 class Kinematics;
 struct RcCommand;
 

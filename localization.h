@@ -31,6 +31,8 @@ class Localization {
 
     float getElevation() const;
 
+    Vector3<float> getVelocity() const;
+
    private:
     Ahrs ahrs_;
     UKF ukf_;

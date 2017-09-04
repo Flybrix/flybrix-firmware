@@ -17,6 +17,7 @@ Systems::Systems()
       imu{state},
       pilot{*this},
       control{Control::PIDParameters()},
+      velocity_control{VelocityControl::PIDParameters()},
       // listen for configuration inputs
       conf{*this, RX},
       autopilot{conf},

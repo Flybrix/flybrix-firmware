@@ -43,6 +43,10 @@ class State {
     void updateStateMag(const Vector3<float>& data);
     void updateFilter(uint32_t time);
 
+    Vector3<float> getVelocity() {
+        return localization.getVelocity();
+    }
+
     Quaternion<float> q;  // quaternion storage for logging
 
     struct __attribute__((packed)) Parameters {
