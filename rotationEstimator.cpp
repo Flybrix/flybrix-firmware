@@ -45,8 +45,6 @@ RotationMatrix<float> RotationEstimator::estimate() const {
 
     quick::normalize(back);
 
-    Vector3<float> cross_up = cross(left, back);
-
     if (dot(cross(left, back), up) <= 0.0f) {
         DebugPrint("Roll and pitch directions were not properly lined up");
         return answer;
