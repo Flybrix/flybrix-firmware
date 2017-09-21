@@ -40,7 +40,7 @@ RcCommand VelocityControl::calculateControlVectors(const Vector3<float>& velocit
 
     vx_pid.setSetpoint(setpoint.pitch * 1.0f / 2047.0f);
     vy_pid.setSetpoint(setpoint.roll * 1.0f / 2047.0f);
-    vz_pid.setSetpoint(setpoint.throttle * 1.0f / 4095.0f);
+    vz_pid.setSetpoint((setpoint.throttle - 2048) * 1.0f / 2047.0f);
 
     setpoint.pitch = vx_pid.Compute(now);
     setpoint.roll = vy_pid.Compute(now);
