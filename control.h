@@ -13,7 +13,7 @@
 #define control_h
 
 #include "Arduino.h"
-#include "cascadedPID.h"
+#include "PIDCascade.h"
 #include "controlVectors.h"
 
 class Kinematics;
@@ -58,7 +58,7 @@ class Control {
     bool pidEnabled[8]{false, false, false, false, false, false, false, false};
 
     // controllers
-    CascadedPID thrust_pid, pitch_pid, roll_pid, yaw_pid;
+    PIDCascade<2> thrust_pid, pitch_pid, roll_pid, yaw_pid;
 };
 
 #endif
