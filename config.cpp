@@ -38,7 +38,7 @@ MAP_SYSTEM(PID_PARAMETERS, Control::PIDParameters, control.pid_parameters);
 MAP_SYSTEM(STATE_PARAMETERS, State::Parameters, state.parameters);
 MAP_SYSTEM(LED_STATES, LED::States, led.states);
 MAP_SYSTEM(DEVICE_NAME, DeviceName, name);
-MAP_SYSTEM(VELOCITY_PID_PARAMETERS, VelocityControl::PIDParameters, velocity_control.pid_parameters);
+MAP_SYSTEM(VELOCITY_PID_PARAMETERS, Control::VelocityPIDParameters, control.velocity_pid_parameters);
 
 #undef MAP_SYSTEM
 

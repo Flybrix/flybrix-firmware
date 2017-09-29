@@ -15,6 +15,7 @@
 #include "Arduino.h"
 #include "PIDCascade.h"
 #include "controlVectors.h"
+#include "utility/vector3.h"
 
 class Kinematics;
 struct RcCommand;
@@ -22,11 +23,12 @@ struct RcCommand;
 class Control {
    public:
     struct PIDParameters;
+    struct VelocityPIDParameters;
 
-    explicit Control(const PIDParameters& config);
+    Control(const PIDParameters& config, const VelocityPIDParameters& velocity_config);
     void parseConfig();
 
-    ControlVectors calculateControlVectors(const Kinematics& feedback, const RcCommand& setpoint);
+    ControlVectors calculateControlVectors(const Vector3<float>& velocity, const Kinematics& feedback, const RcCommand& setpoint);
 
     struct __attribute__((packed)) PIDParameters {
         PIDParameters();
@@ -52,13 +54,31 @@ class Control {
 
     static_assert(sizeof(PIDParameters) == 4 * 8 * 7 + 4 * 4 + 1, "Data is not packed");
 
+    struct __attribute__((packed)) VelocityPIDParameters {
+        VelocityPIDParameters();
+        bool verify() const;
+
+        float forward_master[7];  // parameters are {P,I,D,integral windup guard, D filter delay sec, setpoint filter delay sec, command scaling factor}
+        float right_master[7];
+        float up_master[7];
+
+        float forward_slave[7];
+        float right_slave[7];
+        float up_slave[7];
+
+        uint8_t pid_bypass;  // bitfield order for bypass: {xMaster, yMaster, zMaster, -, xSlave, ySlave, zSlave, -} (LSB-->MSB)
+    } velocity_pid_parameters;
+
+    static_assert(sizeof(VelocityPIDParameters) == 3 * 8 * 7 + 1, "Data is not packed");
+
     uint32_t lastUpdateMicros = 0;  // 1.2 hrs should be enough
 
     // unpack config.pidBypass for convenience
     bool pidEnabled[8]{false, false, false, false, false, false, false, false};
 
     // controllers
-    PIDCascade<2> thrust_pid, pitch_pid, roll_pid, yaw_pid;
+    PIDCascade<4> forward_pid, right_pid, up_pid;
+    PIDCascade<2> yaw_pid;
 };
 
 #endif

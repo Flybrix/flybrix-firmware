@@ -79,15 +79,15 @@ READ_SUBSTATE_PAYLOAD(COMMANDS, command_vector_.throttle, command_vector_.pitch,
 READ_SUBSTATE_PAYLOAD(F_AND_T, control_vectors_)
 
 READ_SUBSTATE(PID_FZ_MASTER) {
-    WritePIDData(payload, control_.thrust_pid.pid<0>());
+    WritePIDData(payload, control_.up_pid.pid<2>());
 }
 
 READ_SUBSTATE(PID_TX_MASTER) {
-    WritePIDData(payload, control_.pitch_pid.pid<0>());
+    WritePIDData(payload, control_.forward_pid.pid<2>());
 }
 
 READ_SUBSTATE(PID_TY_MASTER) {
-    WritePIDData(payload, control_.roll_pid.pid<0>());
+    WritePIDData(payload, control_.right_pid.pid<2>());
 }
 
 READ_SUBSTATE(PID_TZ_MASTER) {
@@ -95,15 +95,15 @@ READ_SUBSTATE(PID_TZ_MASTER) {
 }
 
 READ_SUBSTATE(PID_FZ_SLAVE) {
-    WritePIDData(payload, control_.thrust_pid.pid<1>());
+    WritePIDData(payload, control_.up_pid.pid<3>());
 }
 
 READ_SUBSTATE(PID_TX_SLAVE) {
-    WritePIDData(payload, control_.pitch_pid.pid<1>());
+    WritePIDData(payload, control_.forward_pid.pid<3>());
 }
 
 READ_SUBSTATE(PID_TY_SLAVE) {
-    WritePIDData(payload, control_.roll_pid.pid<1>());
+    WritePIDData(payload, control_.right_pid.pid<3>());
 }
 
 READ_SUBSTATE(PID_TZ_SLAVE) {
