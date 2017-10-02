@@ -147,6 +147,8 @@ void Control::parseConfig() {
     forward_pid.setDefaultScaling(pid_parameters.pitch_gain);
     right_pid.setDefaultScaling(pid_parameters.roll_gain);
     yaw_pid.setDefaultScaling(pid_parameters.yaw_gain);
+
+    bidirectional_throttle = (velocity_pid_parameters.pid_bypass & 0x44) == 0x04;
 }
 
 float radToDeg(float v) {
@@ -167,8 +169,7 @@ ControlVectors Control::calculateControlVectors(const Vector3<float>& velocity, 
     right_pid.pid<1>().setInput(velocity.y);
     up_pid.pid<1>().setInput(velocity.z);
 
-    // TODO: adjust setpoint based on bypass flags
-    up_pid.setSetpoint(setpoint.throttle * (1.0f / 4095.0f) * up_pid.getScalingFactor());
+    up_pid.setSetpoint((bidirectional_throttle ? setpoint.throttle * (1.0f / 2047.0f) - 1.0f : setpoint.throttle * (1.0f / 4095.0f)) * up_pid.getScalingFactor());
     forward_pid.setSetpoint(setpoint.pitch * (1.0f / 2047.0f) * forward_pid.getScalingFactor());
     right_pid.setSetpoint(setpoint.roll * (1.0f / 2047.0f) * right_pid.getScalingFactor());
     yaw_pid.setSetpoint(setpoint.yaw * (1.0f / 2047.0f) * yaw_pid.getScalingFactor());
