@@ -79,6 +79,8 @@ class Control {
     // controllers
     PIDCascade<4> forward_pid, right_pid, up_pid;
     PIDCascade<2> yaw_pid;
+
+    bool bidirectional_throttle{false};
 };
 
 #endif
