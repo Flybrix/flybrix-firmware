@@ -12,7 +12,6 @@
 #ifndef control_h
 #define control_h
 
-#include "Arduino.h"
 #include "PIDCascade.h"
 #include "controlVectors.h"
 #include "utility/vector3.h"

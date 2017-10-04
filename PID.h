@@ -11,7 +11,7 @@
 #ifndef PID_h
 #define PID_h
 
-#include "Arduino.h"
+#include <cstdint>
 
 class IIRfilter {
    public:
@@ -22,6 +22,7 @@ class IIRfilter {
     float update(float in, float dt) {
         return out = (in * dt + out * tau) / (dt + tau);
     };
+
    private:
     float out;
     float tau;
@@ -30,13 +31,7 @@ class IIRfilter {
 class PID {
    public:
     explicit PID(const float* terms)
-        : Kp{terms[0]},
-          Ki{terms[1]},
-          Kd{terms[2]},
-          integral_windup_guard{terms[3]},
-          d_filter{0.0f, terms[4]},
-          setpoint_filter{0.0f, terms[5]},
-          command_to_value{terms[6]} { };
+        : Kp{terms[0]}, Ki{terms[1]}, Kd{terms[2]}, integral_windup_guard{terms[3]}, d_filter{0.0f, terms[4]}, setpoint_filter{0.0f, terms[5]}, command_to_value{terms[6]} {};
 
     void isWrapped(bool wrapped = true) {
         degrees = wrapped;
@@ -105,7 +100,15 @@ class PID {
         p_term = Kp * error;
 
         i_term = Ki * error_integral;
-        error_integral = constrain(error_integral + error * delta_time, -integral_windup_guard/Ki, integral_windup_guard/Ki);
+
+        error_integral += error * delta_time;
+
+        float windup_limit = integral_windup_guard / Ki;
+        if (error_integral > windup_limit) {
+            error_integral = windup_limit;
+        } else if (error_integral < -windup_limit) {
+            error_integral = -windup_limit;
+        }
 
         d_term = d_filter.update(Kd * ((error - previous_error) / delta_time), delta_time);
 

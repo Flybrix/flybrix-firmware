@@ -1,7 +1,7 @@
 #ifndef CONTROL_VECTORS_H
 #define CONTROL_VECTORS_H
 
-struct ControlVectors final {
+struct __attribute__((packed)) ControlVectors final {
     float force_z{0.0};
     float torque_x{0.0};
     float torque_y{0.0};
