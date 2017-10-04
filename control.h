@@ -73,9 +73,6 @@ class Control {
 
     uint32_t lastUpdateMicros = 0;  // 1.2 hrs should be enough
 
-    // unpack config.pidBypass for convenience
-    bool pidEnabled[8]{false, false, false, false, false, false, false, false};
-
     // controllers
     PIDCascade<4> forward_pid, right_pid, up_pid;
     PIDCascade<2> yaw_pid;
