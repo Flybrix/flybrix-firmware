@@ -51,15 +51,15 @@ RotationMatrix<float> RotationEstimator::estimate() const {
     }
 
     answer(0, 0) = left.x;
-    answer(1, 0) = left.y;
-    answer(2, 0) = left.z;
+    answer(0, 1) = left.y;
+    answer(0, 2) = left.z;
 
-    answer(0, 1) = back.x;
+    answer(1, 0) = back.x;
     answer(1, 1) = back.y;
-    answer(2, 1) = back.z;
+    answer(1, 2) = back.z;
 
-    answer(0, 2) = up.x;
-    answer(1, 2) = up.y;
+    answer(2, 0) = up.x;
+    answer(2, 1) = up.y;
     answer(2, 2) = up.z;
 
     return answer;
