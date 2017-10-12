@@ -26,9 +26,9 @@
 #define ACCEL_XDIR 0
 #define ACCEL_YDIR 1
 #define ACCEL_ZDIR 2
-#define ACCEL_XSIGN -1
-#define ACCEL_YSIGN -1
-#define ACCEL_ZSIGN -1  // verified by experiment (units definition issue?)
+#define ACCEL_XSIGN 1
+#define ACCEL_YSIGN 1
+#define ACCEL_ZSIGN 1  // verified by experiment (units definition issue?)
 
 #define GYRO_XDIR 0
 #define GYRO_YDIR 1
