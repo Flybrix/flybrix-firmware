@@ -48,6 +48,9 @@ bool Imu::startInertialMeasurement() {
     return accel_and_gyro_.startMeasurement([this](Vector3<float> linear_acceleration, Vector3<float> angular_velocity) {
         if (calibrate_rotation_) {
             rotation_estimator_.updateGravity(calibration_pose_, linear_acceleration);
+            if (calibration_pose_ == RotationEstimator::Pose::Flat) {
+                correctBiasValues();
+            }
         }
         state_.updateStateIMU(micros(), sensor_to_flyer_ * linear_acceleration, sensor_to_flyer_ * angular_velocity);
     });

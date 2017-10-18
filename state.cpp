@@ -25,23 +25,6 @@ State::Parameters::Parameters() : state_estimation{1.0, 0.01}, enable{0.001, 30.
 State::State(Systems* sys) : localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, Ahrs::Type::Madgwick, parameters.state_estimation, STATE_BARO_VARIANCE), sys_{sys} {
 }
 
-bool State::stable(void) const {
-    Vector3<float> variance = accel_filter_sq - accel_filter.squared();
-    float max_variance = std::max(std::max(variance.x, variance.y), variance.z);
-    return (max_variance < parameters.enable[0]);
-}
-
-float State::fast_cosine(float x_deg) {
-    return 1.0f + x_deg * (-0.000275817445684765f - 0.00013858051199801900f * x_deg);
-}
-
-bool State::upright(void) const {
-    // cos(angle) = (a dot g) / |a| / |g| = -a.z
-    // cos(angle)^2 = a.z*a.z / (a dot a)
-    float cos_test_angle = fast_cosine(parameters.enable[1]);
-    return (accel_filter.z * accel_filter.z > accel_filter.lengthSq() * cos_test_angle * cos_test_angle);
-}
-
 void State::resetState() {
     localization.setTime(0.0f);
     sys_->kinematics = Kinematics();

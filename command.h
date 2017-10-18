@@ -67,6 +67,9 @@ class PilotCommand {
     bool canRequestEnabling() const;
     void setControlState(ControlState state);
 
+    bool upright() const;
+    bool stable() const;
+
     State& state_;
     Imu& imu_;
     StateFlag& flag_;

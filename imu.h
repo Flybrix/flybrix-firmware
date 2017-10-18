@@ -42,6 +42,9 @@ class Imu final {
             pcb_transform.orientation = sensor_to_flyer_.pry();
             rotation_estimator_.clear();
         }
+        if (calibrating && pose == RotationEstimator::Pose::Flat) {
+            forgetBiasValues();
+        }
         calibrate_rotation_ = calibrating;
         calibration_pose_ = pose;
     }

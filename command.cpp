@@ -12,6 +12,10 @@
 #include "cardManagement.h"
 #include "stateFlag.h"
 
+float fast_cosine(float x_deg) {
+    return 1.0f + x_deg * (-0.000275817445684765f - 0.00013858051199801900f * x_deg);
+}
+
 PilotCommand::PilotCommand(Systems& systems) : state_(systems.state), imu_(systems.imu), flag_(systems.flag) {
     setControlState(ControlState::AwaitingAuxDisable);
 }
@@ -57,6 +61,19 @@ void PilotCommand::processMotorEnablingIteration() {
     }
 }
 
+bool PilotCommand::upright() const {
+    // cos(angle) = (a dot g) / |a| / |g| = -a.z
+    // cos(angle)^2 = a.z*a.z / (a dot a)
+    float cos_test_angle = fast_cosine(state_.parameters.enable[1]);
+    return state_.accel_filter.z * state_.accel_filter.z > state_.accel_filter.lengthSq() * cos_test_angle * cos_test_angle;
+}
+
+bool PilotCommand::stable() const {
+    Vector3<float> variance = state_.accel_filter_sq - state_.accel_filter.squared();
+    float max_variance = std::max(std::max(variance.x, variance.y), variance.z);
+    return max_variance < state_.parameters.enable[0];
+}
+
 void PilotCommand::processMotorEnablingIterationHelper() {
     if (!canRequestEnabling()) {
         return;
@@ -73,13 +90,13 @@ void PilotCommand::processMotorEnablingIterationHelper() {
     }
 
     enable_attempts_++;  // we call this routine from "command" at 40Hz
-    if (!state_.upright()) {
+    if (!upright()) {
         setControlState(ControlState::FailAngle);
         return;
     }
     // wait ~1 seconds for the IIR filters to adjust to their bias free values
     if (enable_attempts_ == 41) {
-        if (!state_.stable()) {
+        if (!stable()) {
             setControlState(ControlState::FailStability);
         } else {
             imu_.correctBiasValues();  // now our filters will start filling with accurate data
@@ -95,7 +112,7 @@ void PilotCommand::processMotorEnablingIterationHelper() {
     // wait ~1 seconds for the state filter to converge
     // check one more time to see if we were stable
     if (enable_attempts_ > 81) {
-        if (!state_.stable()) {
+        if (!stable()) {
             setControlState(ControlState::FailStability);
         } else {
             setControlState(ControlState::ThrottleLocked);

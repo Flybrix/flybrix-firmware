@@ -34,9 +34,6 @@ class State {
     Vector3<float> gyro{0.0, 0.0, 0.0};
     Vector3<float> mag{0.0, 0.0, 0.0};
 
-    bool stable() const;
-    bool upright() const;
-
     void resetState();
     void updateStateIMU(uint32_t currentTime, const Vector3<float>& accel, const Vector3<float>& gyro);
     void readStatePT();
