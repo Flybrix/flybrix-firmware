@@ -10,6 +10,7 @@
 #include <Arduino.h>
 
 #include "systems.h"
+#include "utility/quaternion.h"
 
 // DEFAULT FILTER SETTINGS
 
@@ -32,32 +33,14 @@ void State::resetState() {
     localization = Localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, Ahrs::Type::Madgwick, parameters.state_estimation, STATE_BARO_VARIANCE);
 }
 
-float State::mixRadians(float w1, float a1, float a2) {
-    float correction = 0.0f;
-    if ((a2 - a1) > PI)
-        correction = TWO_PI;
-    else if ((a2 - a1) < -PI)
-        correction = -TWO_PI;
-    return (1.0f - w1) * a2 + w1 * (a1 + correction);
-}
-
-void State::updateStateIMU(uint32_t currentTime, const Vector3<float>& accel, const Vector3<float>& gyro) {
-    // update IIRs (@500Hz)
-    this->accel = accel;
-    this->gyro = gyro;
-    gyro_filter = gyro * 0.1 + gyro_filter * 0.9;
-    accel_filter = accel * 0.1 + accel_filter * 0.9;
-    accel_filter_sq = accel.squared() * 0.1 + accel_filter_sq * 0.9;
-
-    Vector3<float> rate_scaled = gyro * DEG2RAD;
-
+void State::updateLocalization(uint32_t currentTime, const Vector3<float>& accel, const Vector3<float>& rate_scaled) {
     sys_->kinematics.rate.pitch = rate_scaled.x;
     sys_->kinematics.rate.roll = rate_scaled.y;
     sys_->kinematics.rate.yaw = rate_scaled.z;
 
     localization.ProcessMeasurementIMU(currentTime, rate_scaled, accel);
 
-    q = localization.getAhrsQuaternion();
+    Quaternion<float> q = localization.getAhrsQuaternion();
     sys_->kinematics.angle.pitch = q.pitch();
     sys_->kinematics.angle.roll = q.roll();
     sys_->kinematics.angle.yaw = q.yaw();
@@ -73,6 +56,5 @@ void State::updateFilter(uint32_t time) {
 }
 
 void State::updateStateMag(const Vector3<float>& data) {
-    this->mag = data;
     localization.ProcessMeasurementMagnetometer(data);
 }

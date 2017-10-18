@@ -27,9 +27,9 @@ void Imu::restart() {
 }
 
 void Imu::correctBiasValues() {
-    Vector3<float> a{state_.accel_filter};
+    Vector3<float> a{accel_filter};
     quick::normalize(a);
-    accel_and_gyro_.correctBiasValues(state_.accel_filter - a, state_.gyro_filter);
+    accel_and_gyro_.correctBiasValues(accel_filter - a, gyro_filter);
 }
 
 void Imu::forgetBiasValues() {
@@ -38,6 +38,36 @@ void Imu::forgetBiasValues() {
 
 void Imu::parseConfig() {
     sensor_to_flyer_ = RotationMatrix<float>(pcb_transform.orientation.x, pcb_transform.orientation.y, pcb_transform.orientation.z);
+}
+
+void Imu::updateAccelGyro(uint32_t time, const Vector3<float>& accel, const Vector3<float>& gyro) {
+    // update IIRs (@500Hz)
+    accel_ = accel;
+    gyro_ = gyro;
+    gyro_filter = gyro * 0.1 + gyro_filter * 0.9;
+    accel_filter = accel * 0.1 + accel_filter * 0.9;
+    accel_filter_sq = accel.squared() * 0.1 + accel_filter_sq * 0.9;
+
+    Vector3<float> rate_scaled = gyro * DEG2RAD;
+
+    state_.updateLocalization(time, accel, rate_scaled);
+}
+
+void Imu::updateMag(const Vector3<float>& mag) {
+    mag_ = mag;
+    state_.updateStateMag(mag);
+}
+
+const Vector3<float>& Imu::accel() const {
+    return accel_;
+}
+
+const Vector3<float>& Imu::gyro() const {
+    return gyro_;
+}
+
+const Vector3<float>& Imu::mag() const {
+    return mag_;
 }
 
 bool Imu::startInertialMeasurement() {
@@ -52,7 +82,7 @@ bool Imu::startInertialMeasurement() {
                 correctBiasValues();
             }
         }
-        state_.updateStateIMU(micros(), sensor_to_flyer_ * linear_acceleration, sensor_to_flyer_ * angular_velocity);
+        updateAccelGyro(micros(), sensor_to_flyer_ * linear_acceleration, sensor_to_flyer_ * angular_velocity);
     });
 }
 
@@ -60,9 +90,26 @@ bool Imu::startMagnetFieldMeasurement() {
     if (!magnetometer_.ready) {
         return false;
     }
-    return magnetometer_.startMeasurement([this](Vector3<float> magnet_field) { state_.updateStateMag(sensor_to_flyer_ * magnet_field); });
+    return magnetometer_.startMeasurement([this](Vector3<float> magnet_field) { updateMag(sensor_to_flyer_ * magnet_field); });
 }
 
 AK8963::MagBias& Imu::magnetometer_bias() {
     return magnetometer_.mag_bias;
+}
+
+float fast_cosine(float x_deg) {
+    return 1.0f + x_deg * (-0.000275817445684765f - 0.00013858051199801900f * x_deg);
+}
+
+bool Imu::upright() const {
+    // cos(angle) = (a dot g) / |a| / |g| = -a.z
+    // cos(angle)^2 = a.z*a.z / (a dot a)
+    float cos_test_angle = fast_cosine(state_.parameters.enable[1]);
+    return accel_filter.z * accel_filter.z > accel_filter.lengthSq() * cos_test_angle * cos_test_angle;
+}
+
+bool Imu::stable() const {
+    Vector3<float> variance = accel_filter_sq - accel_filter.squared();
+    float max_variance = std::max(std::max(variance.x, variance.y), variance.z);
+    return max_variance < state_.parameters.enable[0];
 }

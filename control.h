@@ -70,8 +70,6 @@ class Control {
 
     static_assert(sizeof(VelocityPIDParameters) == 3 * 8 * 7 + 1, "Data is not packed");
 
-    uint32_t lastUpdateMicros = 0;  // 1.2 hrs should be enough
-
     // controllers
     PIDCascade<4> forward_pid, right_pid, up_pid;
     PIDCascade<2> yaw_pid;

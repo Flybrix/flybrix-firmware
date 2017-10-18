@@ -52,11 +52,28 @@ class Imu final {
     bool startInertialMeasurement();
     bool startMagnetFieldMeasurement();
 
+    bool upright() const;
+    bool stable() const;
+
+    const Vector3<float>& accel() const;
+    const Vector3<float>& gyro() const;
+    const Vector3<float>& mag() const;
+
     AK8963::MagBias& magnetometer_bias();
 
     PcbTransform pcb_transform;
 
    private:
+    void updateMag(const Vector3<float>& mag);
+    void updateAccelGyro(uint32_t time, const Vector3<float>& accel, const Vector3<float>& gyro);
+
+    Vector3<float> accel_filter{0.0, 0.0, 0.0}, accel_filter_sq{0.0, 0.0, 0.0};  // for stability variance calculation
+    Vector3<float> gyro_filter{0.0, 0.0, 0.0};                                   // for gyro drift correction
+
+    Vector3<float> accel_{0.0, 0.0, 0.0};
+    Vector3<float> gyro_{0.0, 0.0, 0.0};
+    Vector3<float> mag_{0.0, 0.0, 0.0};
+
     bool calibrate_rotation_{false};
     RotationEstimator::Pose calibration_pose_{RotationEstimator::Pose::Flat};
     RotationEstimator rotation_estimator_;

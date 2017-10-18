@@ -15,7 +15,6 @@
 #include <cstdint>
 #include "localization.h"
 #include "utility/vector3.h"
-#include "utility/quaternion.h"
 
 struct Systems;
 
@@ -26,16 +25,8 @@ class State {
     // timing
     uint32_t loopCount = 0;
 
-    // MPU9250
-    Vector3<float> accel_filter{0.0, 0.0, 0.0}, accel_filter_sq{0.0, 0.0, 0.0};  // for stability variance calculation
-    Vector3<float> gyro_filter{0.0, 0.0, 0.0};                                   // for gyro drift correction
-
-    Vector3<float> accel{0.0, 0.0, 0.0};
-    Vector3<float> gyro{0.0, 0.0, 0.0};
-    Vector3<float> mag{0.0, 0.0, 0.0};
-
     void resetState();
-    void updateStateIMU(uint32_t currentTime, const Vector3<float>& accel, const Vector3<float>& gyro);
+    void updateLocalization(uint32_t currentTime, const Vector3<float>& accel, const Vector3<float>& rate_scaled);
     void readStatePT();
     void updateStateMag(const Vector3<float>& data);
     void updateFilter(uint32_t time);
@@ -43,8 +34,6 @@ class State {
     Vector3<float> getVelocity() {
         return localization.getVelocity();
     }
-
-    Quaternion<float> q;  // quaternion storage for logging
 
     struct __attribute__((packed)) Parameters {
         Parameters();
@@ -61,11 +50,6 @@ class State {
     static_assert(sizeof(Parameters) == 2 * 2 * 4, "Data is not packed");
 
    private:
-    static float fast_cosine(float x_deg);
-
-    float mixRadians(float w1, float a1, float a2);
-    uint32_t lastUpdateMicros = 0;  // 1.2 hrs should be enough
-
     Localization localization;
     Systems* sys_;
 };  // end of class State
