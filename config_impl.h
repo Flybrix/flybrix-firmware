@@ -1,6 +1,8 @@
 #ifndef CONFIG_IMPL_H
 #define CONFIG_IMPL_H
 
+#include "config.h"
+
 constexpr uint16_t fieldToMask(std::size_t field) {
     return 1 << field;
 }

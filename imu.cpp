@@ -29,7 +29,13 @@ void Imu::restart() {
 void Imu::correctBiasValues() {
     Vector3<float> a{accel_filter};
     quick::normalize(a);
-    accel_and_gyro_.correctBiasValues(accel_filter - a, gyro_filter);
+    bias.accel = accel_filter - a;
+    bias.gyro = gyro_filter;
+    readBiasValues();
+}
+
+void Imu::readBiasValues() {
+    accel_and_gyro_.correctBiasValues(bias.accel, bias.gyro);
 }
 
 void Imu::forgetBiasValues() {
@@ -38,6 +44,7 @@ void Imu::forgetBiasValues() {
 
 void Imu::parseConfig() {
     sensor_to_flyer_ = RotationMatrix<float>(pcb_transform.orientation.x, pcb_transform.orientation.y, pcb_transform.orientation.z);
+    readBiasValues();
 }
 
 void Imu::updateAccelGyro(uint32_t time, const Vector3<float>& accel, const Vector3<float>& gyro) {

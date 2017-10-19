@@ -28,7 +28,7 @@ class Imu final {
 
     void initialize();
     void restart();
-    void correctBiasValues();
+    void readBiasValues();
     void forgetBiasValues();
     void parseConfig();
 
@@ -63,7 +63,18 @@ class Imu final {
 
     PcbTransform pcb_transform;
 
+    struct __attribute__((packed)) InertialBias {
+        bool verify() const {
+            return true;
+        }
+        Vector3<float> accel;
+        Vector3<float> gyro;
+    } bias;
+
+    static_assert(sizeof(InertialBias) == 2 * 3 * 4, "Data is not packed");
+
    private:
+    void correctBiasValues();
     void updateMag(const Vector3<float>& mag);
     void updateAccelGyro(uint32_t time, const Vector3<float>& accel, const Vector3<float>& gyro);
 

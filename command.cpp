@@ -75,7 +75,6 @@ void PilotCommand::processMotorEnablingIterationHelper() {
     }
 
     if (enable_attempts_ == 0) {  // first call
-        imu_.forgetBiasValues();  // our filters will start filling with fresh values!
         enable_attempts_ = 1;
         return;
     }
@@ -90,7 +89,7 @@ void PilotCommand::processMotorEnablingIterationHelper() {
         if (!stable()) {
             setControlState(ControlState::FailStability);
         } else {
-            imu_.correctBiasValues();  // now our filters will start filling with accurate data
+            imu_.readBiasValues();  // update filter values if they are not fresh
         }
         return;
     }
