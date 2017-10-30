@@ -24,7 +24,7 @@ struct FieldFunctor {
     }
 
     template <class Cursor>
-    static bool Read(T& data, Cursor&& cursor, uint16_t submask) {
+    static bool Read(T& data, Cursor&& cursor, uint16_t submask, uint16_t& led_mask) {
         return (!(submask & fieldToMask(field))) || cursor.ParseInto(std::get<field>(data));
     }
 
@@ -72,12 +72,11 @@ struct FieldFunctor<T, Config::LED_STATES> {
     }
 
     template <class Cursor>
-    static bool Read(T& data, Cursor&& cursor, uint16_t submask) {
+    static bool Read(T& data, Cursor&& cursor, uint16_t submask, uint16_t& led_mask) {
         if (!(submask & fieldToMask(FIELD))) {
             return true;
         }
         // split up LED states further, since the variable is giant
-        uint16_t led_mask;
         if (!cursor.ParseInto(led_mask)) {
             return false;
         }
@@ -133,16 +132,16 @@ template <std::size_t I = 0, typename... Tp>
 }
 
 template <std::size_t I = 0, class Cursor, typename... Tp>
-inline typename std::enable_if<I == sizeof...(Tp), bool>::type readFieldsFrom(std::tuple<Tp...>& t, Cursor&& cursor, uint16_t submask) {
+inline typename std::enable_if<I == sizeof...(Tp), bool>::type readFieldsFrom(std::tuple<Tp...>& t, Cursor&& cursor, uint16_t submask, uint16_t& led_mask) {
     return true;
 }
 
 template <std::size_t I = 0, class Cursor, typename... Tp>
-    inline typename std::enable_if < I<sizeof...(Tp), bool>::type readFieldsFrom(std::tuple<Tp...>& t, Cursor&& cursor, uint16_t submask) {
-    if (!FieldFunctor<std::tuple<Tp...>, I>::Read(t, cursor, submask)) {
+    inline typename std::enable_if < I<sizeof...(Tp), bool>::type readFieldsFrom(std::tuple<Tp...>& t, Cursor&& cursor, uint16_t submask, uint16_t& led_mask) {
+    if (!FieldFunctor<std::tuple<Tp...>, I>::Read(t, cursor, submask, led_mask)) {
         return false;
     }
-    return readFieldsFrom<I + 1, Cursor, Tp...>(t, cursor, submask);
+    return readFieldsFrom<I + 1, Cursor, Tp...>(t, cursor, submask, led_mask);
 }
 
 template <std::size_t I = 0, class Cursor, typename... Tp>
@@ -189,12 +188,11 @@ template <std::size_t I = 0, class Cursor, typename... Tp>
 }
 
 template <class Cursor>
-bool Config::readPartialFrom(Cursor&& cursor) {
-    uint16_t submask;
+bool Config::readPartialFrom(Cursor&& cursor, uint16_t& submask, uint16_t& led_mask) {
     if (!cursor.ParseInto(submask)) {
         return false;
     }
-    return readFieldsFrom(data, cursor, submask);
+    return readFieldsFrom(data, cursor, submask, led_mask);
 }
 
 template <class Cursor>
