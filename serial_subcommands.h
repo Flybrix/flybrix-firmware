@@ -228,7 +228,7 @@ DO_SUBCOMMAND(REINIT_PARTIAL_EEPROM_DATA) {
         return false;
     }
     tmp_config.applyTo(systems_);
-    tmp_config.writeTo(EEPROMCursor());
+    tmp_config.writeSkippableTo(EEPROMCursor(), submask, led_mask);
     return true;
 }
 
