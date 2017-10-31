@@ -17,18 +17,16 @@
 #include "localization.h"
 #include "utility/vector3.h"
 
-struct Systems;
-
 class State {
    public:
-    explicit State(Systems* sys);
+    State();
 
     // timing
     uint32_t loopCount = 0;
 
     void resetState();
     void updateLocalization(uint32_t currentTime, const Vector3<float>& accel, const Vector3<float>& rate_scaled);
-    void readStatePT();
+    void readStatePT(uint32_t p0, uint32_t pressure, uint16_t temperature);
     void updateStateMag(const Vector3<float>& data);
     void updateFilter(uint32_t time);
 
@@ -57,7 +55,6 @@ class State {
    private:
     Kinematics kinematics;
     Localization localization;
-    Systems* sys_;
 };  // end of class State
 
 #define DEG2RAD 0.01745329251f

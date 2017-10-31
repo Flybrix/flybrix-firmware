@@ -12,8 +12,7 @@
 #include "config.h"
 
 Systems::Systems()
-    : state{this},
-      led{flag},
+    : led{flag},
       imu{state},
       pilot{*this},
       control{Control::PIDParameters(), Control::VelocityPIDParameters()},

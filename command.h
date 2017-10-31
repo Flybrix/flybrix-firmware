@@ -22,6 +22,7 @@
 struct Systems;
 struct CommandVector;
 struct ControlVectors;
+class BMP280;
 class State;
 class StateFlag;
 class Imu;
@@ -70,6 +71,7 @@ class PilotCommand {
     bool upright() const;
     bool stable() const;
 
+    BMP280& bmp_;
     State& state_;
     Imu& imu_;
     StateFlag& flag_;

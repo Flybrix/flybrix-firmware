@@ -48,6 +48,10 @@ class BMP280 {
     bool startMeasurement();
     void triggerCallback();  // handles return for getPT()
 
+    void recalibrateP0() {
+        p0 = pressure;
+    }
+
     uint16_t temperature = 0;
     uint32_t pressure = 0;
     uint32_t p0 = 25600000;  // initial pressure, set to 1 bar by default

@@ -176,7 +176,7 @@ bool ProcessTask<30>::Run() {
 template <>
 bool ProcessTask<100>::Run() {
     if (sys.bmp.ready) {
-        sys.state.readStatePT();
+        sys.state.readStatePT(sys.bmp.p0, sys.bmp.pressure, sys.bmp.temperature);
         sys.bmp.startMeasurement();
     }
 

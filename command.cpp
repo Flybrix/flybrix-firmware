@@ -6,13 +6,14 @@
 
 #include "command.h"
 
+#include "BMP280.h"
 #include "systems.h"
 #include "state.h"
 #include "imu.h"
 #include "cardManagement.h"
 #include "stateFlag.h"
 
-PilotCommand::PilotCommand(Systems& systems) : state_(systems.state), imu_(systems.imu), flag_(systems.flag) {
+PilotCommand::PilotCommand(Systems& systems) : bmp_(systems.bmp), state_(systems.state), imu_(systems.imu), flag_(systems.flag) {
     setControlState(ControlState::AwaitingAuxDisable);
 }
 
@@ -97,6 +98,7 @@ void PilotCommand::processMotorEnablingIterationHelper() {
     // reset the filter to start letting state reconverge with bias corrected mpu data
     if (enable_attempts_ == 42) {
         state_.resetState();
+        bmp_.recalibrateP0();
         return;
     }
     // wait ~1 seconds for the state filter to converge

@@ -9,7 +9,6 @@
 
 #include <Arduino.h>
 
-#include "systems.h"
 #include "utility/quaternion.h"
 
 // DEFAULT FILTER SETTINGS
@@ -23,13 +22,12 @@
 State::Parameters::Parameters() : state_estimation{1.0, 0.01}, enable{0.001, 30.0} {
 }
 
-State::State(Systems* sys) : localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, Ahrs::Type::Madgwick, parameters.state_estimation, STATE_BARO_VARIANCE), sys_{sys} {
+State::State() : localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, Ahrs::Type::Madgwick, parameters.state_estimation, STATE_BARO_VARIANCE) {
 }
 
 void State::resetState() {
     localization.setTime(0.0f);
     kinematics = Kinematics();
-    sys_->bmp.p0 = sys_->bmp.pressure;  // reset filter to current value
     localization = Localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, Ahrs::Type::Madgwick, parameters.state_estimation, STATE_BARO_VARIANCE);
 }
 
@@ -46,8 +44,8 @@ void State::updateLocalization(uint32_t currentTime, const Vector3<float>& accel
     kinematics.angle.yaw = q.yaw();
 }
 
-void State::readStatePT() {
-    localization.ProcessMeasurementPT(STATE_P_SCALE * sys_->bmp.p0, STATE_P_SCALE * sys_->bmp.pressure, STATE_T_SCALE * sys_->bmp.temperature);
+void State::readStatePT(uint32_t p0, uint32_t pressure, uint16_t temperature) {
+    localization.ProcessMeasurementPT(STATE_P_SCALE * p0, STATE_P_SCALE * pressure, STATE_T_SCALE * temperature);
 }
 
 void State::updateFilter(uint32_t time) {
