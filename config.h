@@ -78,10 +78,13 @@ struct Config {
     void writePartialTo(Cursor&& cursor, uint16_t submask, uint16_t led_mask) const;
 
     template <class Cursor>
+    void writeSkippableTo(Cursor&& cursor, uint16_t submask, uint16_t led_mask) const;
+
+    template <class Cursor>
     bool readFrom(Cursor&& cursor);
 
     template <class Cursor>
-    bool readPartialFrom(Cursor&& cursor);
+    bool readPartialFrom(Cursor&& cursor, uint16_t& submask, uint16_t& led_mask);
 
     template <class Cursor>
     static bool readMasks(Cursor&& cursor, uint16_t& submask, uint16_t& led_mask);

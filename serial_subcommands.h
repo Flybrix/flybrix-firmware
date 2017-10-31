@@ -205,14 +205,15 @@ DO_SUBCOMMAND(SET_CARD_RECORDING) {
 
 DO_SUBCOMMAND(SET_PARTIAL_EEPROM_DATA) {
     Config tmp_config(systems_);
-    if (!tmp_config.readPartialFrom(input)) {
+    uint16_t submask, led_mask;
+    if (!tmp_config.readPartialFrom(input, submask, led_mask)) {
         return false;
     }
     if (!tmp_config.verify()) {
         return false;
     }
     tmp_config.applyTo(systems_);
-    tmp_config.writeTo(EEPROMCursor());
+    tmp_config.writeSkippableTo(EEPROMCursor(), submask, led_mask);
     return true;
 }
 
@@ -227,7 +228,7 @@ DO_SUBCOMMAND(REINIT_PARTIAL_EEPROM_DATA) {
         return false;
     }
     tmp_config.applyTo(systems_);
-    tmp_config.writeTo(EEPROMCursor());
+    tmp_config.writeSkippableTo(EEPROMCursor(), submask, led_mask);
     return true;
 }
 
@@ -258,7 +259,8 @@ DO_SUBCOMMAND(REQ_CARD_RECORDING_STATE) {
 
 DO_SUBCOMMAND(SET_PARTIAL_TEMPORARY_CONFIG) {
     Config tmp_config(systems_);
-    if (!tmp_config.readPartialFrom(input)) {
+    uint16_t submask, led_mask;
+    if (!tmp_config.readPartialFrom(input, submask, led_mask)) {
         return false;
     }
     if (!tmp_config.verify()) {

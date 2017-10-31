@@ -24,13 +24,22 @@ struct FieldFunctor {
     }
 
     template <class Cursor>
-    static bool Read(T& data, Cursor&& cursor, uint16_t submask) {
+    static bool Read(T& data, Cursor&& cursor, uint16_t submask, uint16_t& led_mask) {
         return (!(submask & fieldToMask(field))) || cursor.ParseInto(std::get<field>(data));
     }
 
     template <class Cursor>
     static void WriteAll(const T& data, Cursor&& cursor) {
         cursor.Append(std::get<field>(data));
+    }
+
+    template <class Cursor>
+    static void WriteOrSkip(const T& data, Cursor&& cursor, uint16_t submask, uint16_t led_mask) {
+        if (submask & fieldToMask(field)) {
+            cursor.Append(std::get<field>(data));
+        } else {
+            cursor.Skip(std::get<field>(data));
+        }
     }
 
     template <class Cursor>
@@ -63,12 +72,11 @@ struct FieldFunctor<T, Config::LED_STATES> {
     }
 
     template <class Cursor>
-    static bool Read(T& data, Cursor&& cursor, uint16_t submask) {
+    static bool Read(T& data, Cursor&& cursor, uint16_t submask, uint16_t& led_mask) {
         if (!(submask & fieldToMask(FIELD))) {
             return true;
         }
         // split up LED states further, since the variable is giant
-        uint16_t led_mask;
         if (!cursor.ParseInto(led_mask)) {
             return false;
         }
@@ -96,6 +104,21 @@ struct FieldFunctor<T, Config::LED_STATES> {
             }
         }
     }
+
+    template <class Cursor>
+    static void WriteOrSkip(const T& data, Cursor&& cursor, uint16_t submask, uint16_t led_mask) {
+        if (submask & fieldToMask(FIELD)) {
+            for (size_t led_code = 0; led_code < 16; ++led_code) {
+                if (led_mask & (1 << led_code)) {
+                    cursor.Append(std::get<FIELD>(data).states[led_code]);
+                } else {
+                    cursor.Skip(std::get<FIELD>(data).states[led_code]);
+                }
+            }
+        } else {
+            cursor.Skip(std::get<FIELD>(data));
+        }
+    }
 };
 
 template <std::size_t I = 0, typename... Tp>
@@ -109,16 +132,16 @@ template <std::size_t I = 0, typename... Tp>
 }
 
 template <std::size_t I = 0, class Cursor, typename... Tp>
-inline typename std::enable_if<I == sizeof...(Tp), bool>::type readFieldsFrom(std::tuple<Tp...>& t, Cursor&& cursor, uint16_t submask) {
+inline typename std::enable_if<I == sizeof...(Tp), bool>::type readFieldsFrom(std::tuple<Tp...>& t, Cursor&& cursor, uint16_t submask, uint16_t& led_mask) {
     return true;
 }
 
 template <std::size_t I = 0, class Cursor, typename... Tp>
-    inline typename std::enable_if < I<sizeof...(Tp), bool>::type readFieldsFrom(std::tuple<Tp...>& t, Cursor&& cursor, uint16_t submask) {
-    if (!FieldFunctor<std::tuple<Tp...>, I>::Read(t, cursor, submask)) {
+    inline typename std::enable_if < I<sizeof...(Tp), bool>::type readFieldsFrom(std::tuple<Tp...>& t, Cursor&& cursor, uint16_t submask, uint16_t& led_mask) {
+    if (!FieldFunctor<std::tuple<Tp...>, I>::Read(t, cursor, submask, led_mask)) {
         return false;
     }
-    return readFieldsFrom<I + 1, Cursor, Tp...>(t, cursor, submask);
+    return readFieldsFrom<I + 1, Cursor, Tp...>(t, cursor, submask, led_mask);
 }
 
 template <std::size_t I = 0, class Cursor, typename... Tp>
@@ -145,6 +168,16 @@ template <std::size_t I = 0, class Cursor, typename... Tp>
 }
 
 template <std::size_t I = 0, class Cursor, typename... Tp>
+inline typename std::enable_if<I == sizeof...(Tp), void>::type writeOrSkipFieldsTo(const std::tuple<Tp...>& t, Cursor&& cursor, uint16_t submask, uint16_t led_mask) {
+}
+
+template <std::size_t I = 0, class Cursor, typename... Tp>
+    inline typename std::enable_if < I<sizeof...(Tp), void>::type writeOrSkipFieldsTo(const std::tuple<Tp...>& t, Cursor&& cursor, uint16_t submask, uint16_t led_mask) {
+    FieldFunctor<std::tuple<Tp...>, I>::WriteOrSkip(t, cursor, submask, led_mask);
+    writeOrSkipFieldsTo<I + 1, Cursor, Tp...>(t, cursor, submask, led_mask);
+}
+
+template <std::size_t I = 0, class Cursor, typename... Tp>
 inline typename std::enable_if<I == sizeof...(Tp), void>::type writeAllFieldsTo(const std::tuple<Tp...>& t, Cursor&& cursor) {
 }
 
@@ -155,18 +188,23 @@ template <std::size_t I = 0, class Cursor, typename... Tp>
 }
 
 template <class Cursor>
-bool Config::readPartialFrom(Cursor&& cursor) {
-    uint16_t submask;
+bool Config::readPartialFrom(Cursor&& cursor, uint16_t& submask, uint16_t& led_mask) {
     if (!cursor.ParseInto(submask)) {
         return false;
     }
-    return readFieldsFrom(data, cursor, submask);
+    return readFieldsFrom(data, cursor, submask, led_mask);
 }
 
 template <class Cursor>
 void Config::writePartialTo(Cursor&& cursor, uint16_t submask, uint16_t led_mask) const {
     cursor.Append(submask);
     writeFieldsTo(data, cursor, submask, led_mask);
+}
+
+template <class Cursor>
+void Config::writeSkippableTo(Cursor&& cursor, uint16_t submask, uint16_t led_mask) const {
+    cursor.Append(submask);
+    writeOrSkipFieldsTo(data, cursor, submask, led_mask);
 }
 
 template <class Cursor>
