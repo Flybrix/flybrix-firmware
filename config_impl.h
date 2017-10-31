@@ -38,7 +38,7 @@ struct FieldFunctor {
         if (submask & fieldToMask(field)) {
             cursor.Append(std::get<field>(data));
         } else {
-            cursor.Skip(sizeof(T));
+            cursor.Skip(std::get<field>(data));
         }
     }
 
@@ -112,11 +112,11 @@ struct FieldFunctor<T, Config::LED_STATES> {
                 if (led_mask & (1 << led_code)) {
                     cursor.Append(std::get<FIELD>(data).states[led_code]);
                 } else {
-                    cursor.Skip(sizeof(LED::StateCase));
+                    cursor.Skip(std::get<FIELD>(data).states[led_code]);
                 }
             }
         } else {
-            cursor.Skip(sizeof(T));
+            cursor.Skip(std::get<FIELD>(data));
         }
     }
 };
