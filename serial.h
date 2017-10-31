@@ -25,7 +25,6 @@ class StateFlag;
 class Imu;
 class Autopilot;
 struct Systems;
-struct Kinematics;
 struct PowerMonitor;
 struct ControlVectors;
 struct RcSources;
@@ -111,7 +110,6 @@ class SerialComm {
     const BMP280& bmp_;
     Imu& imu_;
     StateFlag& flag_;
-    Kinematics& kinematics_;
     PilotCommand& pilot_;
     PowerMonitor& pwr_;
     RcCommand& command_vector_;

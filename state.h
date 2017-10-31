@@ -13,6 +13,7 @@
 #define state_h
 
 #include <cstdint>
+#include "kinematics.h"
 #include "localization.h"
 #include "utility/vector3.h"
 
@@ -35,6 +36,10 @@ class State {
         return localization.getVelocity();
     }
 
+    const Kinematics& getKinematics() const {
+        return kinematics;
+    }
+
     struct __attribute__((packed)) Parameters {
         Parameters();
         bool verify() const {
@@ -50,6 +55,7 @@ class State {
     static_assert(sizeof(Parameters) == 2 * 2 * 4, "Data is not packed");
 
    private:
+    Kinematics kinematics;
     Localization localization;
     Systems* sys_;
 };  // end of class State

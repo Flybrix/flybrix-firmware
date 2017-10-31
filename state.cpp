@@ -28,22 +28,22 @@ State::State(Systems* sys) : localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED
 
 void State::resetState() {
     localization.setTime(0.0f);
-    sys_->kinematics = Kinematics();
+    kinematics = Kinematics();
     sys_->bmp.p0 = sys_->bmp.pressure;  // reset filter to current value
     localization = Localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, Ahrs::Type::Madgwick, parameters.state_estimation, STATE_BARO_VARIANCE);
 }
 
 void State::updateLocalization(uint32_t currentTime, const Vector3<float>& accel, const Vector3<float>& rate_scaled) {
-    sys_->kinematics.rate.pitch = rate_scaled.x;
-    sys_->kinematics.rate.roll = rate_scaled.y;
-    sys_->kinematics.rate.yaw = rate_scaled.z;
+    kinematics.rate.pitch = rate_scaled.x;
+    kinematics.rate.roll = rate_scaled.y;
+    kinematics.rate.yaw = rate_scaled.z;
 
     localization.ProcessMeasurementIMU(currentTime, rate_scaled, accel);
 
     Quaternion<float> q = localization.getAhrsQuaternion();
-    sys_->kinematics.angle.pitch = q.pitch();
-    sys_->kinematics.angle.roll = q.roll();
-    sys_->kinematics.angle.yaw = q.yaw();
+    kinematics.angle.pitch = q.pitch();
+    kinematics.angle.roll = q.roll();
+    kinematics.angle.yaw = q.yaw();
 }
 
 void State::readStatePT() {
@@ -52,7 +52,7 @@ void State::readStatePT() {
 
 void State::updateFilter(uint32_t time) {
     localization.updateFilter(time);
-    sys_->kinematics.altitude = localization.getElevation();
+    kinematics.altitude = localization.getElevation();
 }
 
 void State::updateStateMag(const Vector3<float>& data) {

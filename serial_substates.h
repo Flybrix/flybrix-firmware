@@ -5,7 +5,6 @@
 
 #include "BMP280.h"
 #include "power.h"
-#include "kinematics.h"
 #include "stateFlag.h"
 #include "imu.h"
 
@@ -114,9 +113,9 @@ READ_SUBSTATE(MOTOR_OUT) {
     pilot_.writeMotorsTo(payload);
 }
 
-READ_SUBSTATE_PAYLOAD(KINE_ANGLE, kinematics_.angle)
-READ_SUBSTATE_PAYLOAD(KINE_RATE, kinematics_.rate)
-READ_SUBSTATE_PAYLOAD(KINE_ALTITUDE, kinematics_.altitude)
+READ_SUBSTATE_PAYLOAD(KINE_ANGLE, state_.getKinematics().angle)
+READ_SUBSTATE_PAYLOAD(KINE_RATE, state_.getKinematics().rate)
+READ_SUBSTATE_PAYLOAD(KINE_ALTITUDE, state_.getKinematics().altitude)
 READ_SUBSTATE_PAYLOAD(LOOP_COUNT, state_.loopCount)
 
 #undef READ_SUBSTATE

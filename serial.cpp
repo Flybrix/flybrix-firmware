@@ -63,7 +63,6 @@ SerialComm::SerialComm(Systems& systems, const volatile uint16_t* ppm)
       bmp_(systems.bmp),
       imu_(systems.imu),
       flag_(systems.flag),
-      kinematics_(systems.kinematics),
       pilot_(systems.pilot),
       pwr_(systems.pwr),
       command_vector_(systems.command_vector),

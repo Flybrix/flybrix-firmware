@@ -22,7 +22,6 @@
 #include "version.h"
 #include "devicename.h"
 #include "stateFlag.h"
-#include "kinematics.h"
 #include "controlVectors.h"
 #include "autopilot.h"
 #include "utility/rcHelpers.h"
@@ -33,7 +32,6 @@ struct Systems {
     // Storing inside a struct forces the right initialization order
     StateFlag flag;
 
-    Kinematics kinematics;
     ControlVectors control_vectors;
     RcCommand command_vector;
 
