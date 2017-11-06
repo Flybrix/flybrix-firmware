@@ -117,6 +117,6 @@ bool Imu::upright() const {
 
 bool Imu::stable() const {
     Vector3<float> variance = accel_filter_sq - accel_filter.squared();
-    float max_variance = std::max(std::max(variance.x, variance.y), variance.z);
+    float max_variance = max(max(variance.x, variance.y), variance.z);
     return max_variance < state_.parameters.enable[0];
 }
