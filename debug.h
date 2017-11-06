@@ -11,6 +11,18 @@
 #ifndef debug_h
 #define debug_h
 
+#ifdef TESTSUITE
+
+template <class... T>
+void DebugPrint(T... args) {
+}
+
+template <class... T>
+void DebugPrintf(T... args) {
+}
+
+#else
+
 #include "Arduino.h"
 
 class SerialComm;
@@ -31,5 +43,7 @@ void DebugPrintf(T... args) {
     sprintf(print_buffer, args...);
     DebugPrint(print_buffer);
 }
+
+#endif
 
 #endif
