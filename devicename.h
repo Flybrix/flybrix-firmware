@@ -1,11 +1,7 @@
 #ifndef DEVICENAME_H
 #define DEVICENAME_H
 
-#include <cstdint>
-
-class String;
-
-constexpr uint8_t MAX_NAME_LENGTH = 8;
+constexpr unsigned MAX_NAME_LENGTH = 8;
 
 struct __attribute__((packed)) DeviceName {
     DeviceName();

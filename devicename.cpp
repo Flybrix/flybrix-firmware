@@ -1,7 +1,5 @@
 #include "devicename.h"
 
-#include "Arduino.h"
-
 #include "debug.h"
 
 DeviceName::DeviceName() : value{"FLYBRIX"} {
@@ -12,6 +10,7 @@ bool badChar(char c);
 bool DeviceName::verify() const {
     if (!value[0]) {
         DebugPrint("Name cannot be empty");
+        return false;
     }
     for (char c : value) {
         if (badChar(c)) {
