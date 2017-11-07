@@ -9,7 +9,6 @@ constexpr uint8_t MAX_NAME_LENGTH = 8;
 
 struct __attribute__((packed)) DeviceName {
     DeviceName();
-    DeviceName(const String& name);
 
     bool verify() const;
 
