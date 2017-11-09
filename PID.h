@@ -28,12 +28,34 @@ class IIRfilter {
     float tau;
 };
 
+struct __attribute__((packed)) PIDSettings {
+    bool verify() const {
+        return integral_windup_guard >= 0.0 && d_filter_time >= 0.0 && setpoint_filter_time >= 0.0;
+    }
+
+    float kp{0};
+    float ki{0};
+    float kd{0};
+    float integral_windup_guard{0};
+    float d_filter_time{0};
+    float setpoint_filter_time{0};
+    float command_to_value{0};
+} channel;
+
+static_assert(sizeof(PIDSettings) == 7 * 4, "Data is not packed");
+
 class PID {
    public:
-    explicit PID(const float* terms) : PID(terms[0], terms[1], terms[2], terms[3], terms[4], terms[5], terms[6]){};
+    explicit PID(const float* terms) : PID(PIDSettings{terms[0], terms[1], terms[2], terms[3], terms[4], terms[5], terms[6]}){};
 
-    PID(float kp, float ki, float kd, float integral_windup_guard, float d_filter_time, float setpoint_filter_time, float command_to_value)
-        : Kp{kp}, Ki{ki}, Kd{kd}, integral_windup_guard{integral_windup_guard}, d_filter{0.0f, d_filter_time}, setpoint_filter{0.0f, setpoint_filter_time}, command_to_value{command_to_value} {};
+    explicit PID(const PIDSettings& settings)
+        : Kp{settings.kp},
+          Ki{settings.ki},
+          Kd{settings.kd},
+          integral_windup_guard{settings.integral_windup_guard},
+          d_filter{0.0f, settings.d_filter_time},
+          setpoint_filter{0.0f, settings.setpoint_filter_time},
+          command_to_value{settings.command_to_value} {};
 
     void isWrapped(bool wrapped = true) {
         degrees = wrapped;
