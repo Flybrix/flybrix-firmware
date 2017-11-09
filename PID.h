@@ -30,8 +30,10 @@ class IIRfilter {
 
 class PID {
    public:
-    explicit PID(const float* terms)
-        : Kp{terms[0]}, Ki{terms[1]}, Kd{terms[2]}, integral_windup_guard{terms[3]}, d_filter{0.0f, terms[4]}, setpoint_filter{0.0f, terms[5]}, command_to_value{terms[6]} {};
+    explicit PID(const float* terms) : PID(terms[0], terms[1], terms[2], terms[3], terms[4], terms[5], terms[6]){};
+
+    PID(float kp, float ki, float kd, float integral_windup_guard, float d_filter_time, float setpoint_filter_time, float command_to_value)
+        : Kp{kp}, Ki{ki}, Kd{kd}, integral_windup_guard{integral_windup_guard}, d_filter{0.0f, d_filter_time}, setpoint_filter{0.0f, setpoint_filter_time}, command_to_value{command_to_value} {};
 
     void isWrapped(bool wrapped = true) {
         degrees = wrapped;
