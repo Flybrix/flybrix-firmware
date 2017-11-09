@@ -33,15 +33,15 @@ class Control {
         PIDParameters();
         bool verify() const;
 
-        float thrust_master[7];  // parameters are {P,I,D,integral windup guard, D filter delay sec, setpoint filter delay sec, command scaling factor}
-        float pitch_master[7];
-        float roll_master[7];
-        float yaw_master[7];
+        PIDSettings thrust_master;
+        PIDSettings pitch_master;
+        PIDSettings roll_master;
+        PIDSettings yaw_master;
 
-        float thrust_slave[7];
-        float pitch_slave[7];
-        float roll_slave[7];
-        float yaw_slave[7];
+        PIDSettings thrust_slave;
+        PIDSettings pitch_slave;
+        PIDSettings roll_slave;
+        PIDSettings yaw_slave;
 
         float thrust_gain;
         float pitch_gain;
@@ -57,13 +57,13 @@ class Control {
         VelocityPIDParameters();
         bool verify() const;
 
-        float forward_master[7];  // parameters are {P,I,D,integral windup guard, D filter delay sec, setpoint filter delay sec, command scaling factor}
-        float right_master[7];
-        float up_master[7];
+        PIDSettings forward_master;
+        PIDSettings right_master;
+        PIDSettings up_master;
 
-        float forward_slave[7];
-        float right_slave[7];
-        float up_slave[7];
+        PIDSettings forward_slave;
+        PIDSettings right_slave;
+        PIDSettings up_slave;
 
         uint8_t pid_bypass;  // bitfield order for bypass: {xMaster, yMaster, zMaster, -, xSlave, ySlave, zSlave, -} (LSB-->MSB)
     } velocity_pid_parameters;

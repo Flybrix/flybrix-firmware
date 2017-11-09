@@ -65,7 +65,7 @@ class PIDCascade final {
 
    private:
     struct Regulator {
-        Regulator(const float* terms) : use{false}, pid{terms} {
+        Regulator(const PIDSettings& terms) : use{false}, pid{terms} {
         }
 
         bool use;

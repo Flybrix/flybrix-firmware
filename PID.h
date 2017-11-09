@@ -29,25 +29,29 @@ class IIRfilter {
 };
 
 struct __attribute__((packed)) PIDSettings {
+    PIDSettings() : PIDSettings(0, 0, 0, 0, 0, 0, 0) {
+    }
+    PIDSettings(float kp, float ki, float kd, float integral_windup_guard, float d_filter_time, float setpoint_filter_time, float command_to_value)
+        : kp{kp}, ki{ki}, kd{kd}, integral_windup_guard{integral_windup_guard}, d_filter_time{d_filter_time}, setpoint_filter_time{setpoint_filter_time}, command_to_value{command_to_value} {
+    }
+
     bool verify() const {
         return integral_windup_guard >= 0.0 && d_filter_time >= 0.0 && setpoint_filter_time >= 0.0;
     }
 
-    float kp{0};
-    float ki{0};
-    float kd{0};
-    float integral_windup_guard{0};
-    float d_filter_time{0};
-    float setpoint_filter_time{0};
-    float command_to_value{0};
-} channel;
+    float kp;
+    float ki;
+    float kd;
+    float integral_windup_guard;
+    float d_filter_time;
+    float setpoint_filter_time;
+    float command_to_value;
+};
 
 static_assert(sizeof(PIDSettings) == 7 * 4, "Data is not packed");
 
 class PID {
    public:
-    explicit PID(const float* terms) : PID(PIDSettings{terms[0], terms[1], terms[2], terms[3], terms[4], terms[5], terms[6]}){};
-
     explicit PID(const PIDSettings& settings)
         : Kp{settings.kp},
           Ki{settings.ki},

@@ -1,8 +1,8 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
-    *
-    *  License and other details available at: http://www.flybrix.com/firmware
-*/
+ *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+ *
+ *  License and other details available at: http://www.flybrix.com/firmware
+ */
 
 #include "control.h"
 #include "debug.h"
@@ -102,11 +102,12 @@ bool Control::PIDParameters::verify() const {
         DebugPrint("The slave PID of the thrust regulator must be disabled for now");
         retval = false;
     }
-    return retval;
+    return retval || thrust_master.verify() || pitch_master.verify() || roll_master.verify() || yaw_master.verify() || thrust_slave.verify() || pitch_slave.verify() || roll_slave.verify() ||
+           yaw_slave.verify();
 }
 
 bool Control::VelocityPIDParameters::verify() const {
-    return true;
+    return forward_master.verify() || right_master.verify() || up_master.verify() || forward_slave.verify() || right_slave.verify() || up_slave.verify();
 }
 
 void Control::parseConfig() {
