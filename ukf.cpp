@@ -60,7 +60,7 @@ void UKF::update(Measurement vu, Measurement vv, Measurement d_tof, Measurement 
 
     merwe::State<float, 4> z;
     z[SensorFields::V_U] = vu.value;
-    z[SensorFields::V_V] = vu.value;
+    z[SensorFields::V_V] = vv.value;
     z[SensorFields::D_TOF] = d_tof.value;
     z[SensorFields::H_BAR] = h_bar.value;
 
@@ -73,7 +73,7 @@ void UKF::update(Measurement vu, Measurement vv, Measurement d_tof, Measurement 
 
     merwe::Covariance<float, 4> P_z;
     P_z(SensorFields::V_U, SensorFields::V_U) = vu.variance;
-    P_z(SensorFields::V_V, SensorFields::V_V) = vu.variance;
+    P_z(SensorFields::V_V, SensorFields::V_V) = vv.variance;
     P_z(SensorFields::D_TOF, SensorFields::D_TOF) = d_tof.variance;
     P_z(SensorFields::H_BAR, SensorFields::H_BAR) = h_bar.variance;
     Matrix<float, 5, 4> y_z_cov;
