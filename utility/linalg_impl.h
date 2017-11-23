@@ -244,7 +244,7 @@ template <typename T, size_t ROWS, size_t COLS>
 void Matrix<T, ROWS, COLS>::addCorrelation(const Vector<T, ROWS>& u, const Vector<T, COLS>& v, T scaling) {
     for (size_t i = 0; i < ROWS; ++i) {
         for (size_t j = 0; j < COLS; ++j) {
-            (*this)(i, j) = u[i] * v[j] * scaling;
+            (*this)(i, j) += u[i] * v[j] * scaling;
         }
     }
 }
