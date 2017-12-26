@@ -40,24 +40,32 @@ void UKF::predict(float dt) {
     }
 }
 
+using SigmasH = std::array<merwe::State<float, 4>, 11>;
+
 void UKF::update(Measurement vu, Measurement vv, Measurement d_tof, Measurement h_bar, float roll, float pitch) {
     float cr = cos(roll);
     float cp = cos(pitch);
     float sr = sin(roll);
     float sp = sin(pitch);
     float height_divider{cp * cr};
+
+    SigmasH sigmas_h;
+
     for (size_t i = 0; i < 11; ++i) {
         float vx{sigmas_f_[i][StateFields::V_X]};
         float vy{sigmas_f_[i][StateFields::V_Y]};
         float vz{sigmas_f_[i][StateFields::V_Z]};
         float pz{sigmas_f_[i][StateFields::P_Z]};
         float h{sigmas_f_[i][StateFields::H_GROUND]};
-        sigmas_h_[i][SensorFields::V_U] = cp * vx - sp * vz;
-        sigmas_h_[i][SensorFields::V_V] = sp * sr * vx + cr * vy + cp * sr * vz;
-        sigmas_h_[i][SensorFields::D_TOF] = (pz - h) / height_divider;
-        sigmas_h_[i][SensorFields::H_BAR] = pz;
+
+        // Multiply by zero for unset measurements, resulting in zero Z_mean
+        sigmas_h[i][SensorFields::V_U] = vu.weight * (cp * vx - sp * vz);
+        sigmas_h[i][SensorFields::V_V] = vv.weight * (sp * sr * vx + cr * vy + cp * sr * vz);
+        sigmas_h[i][SensorFields::D_TOF] = d_tof.weight * ((pz - h) / height_divider);
+        sigmas_h[i][SensorFields::H_BAR] = h_bar.weight * (pz);
     }
 
+    // Unset measurements have zero Z, so Z - Z_mean = 0
     merwe::State<float, 4> z;
     z[SensorFields::V_U] = vu.value;
     z[SensorFields::V_V] = vv.value;
@@ -66,11 +74,13 @@ void UKF::update(Measurement vu, Measurement vv, Measurement d_tof, Measurement 
 
     merwe::State<float, 4> z_mean;
 
-    z_mean.setScaled(sigmas_h_[0], weights_.mean_center);
+    // Unset measurements have zero Z, so Z - Z_mean = 0
+    z_mean.setScaled(sigmas_h[0], weights_.mean_center);
     for (size_t i = 1; i < 11; ++i) {
-        z_mean.addScaled(sigmas_h_[i], weights_.mean_offset);
+        z_mean.addScaled(sigmas_h[i], weights_.mean_offset);
     }
 
+    // Unset measurements have variance one, so they don't affect the inverse
     merwe::Covariance<float, 4> P_z;
     P_z(SensorFields::V_U, SensorFields::V_U) = vu.variance;
     P_z(SensorFields::V_V, SensorFields::V_V) = vv.variance;
@@ -78,17 +88,16 @@ void UKF::update(Measurement vu, Measurement vv, Measurement d_tof, Measurement 
     P_z(SensorFields::H_BAR, SensorFields::H_BAR) = h_bar.variance;
     Matrix<float, 5, 4> y_z_cov;
 
-    const merwe::State<float, 4> delta_h{sigmas_h_[0] - z_mean};
+    const merwe::State<float, 4> delta_h{sigmas_h[0] - z_mean};
     P_z.addCorrelation(delta_h, delta_h, weights_.covariance_center);
     y_z_cov.addCorrelation(sigmas_f_[0] - x_, delta_h, weights_.covariance_center);
 
     for (size_t i = 1; i < 11; ++i) {
-        const merwe::State<float, 4> delta_h{sigmas_h_[i] - z_mean};
+        const merwe::State<float, 4> delta_h{sigmas_h[i] - z_mean};
         P_z.addCorrelation(delta_h, delta_h, weights_.covariance_offset);
-        y_z_cov.addCorrelation(sigmas_f_[i] - x_, delta_h, weights_.covariance_center);
+        y_z_cov.addCorrelation(sigmas_f_[i] - x_, delta_h, weights_.covariance_offset);
     }
     Matrix<float, 5, 4> K{y_z_cov * invertRootable(P_z)};
     x_ += K * (z - z_mean);
-    Matrix<float, 5, 4> K_P_z{K * P_z};
-    P_ -= multMatrixAndTransposeMatrix(K_P_z, K);
+    P_ -= multMatrixAndTransposeMatrix(y_z_cov, K);
 }

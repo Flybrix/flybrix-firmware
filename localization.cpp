@@ -18,7 +18,7 @@ float powForPT(float x) {
 float calculateElevation(float p_sl, float p, float t) {
     return (powForPT(p_sl / p) - 1.0f) * (t + 273.15f) / 0.0065f;
 }
-}
+}  // namespace
 
 Localization::Localization(float deltaTime, Ahrs::Type ahrsType, const float* ahrsParameters, float elevation_variance)
     : Localization(1.0f, 0.0f, 0.0f, 0.0f, deltaTime, ahrsType, ahrsParameters, elevation_variance) {
@@ -33,8 +33,7 @@ Localization::Localization(float q0, float q1, float q2, float q3, float deltaTi
 }
 
 void Localization::ProcessMeasurementElevation(float elevation) {
-    h_bar_.value = elevation;
-    h_bar_.variance = elevation_variance_;
+    h_bar_ = UKF::Measurement(elevation, elevation_variance_);
     has_measurement_ = true;
 }
 

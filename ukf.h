@@ -8,8 +8,18 @@
 class UKF final {
    public:
     struct Measurement {
-        float value{0.0f};
-        float variance{HUGE_VALF};
+        Measurement() : value{0.0f}, variance{1.0f}, weight{0.0f} {
+        }
+
+        Measurement(float value, float variance) : value{value}, variance{variance}, weight{1.0f} {};
+
+       private:
+        float value;
+        float variance;
+        // Unset measurements have zero weight
+        float weight;
+
+        friend UKF;
     };
 
     UKF();
@@ -69,12 +79,10 @@ class UKF final {
         H_BAR = 3,
     };
     using SigmasF = std::array<merwe::State<float, 5>, 11>;
-    using SigmasH = std::array<merwe::State<float, 4>, 11>;
     merwe::Covariance<float, 5> Q_;
     merwe::State<float, 5> x_;
     merwe::Covariance<float, 5> P_;
     SigmasF sigmas_f_;
-    SigmasH sigmas_h_;
     merwe::Weights<float> weights_;
 };
 
