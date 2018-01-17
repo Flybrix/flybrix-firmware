@@ -147,8 +147,7 @@ class PID {
     };
 
     void IntegralReset() {
-        error_integral = 0.0f;
-        desired_setpoint_ = 0.0f;
+        error_integral = 0.0f;   
     };
 
    private:
