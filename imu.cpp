@@ -104,14 +104,12 @@ AK8963::MagBias& Imu::magnetometer_bias() {
     return magnetometer_.mag_bias;
 }
 
-float fast_cosine(float x_deg) {
-    return 1.0f + x_deg * (-0.000275817445684765f - 0.00013858051199801900f * x_deg);
-}
+#define DEGREES_TO_RADIANS 0.01745329252
 
 bool Imu::upright() const {
     // cos(angle) = (a dot g) / |a| / |g| = -a.z
     // cos(angle)^2 = a.z*a.z / (a dot a)
-    float cos_test_angle = fast_cosine(state_.parameters.enable[1]);
+    float cos_test_angle = quick::fast_cosine(state_.parameters.enable[1] * DEGREES_TO_RADIANS); //enable angle parameter is specified in degrees
     return accel_filter.z * accel_filter.z > accel_filter.lengthSq() * cos_test_angle * cos_test_angle;
 }
 
