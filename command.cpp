@@ -97,7 +97,7 @@ void PilotCommand::processMotorEnablingIterationHelper() {
 
     // reset the filter to start letting state reconverge with bias corrected mpu data
     if (enable_attempts_ == 42) {
-        state_.resetState();
+        //state_.resetState(); //UKF requires up to 15 seconds to converge!
         bmp_.recalibrateP0();
         return;
     }
