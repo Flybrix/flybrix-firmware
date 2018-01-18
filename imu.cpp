@@ -104,7 +104,7 @@ AK8963::MagBias& Imu::magnetometer_bias() {
     return magnetometer_.mag_bias;
 }
 
-#define DEGREES_TO_RADIANS 0.01745329252
+#define DEGREES_TO_RADIANS 0.01745329252f
 
 bool Imu::upright() const {
     // cos(angle) = (a dot g) / |a| / |g| = -a.z
