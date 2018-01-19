@@ -7,8 +7,8 @@
 #include "control.h"
 #include "debug.h"
 #include "kinematics.h"
-#include "utility/rcHelpers.h"
 #include "quickmath.h"
+#include "utility/rcHelpers.h"
 
 #define BYPASS_THRUST_MASTER 1 << 0
 #define BYPASS_PITCH_MASTER 1 << 1
@@ -172,33 +172,32 @@ ControlVectors Control::calculateControlVectors(const Vector3<float>& velocity, 
     up_pid.pid<1>().setInput(velocity.z);
 
     // keep "up" in the global coordinates
-    float pose_throttle_adjustment = max(0.8f, quick::fast_cosine(feedback.angle.roll) * quick::fast_cosine(feedback.angle.pitch));
-    uint16_t adjusted_throttle = constrain( (uint16_t) ( (float) setpoint.throttle / pose_throttle_adjustment ), 0, 4095);
+    float pose_throttle_adjustment = max(0.8f, quick::cos(feedback.angle.roll) * quick::cos(feedback.angle.pitch));
+    uint16_t adjusted_throttle = constrain((uint16_t)((float)setpoint.throttle / pose_throttle_adjustment), 0, 4095);
 
     ControlVectors control;
 
-    if (setpoint.throttle < 10) {  // throttle is in low condition 
+    if (setpoint.throttle < 10) {  // throttle is in low condition
         up_pid.integralReset();
         forward_pid.integralReset();
         right_pid.integralReset();
         yaw_pid.integralReset();
-        
+
         up_pid.setSetpoint(0);
         forward_pid.setSetpoint(0);
         right_pid.setSetpoint(0);
         yaw_pid.setSetpoint(0);
-        
+
         control.force_z = 0;
         control.torque_x = 0;
         control.torque_y = 0;
         control.torque_z = 0;
-    }
-    else {
+    } else {
         up_pid.setSetpoint((bidirectional_throttle ? adjusted_throttle * (1.0f / 2047.0f) - 1.0f : adjusted_throttle * (1.0f / 4095.0f)) * up_pid.getScalingFactor());
         forward_pid.setSetpoint(setpoint.pitch * (1.0f / 2047.0f) * forward_pid.getScalingFactor());
         right_pid.setSetpoint(setpoint.roll * (1.0f / 2047.0f) * right_pid.getScalingFactor());
         yaw_pid.setSetpoint(setpoint.yaw * (1.0f / 2047.0f) * yaw_pid.getScalingFactor());
-        
+
         uint32_t now = micros();
         control.force_z = up_pid.compute(now);
         control.torque_x = forward_pid.compute(now);

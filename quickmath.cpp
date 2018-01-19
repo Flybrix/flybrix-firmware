@@ -12,9 +12,9 @@
 float quick::invSqrt(float x) {
     float halfx = 0.5f * (float)x;
     float y = (float)x;
-    long i = *(long*)&y;
+    long i = *(long *)&y;
     i = 0x5f3759df - (i >> 1);
-    y = *(float*)&i;
+    y = *(float *)&i;
     y = y * (1.5f - (halfx * y * y));
     return fabs(y);
 }
@@ -27,30 +27,27 @@ float quick::invSqrt(float x) {
 
 #endif
 
-#define PI__2     1.5707963268
-#define _4__PI    1.2732395447
-#define _4__PIPI  0.4052847346
+namespace {
+constexpr float PI = 4 * std::atan(1.0);
+constexpr float TWO_PI = 2 * PI;
+constexpr float PI_HALF = PI / 2;
+constexpr float _4__PI = 1.2732395447;
+constexpr float _4__PIPI = 0.4052847346;
+}  // namespace
 
-float quick::fast_sine(float x) {
-    //always wrap input angle to -PI..PI
-    while (x < -3.14159265) { x += 6.28318531; }
-    while (x > 3.14159265) { x -= 6.28318531; }
-    
-    float sine;
-    if (x < 0)
-        sine = x * (_4__PI + _4__PIPI * x);
-    else
-        sine = x * (_4__PI - _4__PIPI * x);
+float quick::sin(float x) {
+    // always wrap input angle to -PI..PI
+    while (x < -PI) {
+        x += TWO_PI;
+    }
+    while (x > PI) {
+        x -= TWO_PI;
+    }
 
-    if (sine < 0)
-        sine = sine*(-0.225 * (sine + 1) + 1);
-    else
-        sine = sine*( 0.225 * (sine - 1) + 1);
-    
-    return sine;
+    float helper = x * (_4__PI - _4__PIPI * std::fabs(x));
+    return helper * (0.225 * (std::fabs(helper) - 1) + 1);
 }
 
-float quick::fast_cosine(float x) {
-    return fast_sine( x + PI__2 );
+float quick::cos(float x) {
+    return quick::sin(x + PI_HALF);
 }
-

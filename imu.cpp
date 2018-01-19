@@ -1,7 +1,7 @@
 #include "imu.h"
 
-#include "state.h"
 #include "quickmath.h"
+#include "state.h"
 
 Imu::Imu(State& state) : state_(state) {
 }
@@ -109,7 +109,7 @@ AK8963::MagBias& Imu::magnetometer_bias() {
 bool Imu::upright() const {
     // cos(angle) = (a dot g) / |a| / |g| = -a.z
     // cos(angle)^2 = a.z*a.z / (a dot a)
-    float cos_test_angle = quick::fast_cosine(state_.parameters.enable[1] * DEGREES_TO_RADIANS); //enable angle parameter is specified in degrees
+    float cos_test_angle = quick::cos(state_.parameters.enable[1] * DEGREES_TO_RADIANS);  // enable angle parameter is specified in degrees
     return accel_filter.z * accel_filter.z > accel_filter.lengthSq() * cos_test_angle * cos_test_angle;
 }
 
