@@ -10,20 +10,41 @@
 #include "quickmath.h"
 #include "utility/rcHelpers.h"
 
-#define BYPASS_THRUST_MASTER 1 << 0
-#define BYPASS_PITCH_MASTER 1 << 1
-#define BYPASS_ROLL_MASTER 1 << 2
-#define BYPASS_YAW_MASTER 1 << 3
-#define BYPASS_THRUST_SLAVE 1 << 4
-#define BYPASS_PITCH_SLAVE 1 << 5
-#define BYPASS_ROLL_SLAVE 1 << 6
-#define BYPASS_YAW_SLAVE 1 << 7
-#define BYPASS_FORWARD_MASTER 1 << 0
-#define BYPASS_RIGHT_MASTER 1 << 1
-#define BYPASS_UP_MASTER 1 << 2
-#define BYPASS_FORWARD_SLAVE 1 << 4
-#define BYPASS_RIGHT_SLAVE 1 << 5
-#define BYPASS_UP_SLAVE 1 << 6
+namespace {
+enum PID_ID {
+    THRUST_MASTER = 0,
+    PITCH_MASTER = 1,
+    ROLL_MASTER = 2,
+    YAW_MASTER = 3,
+    THRUST_SLAVE = 4,
+    PITCH_SLAVE = 5,
+    ROLL_SLAVE = 6,
+    YAW_SLAVE = 7,
+    FORWARD_MASTER = 0,
+    RIGHT_MASTER = 1,
+    UP_MASTER = 2,
+    FORWARD_SLAVE = 4,
+    RIGHT_SLAVE = 5,
+    UP_SLAVE = 6,
+};
+
+constexpr uint8_t BYPASS_THRUST_MASTER = 1 << THRUST_MASTER;
+constexpr uint8_t BYPASS_PITCH_MASTER = 1 << PITCH_MASTER;
+constexpr uint8_t BYPASS_ROLL_MASTER = 1 << ROLL_MASTER;
+constexpr uint8_t BYPASS_YAW_MASTER = 1 << YAW_MASTER;
+constexpr uint8_t BYPASS_THRUST_SLAVE = 1 << THRUST_SLAVE;
+constexpr uint8_t BYPASS_PITCH_SLAVE = 1 << PITCH_SLAVE;
+constexpr uint8_t BYPASS_ROLL_SLAVE = 1 << ROLL_SLAVE;
+constexpr uint8_t BYPASS_YAW_SLAVE = 1 << YAW_SLAVE;
+
+constexpr uint8_t BYPASS_FORWARD_MASTER = 1 << FORWARD_MASTER;
+constexpr uint8_t BYPASS_RIGHT_MASTER = 1 << RIGHT_MASTER;
+constexpr uint8_t BYPASS_UP_MASTER = 1 << UP_MASTER;
+constexpr uint8_t BYPASS_FORWARD_SLAVE = 1 << FORWARD_SLAVE;
+constexpr uint8_t BYPASS_RIGHT_SLAVE = 1 << RIGHT_SLAVE;
+constexpr uint8_t BYPASS_UP_SLAVE = 1 << UP_SLAVE;
+constexpr uint8_t BYPASS_VELO_PID_ALL = BYPASS_FORWARD_MASTER | BYPASS_RIGHT_MASTER | BYPASS_UP_MASTER | BYPASS_FORWARD_SLAVE | BYPASS_RIGHT_SLAVE | BYPASS_UP_SLAVE;
+}  // namespace
 
 // PID parameters:
 
@@ -69,21 +90,8 @@ Control::VelocityPIDParameters::VelocityPIDParameters()
       forward_slave{1.0, 0.0, 0.0, 10.0, 0.001, 0.001, 0.3},
       right_slave{10.0, 4.0, 0.0, 30.0, 0.001, 0.001, 30.0},
       up_slave{10.0, 4.0, 0.0, 30.0, 0.001, 0.001, 30.0},
-      pid_bypass{BYPASS_FORWARD_MASTER | BYPASS_RIGHT_MASTER | BYPASS_UP_MASTER | BYPASS_FORWARD_SLAVE | BYPASS_RIGHT_SLAVE | BYPASS_UP_SLAVE}  // Disabled
+      pid_bypass{BYPASS_VELO_PID_ALL}  // Disabled
 {
-}
-
-namespace {
-enum PID_ID {
-    THRUST_MASTER = 0,
-    PITCH_MASTER = 1,
-    ROLL_MASTER = 2,
-    YAW_MASTER = 3,
-    THRUST_SLAVE = 4,
-    PITCH_SLAVE = 5,
-    ROLL_SLAVE = 6,
-    YAW_SLAVE = 7,
-};
 }
 
 Control::Control(const PIDParameters& config, const VelocityPIDParameters& velocity_config)
@@ -103,12 +111,12 @@ bool Control::PIDParameters::verify() const {
         DebugPrint("The slave PID of the thrust regulator must be disabled for now");
         retval = false;
     }
-    return retval || thrust_master.verify() || pitch_master.verify() || roll_master.verify() || yaw_master.verify() || thrust_slave.verify() || pitch_slave.verify() || roll_slave.verify() ||
+    return retval && thrust_master.verify() && pitch_master.verify() && roll_master.verify() && yaw_master.verify() && thrust_slave.verify() && pitch_slave.verify() && roll_slave.verify() &&
            yaw_slave.verify();
 }
 
 bool Control::VelocityPIDParameters::verify() const {
-    return forward_master.verify() || right_master.verify() || up_master.verify() || forward_slave.verify() || right_slave.verify() || up_slave.verify();
+    return forward_master.verify() && right_master.verify() && up_master.verify() && forward_slave.verify() && right_slave.verify() && up_slave.verify();
 }
 
 void Control::parseConfig() {
