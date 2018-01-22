@@ -1,8 +1,8 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
-    *
-    *  License and other details available at: http://www.flybrix.com/firmware
-*/
+ *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+ *
+ *  License and other details available at: http://www.flybrix.com/firmware
+ */
 
 #include "led.h"
 #include "stateFlag.h"
@@ -29,8 +29,6 @@ LED::States::States()
           LED::StateCase(Status::IDLE, LED::BEACON, fade(CRGB::Green)),
       } {
 }
-
-void (*LEDFastUpdate)(){nullptr};
 
 namespace {
 class LEDDriver {
@@ -71,26 +69,7 @@ inline uint8_t scaleLight(uint8_t light, uint8_t scale) {
 LEDDriver::LEDDriver() {
     setColor(CRGB::Black);
     setPattern(LED::SOLID);
-#ifndef ALPHA
     FastLED.addLeds<WS2812B, board::led::DATA_PIN>(leds, board::led::COUNT);
-#else
-    pinMode(board::LED_A_RED, OUTPUT);
-    pinMode(board::LED_A_GRN, OUTPUT);
-    pinMode(board::LED_A_BLU, OUTPUT);
-    pinMode(board::LED_B_RED, OUTPUT);
-    pinMode(board::LED_B_GRN, OUTPUT);
-    pinMode(board::LED_B_BLU, OUTPUT);
-    LEDFastUpdate = []() {
-        static uint8_t cycle;
-        uint8_t threshold = scrambleCycle(++cycle);
-        digitalWriteFast(board::LED_A_RED, (scaleLight(LED_driver.leds[0].red, LED_driver.scale) > threshold) ? LOW : HIGH);
-        digitalWriteFast(board::LED_B_RED, (scaleLight(LED_driver.leds[1].red, LED_driver.scale) > threshold) ? LOW : HIGH);
-        digitalWriteFast(board::LED_A_GRN, (scaleLight(LED_driver.leds[0].green, LED_driver.scale) > threshold) ? LOW : HIGH);
-        digitalWriteFast(board::LED_B_GRN, (scaleLight(LED_driver.leds[1].green, LED_driver.scale) > threshold) ? LOW : HIGH);
-        digitalWriteFast(board::LED_A_BLU, (scaleLight(LED_driver.leds[0].blue, LED_driver.scale) > threshold) ? LOW : HIGH);
-        digitalWriteFast(board::LED_B_BLU, (scaleLight(LED_driver.leds[1].blue, LED_driver.scale) > threshold) ? LOW : HIGH);
-    };
-#endif
 }
 
 uint8_t LEDDriver::getCycleIndex() const {
@@ -106,9 +85,7 @@ inline bool isInside(const board::led::Position& p, const board::led::Position& 
 }
 
 void LEDDriver::setColor(CRGB color, board::led::Position lower_left, board::led::Position upper_right) {
-#ifndef ALPHA
     color = CRGB(color.green, color.red, color.blue);
-#endif
     for (size_t idx = 0; idx < board::led::COUNT; ++idx) {
         if (!isInside(board::led::POSITION[idx], lower_left, upper_right))
             continue;
@@ -137,12 +114,7 @@ void LEDDriver::update() {
     writeToDisplay();
     if (!hasChanges)
         return;
-#ifndef ALPHA
     FastLED.show(scale);
-#else
-    if (LEDFastUpdate)
-        LEDFastUpdate();
-#endif
     hasChanges = false;
 }
 

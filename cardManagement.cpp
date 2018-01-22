@@ -17,10 +17,6 @@
 #include "debug.h"
 #include "version.h"
 
-#ifdef ALPHA
-#define SKIP_SD
-#endif
-
 namespace sdcard {
 namespace {
 State card_state{State::Closed};
@@ -45,7 +41,7 @@ bool openSD() {
     static bool sd_open{openSDHardwarePort()};
     return sd_open;
 }
-}
+}  // namespace
 
 void startup() {
     openSD();
@@ -202,7 +198,7 @@ bool openFile(const char* base_name) {
 }
 
 bool locked = false;
-}
+}  // namespace
 
 void open() {
     if (locked)
@@ -262,7 +258,7 @@ void setLock(bool enable) {
 bool isLocked() {
     return locked;
 }
-}
+}  // namespace writing
 
 namespace reading {
 namespace {
@@ -279,7 +275,7 @@ struct SenseCloseIIFE {
         }
     };
 };
-}
+}  // namespace
 
 void open() {
     if (!openSD()) {
@@ -314,6 +310,6 @@ bool hasMore() {
 char read() {
     return read_file.read();
 }
-}
+}  // namespace reading
 
 }  // namespace sdcard

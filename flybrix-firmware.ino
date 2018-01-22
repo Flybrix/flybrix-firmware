@@ -1,6 +1,6 @@
+#include <FastLED.h>
 #include <SPI.h>
 #include <SdFat.h>
-#include <FastLED.h>
 /*
     *  Flybrix Flight Controller -- Copyright 2015, 2016 Flying Selfie Inc.
     *
@@ -16,34 +16,34 @@
 // #define DEBUG
 
 // library imports
+#include <ADC.h>
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <i2c_t3.h>
-#include <ADC.h>
 
 // octoteensy custom library imports
-#include "power.h"
+#include "AK8963.h"
 #include "BMP280.h"
 #include "MPU9250.h"
-#include "AK8963.h"
-#include "led.h"
 #include "R415X.h"
-#include "command.h"
-#include "control.h"
 #include "airframe.h"
-#include "motors.h"
-#include "state.h"
-#include "config.h"
-#include "serial.h"
-#include "i2cManager.h"
-#include "localization.h"
-#include "debug.h"
-#include "version.h"
 #include "board.h"
 #include "cardManagement.h"
+#include "command.h"
+#include "config.h"
+#include "control.h"
+#include "debug.h"
+#include "i2cManager.h"
+#include "led.h"
+#include "localization.h"
+#include "motors.h"
+#include "power.h"
+#include "serial.h"
 #include "serialFork.h"
-#include "testMode.h"
+#include "state.h"
 #include "systems.h"
+#include "testMode.h"
+#include "version.h"
 
 Systems sys;
 
@@ -162,8 +162,6 @@ bool ProcessTask<1000>::Run() {
     }
     counterSerial %= 1000;
     counterSdCard %= 1000;
-    if (LEDFastUpdate)
-        LEDFastUpdate();
     return true;
 }
 

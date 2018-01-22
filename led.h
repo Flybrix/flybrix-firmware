@@ -20,8 +20,6 @@
 
 class StateFlag;
 
-extern void (*LEDFastUpdate)();
-
 class LED {
    public:
     enum Pattern : uint8_t {

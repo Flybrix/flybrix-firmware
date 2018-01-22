@@ -42,7 +42,6 @@ struct USBComm {
 
 USBComm usb_comm;
 
-#ifndef ALPHA
 struct Bluetooth {
     Bluetooth() {
         pinMode(board::bluetooth::RESET, OUTPUT);
@@ -169,35 +168,25 @@ void Bluetooth::setBluetoothUart(const DeviceName& name) {
     delay(100);
     digitalWriteFast(board::bluetooth::RESET, HIGH);  // reset BMD complete, now not in AT mode
 }
-
-#endif
-}
+}  // namespace
 
 void setBluetoothUart(const DeviceName& name) {
-#ifndef ALPHA
     bluetooth.setBluetoothUart(name);
-#endif
 }
 
 CobsReaderBuffer* readSerial() {
     if (usb_comm.read())
         return &usb_comm.buffer();
-#ifndef ALPHA
     if (bluetooth.read())
         return &bluetooth.buffer();
-#endif
     return nullptr;
 }
 
 void writeSerial(uint8_t* data, size_t length) {
     usb_comm.write(data, length);
-#ifndef ALPHA
     bluetooth.write(data, length);
-#endif
 }
 
 void flushSerial() {
-#ifndef ALPHA
     bluetooth.flush();
-#endif
 }
