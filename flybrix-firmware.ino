@@ -199,7 +199,7 @@ bool ProcessTask<40>::Run() {
     sys.pwr.updateLevels();  // read all ADCs
 
     // check for low voltage condition
-    if (sys.pwr.I1() > 1.0f) {  // if total battery current > 1A
+    if (sys.pwr.I1() > 1000.0f) {  // if total battery current > 1A
         if (sys.pwr.V0() < 2.8f) {
             low_battery_counter++;
             if (low_battery_counter > 40) {
@@ -209,7 +209,7 @@ bool ProcessTask<40>::Run() {
             low_battery_counter = 0;
         }
     } else {
-        if (sys.pwr.V0() < 3.63f) {
+        if (sys.pwr.V0() < 3.5f) {
             low_battery_counter++;
             if (low_battery_counter > 40) {
                 sys.flag.set(Status::BATTERY_LOW);
