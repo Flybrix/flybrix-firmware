@@ -107,7 +107,7 @@ void setup() {
     sys.led.update();
 }
 
-uint32_t low_battery_counter = 0;
+uint8_t low_battery_counter = 0;
 
 template <uint32_t f>
 uint32_t RunProcess(uint32_t start);
@@ -202,23 +202,24 @@ bool ProcessTask<40>::Run() {
     if (sys.pwr.I1() > 1000.0f) {  // if total battery current > 1A
         if (sys.pwr.V0() < 2.8f) {
             low_battery_counter++;
-            if (low_battery_counter > 40) {
-                sys.flag.set(Status::BATTERY_LOW);
-            }
         } else {
-            low_battery_counter = 0;
+            low_battery_counter--;
         }
     } else {
         if (sys.pwr.V0() < 3.5f) {
             low_battery_counter++;
-            if (low_battery_counter > 40) {
-                sys.flag.set(Status::BATTERY_LOW);
-            }
         } else {
-            low_battery_counter = 0;
+            low_battery_counter--;
         }
     }
-
+    if (low_battery_counter > 40) {
+        sys.flag.set(Status::BATTERY_LOW);
+        low_battery_counter = 40;
+    }
+    if (low_battery_counter < 2) {
+        sys.flag.clear(Status::BATTERY_LOW);
+        low_battery_counter = 2;
+    }
     return true;
 }
 
