@@ -4,29 +4,28 @@
 
 namespace loops {
 namespace {
-static bool loops_stopped{true};
+static uint32_t starts_needed{1};
 static uint32_t last_stop_micros{0};
 static uint32_t overall_delay{0};
 }  // namespace
 
 void stop() {
-    if (loops_stopped) {
+    if (starts_needed++) {
         return;
     }
     last_stop_micros = micros();
-    loops_stopped = true;
 }
 
 void start() {
-    if (!loops_stopped) {
+    if (starts_needed-- > 1) {
         return;
     }
     overall_delay += micros() - last_stop_micros;
-    loops_stopped = false;
+    starts_needed = 0;
 }
 
 bool stopped() {
-    return loops_stopped;
+    return starts_needed;
 }
 
 uint32_t delay() {
