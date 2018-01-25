@@ -15,6 +15,7 @@
 #include <cstdio>
 #include "board.h"
 #include "debug.h"
+#include "loop_stopper.h"
 #include "version.h"
 
 namespace sdcard {
@@ -44,6 +45,7 @@ bool openSD() {
 }  // namespace
 
 void startup() {
+    loops::Stopper _stopper;
     openSD();
 }
 
@@ -201,6 +203,7 @@ bool locked = false;
 }  // namespace
 
 void open() {
+    loops::Stopper _stopper;
     if (locked)
         return;
     if (!openSD())
@@ -227,6 +230,7 @@ void write(const uint8_t* data, size_t length) {
 }
 
 void close() {
+    loops::Stopper _stopper;
     SenseCloseIIFE close_iife;
     if (!isWriting()) {
         return;
@@ -278,6 +282,7 @@ struct SenseCloseIIFE {
 }  // namespace
 
 void open() {
+    loops::Stopper _stopper;
     if (!openSD()) {
         return;
     }
@@ -292,6 +297,7 @@ void open() {
 }
 
 void close() {
+    loops::Stopper _stopper;
     SenseCloseIIFE close_iife;
     if (!isReading()) {
         return;

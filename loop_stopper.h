@@ -8,6 +8,7 @@ void stop();
 void start();
 
 class Stopper final {
+   public:
     Stopper() {
         stop();
     }
