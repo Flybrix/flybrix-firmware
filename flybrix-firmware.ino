@@ -36,6 +36,7 @@
 #include "i2cManager.h"
 #include "led.h"
 #include "localization.h"
+#include "loop_stopper.h"
 #include "motors.h"
 #include "power.h"
 #include "serial.h"
@@ -105,12 +106,14 @@ void setup() {
 
     sys.flag.clear(Status::BOOT);
     sys.led.update();
+
+    loops::start();
 }
 
 uint8_t low_battery_counter = 0;
 
 template <uint32_t f>
-uint32_t RunProcess(uint32_t start);
+void RunProcess(uint32_t start);
 
 void loop() {
     sys.state.loopCount++;
@@ -234,18 +237,18 @@ bool ProcessTask<1>::Run() {
 }
 
 template <uint32_t f>
-uint32_t RunProcess(uint32_t start) {
-    static uint32_t previous_time{start};
-    static uint32_t iterations{0};
+void RunProcess(uint32_t start) {
+    if (loops::stopped()) {
+        return;
+    }
+    start -= loops::delay();
+    static uint32_t previous_time{0};
 
     while (start - previous_time > 1000000 / f) {
         if (ProcessTask<f>::Run()) {
             previous_time += 1000000 / f;
-            ++iterations;
         } else {
             break;
         }
     }
-
-    return iterations;
 }
