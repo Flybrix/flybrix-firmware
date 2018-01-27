@@ -1,12 +1,9 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
+    *  http://www.flybrix.com
 
-    <R415X.h/cpp>
-
-    Uses a timer to receive data from the Orange R415X receiver module.
-
+    Uses a timer to receive data from a 6 channel cPPM output.
 */
 
 #ifndef R415X_h

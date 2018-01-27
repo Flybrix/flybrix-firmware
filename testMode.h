@@ -1,12 +1,7 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
-
-    <testMode.h/cpp>
-
-    Test mode for LED and motor functionality
-
+    *  http://www.flybrix.com
 */
 
 class LED;

@@ -1,12 +1,9 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
-
-    <stlFix.h/cpp>
+    *  http://www.flybrix.com
 
     Implements missing elements for using certain STL libraries in Teensyduino.
-
 */
 
 #ifndef STL_FIX_H

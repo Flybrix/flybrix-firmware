@@ -1,16 +1,13 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
-
-    <config.h/cpp>
+    *  http://www.flybrix.com
 
     EEPROM based configuration data storage structure
 
     Nonvolatile parameters are being stored inside an CONFIG structure
     that can be accesed as data union, for easier manipulation as a javascript
     ArrayBuffer object over serial.
-
 */
 
 #ifndef config_h

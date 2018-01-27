@@ -1,11 +1,7 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
-
-    <cardManagement.h/cpp>
-
-    General interaction with the SD card, in the forms of logging or reading.
+    *  http://www.flybrix.com
 */
 
 #include "cardManagement.h"

@@ -1,27 +1,23 @@
+/*
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
+    *
+    *  http://www.flybrix.com
+
+    Credit for inspiration and guidance is due to several other projects, including:
+      - multiwii ("https://github.com/multiwii")
+      - cleanflight ("https://github.com/cleanflight")
+      - phoenix flight controller ("https://github.com/cTn-dev/Phoenix-FlightController")
+*/
+
+// library imports
 #include <FastLED.h>
 #include <SPI.h>
 #include <SdFat.h>
-/*
-    *  Flybrix Flight Controller -- Copyright 2015, 2016 Flying Selfie Inc.
-    *
-    *  License and other details available at: http://www.flybrix.com/firmware
-
-    Credit for inspiration and guidance is due to several other projects, including:
-    - multiwii ("https://github.com/multiwii")
-    - cleanflight ("https://github.com/cleanflight")
-    - phoenix flight controller ("https://github.com/cTn-dev/Phoenix-FlightController")
-
-*/
-
-// #define DEBUG
-
-// library imports
 #include <ADC.h>
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <i2c_t3.h>
 
-// octoteensy custom library imports
 #include "AK8963.h"
 #include "BMP280.h"
 #include "MPU9250.h"

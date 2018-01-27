@@ -1,12 +1,7 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
-
-    <state.h/cpp>
-
-    State tracks everything we know about the UAV, computes derived state variables, and handles data logging
-
+    *  http://www.flybrix.com
 */
 
 #ifndef state_h
