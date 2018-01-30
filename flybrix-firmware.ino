@@ -10,12 +10,12 @@
 */
 
 // library imports
-#include <FastLED.h>
-#include <SPI.h>
-#include <SdFat.h>
 #include <ADC.h>
 #include <Arduino.h>
 #include <EEPROM.h>
+#include <FastLED.h>
+#include <SPI.h>
+#include <SdFat.h>
 #include <i2c_t3.h>
 
 #include "AK8963.h"
@@ -39,10 +39,119 @@
 #include "serialFork.h"
 #include "state.h"
 #include "systems.h"
+#include "taskRunner.h"
 #include "testMode.h"
 #include "version.h"
 
 Systems sys;
+uint8_t low_battery_counter = 0;
+
+void writeToSerial() {
+    sys.conf.SendState();
+}
+
+void writeToSdCard() {
+    sys.conf.SendState(0xFFFFFFFF, true);
+}
+
+void updateLoopCount() {
+    sys.state.loopCount++;
+}
+
+void updateI2C() {
+    i2c().update();
+}
+
+void updateIndicatorLights() {
+    sys.led.update();  // update quickly to support color dithering
+}
+
+void processPressureSensor() {
+    if (sys.bmp.ready) {
+        sys.state.readStatePT(sys.bmp.p0, sys.bmp.pressure, sys.bmp.temperature);
+        sys.bmp.startMeasurement();
+    }
+}
+
+void processSerialInput() {
+    sys.conf.Read();
+}
+
+void updateStateEstimate() {
+    sys.state.updateFilter(micros());
+}
+
+void runAutopilot() {
+    sys.autopilot.run(micros());
+}
+
+void flushBluetoothSerial() {
+    flushSerial();
+}
+
+void updateControlVectors() {
+    if (!sys.pilot.isOverridden()) {  // user isn't changing motor levels using Configurator
+        sys.control_vectors = sys.control.calculateControlVectors(sys.state.getVelocity(), sys.state.getKinematics(), sys.command_vector);
+    }
+    sys.pilot.applyControl(sys.control_vectors);
+}
+
+void processPilotInput() {
+    sys.command_vector = sys.pilot.processCommands(sys.rc_mux.query());
+}
+
+void checkBatteryUse() {
+    sys.pwr.updateLevels();  // read all ADCs
+
+    // check for low voltage condition
+    if (sys.pwr.I1() > 1000.0f) {  // if total battery current > 1A
+        if (sys.pwr.V0() < 2.8f) {
+            low_battery_counter++;
+        } else {
+            low_battery_counter--;
+        }
+    } else {
+        if (sys.pwr.V0() < 3.5f) {
+            low_battery_counter++;
+        } else {
+            low_battery_counter--;
+        }
+    }
+    if (low_battery_counter > 40) {
+        sys.flag.set(Status::BATTERY_LOW);
+        low_battery_counter = 40;
+    }
+    if (low_battery_counter < 2) {
+        sys.flag.clear(Status::BATTERY_LOW);
+        low_battery_counter = 2;
+    }
+}
+
+void updateMagnetometer() {
+    sys.imu.startMagnetFieldMeasurement();
+}
+
+void performInertialMeasurement() {
+    sys.imu.startInertialMeasurement();
+}
+
+TaskRunner tasks[] = {
+    {writeToSerial, hzToMicros(1)},                 //
+    {writeToSdCard, hzToMicros(1)},                 //
+    {updateLoopCount, hzToMicros(1200)},            //
+    {updateI2C, hzToMicros(800)},                   //
+    {updateIndicatorLights, hzToMicros(30)},        //
+    {processPressureSensor, hzToMicros(100)},       //
+    {processSerialInput, hzToMicros(100)},          //
+    {updateStateEstimate, hzToMicros(100)},         //
+    {runAutopilot, hzToMicros(100)},                //
+    {flushBluetoothSerial, hzToMicros(35)},         //
+    {updateControlVectors, hzToMicros(400)},        //
+    {processPilotInput, hzToMicros(40)},            //
+    {checkBatteryUse, hzToMicros(10)},              //
+    {updateMagnetometer, hzToMicros(10)},           //
+    {performInertialMeasurement, hzToMicros(400)},  //
+};
 
 void setup() {
     debug_serial_comm = &sys.conf;
@@ -106,145 +215,21 @@ void setup() {
     loops::start();
 }
 
-uint8_t low_battery_counter = 0;
-
-template <uint32_t f>
-void RunProcess(uint32_t start);
-
 void loop() {
-    sys.state.loopCount++;
-
-    i2c().update();  // manages a queue of requests for mpu, mag, bmp
-
-    sys.imu.startInertialMeasurement();
-
-    i2c().update();
-
-    if (!sys.pilot.isOverridden()) {  // user isn't changing motor levels using Configurator
-        sys.control_vectors = sys.control.calculateControlVectors(sys.state.getVelocity(), sys.state.getKinematics(), sys.command_vector);
-    }
-    sys.pilot.applyControl(sys.control_vectors);
-
-    RunProcess<1000>(micros());
-    i2c().update();
-    RunProcess<100>(micros());
-    i2c().update();
-    RunProcess<40>(micros());
-    i2c().update();
-    RunProcess<35>(micros());
-    i2c().update();
-    RunProcess<30>(micros());
-    i2c().update();
-    RunProcess<10>(micros());
-    i2c().update();
-    RunProcess<1>(micros());
-    i2c().update();
-}
-
-template <uint32_t f>
-class ProcessTask {
-   public:
-    static bool Run();
-};
-
-template <>
-bool ProcessTask<1000>::Run() {
-    static uint16_t counterSerial{0};
-    static uint16_t counterSdCard{0};
-    if (++counterSerial > sys.conf.GetSendStateDelay() - 1) {
-        counterSerial = 0;
-        sys.conf.SendState();
-    }
-    if (++counterSdCard > sys.conf.GetSdCardStateDelay() - 1) {
-        counterSdCard = 0;
-        sys.conf.SendState(0xFFFFFFFF, true);
-    }
-    counterSerial %= 1000;
-    counterSdCard %= 1000;
-    return true;
-}
-
-template <>
-bool ProcessTask<30>::Run() {
-    sys.led.update();  // update quickly to support color dithering
-    return true;
-}
-
-template <>
-bool ProcessTask<100>::Run() {
-    if (sys.bmp.ready) {
-        sys.state.readStatePT(sys.bmp.p0, sys.bmp.pressure, sys.bmp.temperature);
-        sys.bmp.startMeasurement();
-    }
-
-    sys.state.updateFilter(micros());
-
-    sys.conf.Read();  // Respond to commands from the Configurator chrome extension
-    sys.autopilot.run(micros());
-
-    return true;
-}
-
-template <>
-bool ProcessTask<35>::Run() {
-    flushSerial();
-    return true;
-}
-
-template <>
-bool ProcessTask<40>::Run() {
-    sys.command_vector = sys.pilot.processCommands(sys.rc_mux.query());
-
-    sys.pwr.updateLevels();  // read all ADCs
-
-    // check for low voltage condition
-    if (sys.pwr.I1() > 1000.0f) {  // if total battery current > 1A
-        if (sys.pwr.V0() < 2.8f) {
-            low_battery_counter++;
-        } else {
-            low_battery_counter--;
-        }
-    } else {
-        if (sys.pwr.V0() < 3.5f) {
-            low_battery_counter++;
-        } else {
-            low_battery_counter--;
-        }
-    }
-    if (low_battery_counter > 40) {
-        sys.flag.set(Status::BATTERY_LOW);
-        low_battery_counter = 40;
-    }
-    if (low_battery_counter < 2) {
-        sys.flag.clear(Status::BATTERY_LOW);
-        low_battery_counter = 2;
-    }
-    return true;
-}
-
-template <>
-bool ProcessTask<10>::Run() {
-    return sys.imu.startMagnetFieldMeasurement();
-}
-
-template <>
-bool ProcessTask<1>::Run() {
-    return true;
-}
-
-template <uint32_t f>
-void RunProcess(uint32_t start) {
     if (loops::stopped()) {
         return;
     }
-    start -= loops::delay();
-    static uint32_t previous_time{0};
 
-    while (start - previous_time > 1000000 / f) {
-        if (ProcessTask<f>::Run()) {
-            previous_time += 1000000 / f;
-        } else {
-            break;
+    if (loops::consumeStop()) {
+        for (TaskRunner& task : tasks) {
+            task.reset();
         }
+    }
+
+    tasks[0].setDesiredInterval(sys.conf.GetSendStateDelay() * 1000);
+    tasks[1].setDesiredInterval(sys.conf.GetSdCardStateDelay() * 1000);
+
+    for (TaskRunner& task : tasks) {
+        task.process();
     }
 }
