@@ -8,9 +8,9 @@
 #define serial_h
 
 #include <Arduino.h>
+#include "R415X.h"
 #include "cobs.h"
 #include "utility/rcHelpers.h"
-#include "R415X.h"
 
 class BMP280;
 class PilotCommand;
@@ -74,7 +74,7 @@ class SerialComm {
 
     SerialComm(Systems& systems, const volatile uint16_t* ppm);
 
-    void Read();
+    bool Read();
 
     void SendConfiguration() const;
     void SendPartialConfiguration(uint16_t submask, uint16_t led_mask) const;

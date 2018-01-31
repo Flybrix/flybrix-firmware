@@ -9,7 +9,7 @@
 
 #include <Arduino.h>
 
-using TaskPtr = void (*)();
+using TaskPtr = bool (*)();
 
 constexpr uint32_t hzToMicros(float hz) {
     return 1000000 / hz;

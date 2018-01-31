@@ -8,11 +8,11 @@
 #include "BMP280.h"
 #include "command.h"
 #include "control.h"
+#include "imu.h"
 #include "led.h"
 #include "state.h"
-#include "systems.h"
 #include "stateFlag.h"
-#include "imu.h"
+#include "systems.h"
 
 namespace {
 
@@ -51,7 +51,7 @@ template <uint8_t I = 0>
     readSubstateWrap<I>(serial, payload, mask);
     readSubstates<I + 1>(serial, payload, mask);
 }
-}
+}  // namespace
 
 SerialComm::SerialComm(Systems& systems, const volatile uint16_t* ppm)
     : state_(systems.state),
@@ -71,11 +71,14 @@ SerialComm::SerialComm(Systems& systems, const volatile uint16_t* ppm)
       control_vectors_(systems.control_vectors) {
 }
 
-void SerialComm::Read() {
+bool SerialComm::Read() {
+    bool did_something{false};
     for (;;) {
         CobsReaderBuffer* buffer{readSerial()};
-        if (buffer == nullptr)
-            return;
+        if (buffer == nullptr) {
+            return did_something;
+        }
+        did_something = true;
         ProcessData(*buffer, true);
     }
 }

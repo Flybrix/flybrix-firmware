@@ -22,7 +22,7 @@ struct I2CTransfer {
 
 class I2CManager {
    public:
-    void update();
+    bool update();
     void addTransfer(uint8_t address, uint8_t send_count, uint8_t* send_data, uint8_t receive_count, uint8_t* receive_data, std::function<void()> callback);
 
     uint8_t readByte(uint8_t address, uint8_t subAddress);

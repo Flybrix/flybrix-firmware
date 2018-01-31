@@ -16,7 +16,4 @@ CobsReaderBuffer* readSerial();
 void writeSerial(uint8_t* data, size_t length);
 uint32_t flushSerial(uint32_t times);
 void setBluetoothUart(const DeviceName& name);
-uint32_t flushSerial() {
-    return flushSerial(5);
-}
 #endif
