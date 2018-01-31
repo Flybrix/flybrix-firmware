@@ -8,6 +8,7 @@
 #include <Arduino.h>
 #include "board.h"
 #include "devicename.h"
+#include "usbModeSelector.h"
 
 namespace {
 struct USBComm {
@@ -175,15 +176,19 @@ void setBluetoothUart(const DeviceName& name) {
 }
 
 CobsReaderBuffer* readSerial() {
-    if (usb_comm.read())
-        return &usb_comm.buffer();
+    if (usb_mode::get() == usb_mode::BLUETOOTH_MIRROR) {
+        if (usb_comm.read())
+            return &usb_comm.buffer();
+    }
     if (bluetooth.read())
         return &bluetooth.buffer();
     return nullptr;
 }
 
 void writeSerial(uint8_t* data, size_t length) {
-    usb_comm.write(data, length);
+    if (usb_mode::get() == usb_mode::BLUETOOTH_MIRROR) {
+        usb_comm.write(data, length);
+    }
     bluetooth.write(data, length);
 }
 
