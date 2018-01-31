@@ -10,12 +10,20 @@
 
 namespace loops {
 namespace {
+static bool hadUnobservedStop{true};
 static uint32_t starts_needed{1};
 static uint32_t last_stop_micros{0};
 static uint32_t overall_delay{0};
 }  // namespace
 
+bool consumeStop() {
+    bool value{hadUnobservedStop};
+    hadUnobservedStop = false;
+    return value;
+}
+
 void stop() {
+    hadUnobservedStop = true;
     if (starts_needed++) {
         return;
     }

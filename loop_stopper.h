@@ -23,6 +23,8 @@ class Stopper final {
     }
 };
 
+// Returns true if there was a stop since the last consume stop call
+bool consumeStop();
 bool stopped();
 uint32_t delay();
 }  // namespace loops
