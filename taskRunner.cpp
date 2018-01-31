@@ -6,7 +6,9 @@ TaskRunner::TaskRunner(TaskPtr task, uint32_t desired_interval_us) : task{task},
 bool TaskRunner::process() {
     uint32_t now{micros()};
 
-    if (last_update_us + desired_interval_us > now) {
+    uint32_t delay{now - last_update_us};
+
+    if (desired_interval_us > delay) {
         return false;
     }
 
@@ -14,7 +16,7 @@ bool TaskRunner::process() {
     if (!task()) {
         return false;
     }
-    logExecution(now - last_update_us - desired_interval_us, micros() - now);
+    logExecution(delay - desired_interval_us, micros() - now);
 
     return true;
 }
