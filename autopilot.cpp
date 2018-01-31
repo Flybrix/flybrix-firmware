@@ -6,8 +6,8 @@
 
 #include "autopilot.h"
 
-#include "serial.h"
 #include "cardManagement.h"
+#include "serial.h"
 
 Autopilot::Autopilot(SerialComm& serial) : serial_(serial) {
 }
@@ -20,17 +20,20 @@ void Autopilot::start(uint32_t now) {
     wait_until_ = 0;
 }
 
-void Autopilot::run(uint32_t now) {
+bool Autopilot::run(uint32_t now) {
+    bool did_something{false};
     if (!running_) {
-        return;
+        return did_something;
     }
     while (sdcard::reading::hasMore()) {
         if (wait_until_ > now - start_time_) {
-            return;
+            return did_something;
         }
         readCobs();
+        did_something = true;
     }
     running_ = false;
+    return did_something;
 }
 
 void Autopilot::stop() {

@@ -16,7 +16,7 @@ class Autopilot final {
    public:
     explicit Autopilot(SerialComm& serial);
     void start(uint32_t now);
-    void run(uint32_t now);
+    bool run(uint32_t now);
     void stop();
 
    private:

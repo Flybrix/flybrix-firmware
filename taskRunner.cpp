@@ -17,7 +17,9 @@ bool TaskRunner::process() {
     }
 
     last_update_us = now;
-    task();
+    if (!task()) {
+        return false;
+    }
     logExecution(now - last_update_us - desired_interval_us, micros() - now);
 
     return true;

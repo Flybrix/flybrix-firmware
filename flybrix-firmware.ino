@@ -46,61 +46,70 @@
 Systems sys;
 uint8_t low_battery_counter = 0;
 
-void writeToSerial() {
+bool writeToSerial() {
     sys.conf.SendState();
+    return true;
 }
 
-void writeToSdCard() {
+bool writeToSdCard() {
     sys.conf.SendState(0xFFFFFFFF, true);
+    return true;
 }
 
-void updateLoopCount() {
+bool updateLoopCount() {
     sys.state.loopCount++;
+    return true;
 }
 
-void updateI2C() {
-    i2c().update();
+bool updateI2C() {
+    return i2c().update();
 }
 
-void updateIndicatorLights() {
+bool updateIndicatorLights() {
     sys.led.update();  // update quickly to support color dithering
+    return true;
 }
 
-void processPressureSensor() {
-    if (sys.bmp.ready) {
-        sys.state.readStatePT(sys.bmp.p0, sys.bmp.pressure, sys.bmp.temperature);
-        sys.bmp.startMeasurement();
+bool processPressureSensor() {
+    if (!sys.bmp.ready) {
+        return false;
     }
+    sys.state.readStatePT(sys.bmp.p0, sys.bmp.pressure, sys.bmp.temperature);
+    sys.bmp.startMeasurement();
+    return true;
 }
 
-void processSerialInput() {
-    sys.conf.Read();
+bool processSerialInput() {
+    return sys.conf.Read();
 }
 
-void updateStateEstimate() {
+bool updateStateEstimate() {
     sys.state.updateFilter(micros());
+    return true;
 }
 
-void runAutopilot() {
-    sys.autopilot.run(micros());
+bool runAutopilot() {
+    return sys.autopilot.run(micros());
 }
 
-void flushBluetoothSerial() {
-    flushSerial();
+bool flushBluetoothSerial() {
+    return flushSerial(5) > 0;
 }
 
-void updateControlVectors() {
+bool updateControlVectors() {
     if (!sys.pilot.isOverridden()) {  // user isn't changing motor levels using Configurator
         sys.control_vectors = sys.control.calculateControlVectors(sys.state.getVelocity(), sys.state.getKinematics(), sys.command_vector);
     }
     sys.pilot.applyControl(sys.control_vectors);
+    return true;
 }
 
-void processPilotInput() {
+bool processPilotInput() {
     sys.command_vector = sys.pilot.processCommands(sys.rc_mux.query());
+    return true;
 }
 
-void checkBatteryUse() {
+bool checkBatteryUse() {
     sys.pwr.updateLevels();  // read all ADCs
 
     // check for low voltage condition
@@ -125,14 +134,16 @@ void checkBatteryUse() {
         sys.flag.clear(Status::BATTERY_LOW);
         low_battery_counter = 2;
     }
+
+    return true;
 }
 
-void updateMagnetometer() {
-    sys.imu.startMagnetFieldMeasurement();
+bool updateMagnetometer() {
+    return sys.imu.startMagnetFieldMeasurement();
 }
 
-void performInertialMeasurement() {
-    sys.imu.startInertialMeasurement();
+bool performInertialMeasurement() {
+    return sys.imu.startInertialMeasurement();
 }
 
 TaskRunner tasks[] = {
@@ -145,7 +156,7 @@ TaskRunner tasks[] = {
     {processSerialInput, hzToMicros(100)},          //
     {updateStateEstimate, hzToMicros(100)},         //
     {runAutopilot, hzToMicros(100)},                //
-    {flushBluetoothSerial, hzToMicros(35)},         //
+    {flushBluetoothSerial, hzToMicros(100)},        //
     {updateControlVectors, hzToMicros(400)},        //
     {processPilotInput, hzToMicros(40)},            //
     {checkBatteryUse, hzToMicros(10)},              //

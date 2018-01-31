@@ -8,6 +8,7 @@
 #include <Arduino.h>
 #include "board.h"
 #include "devicename.h"
+#include "usbModeSelector.h"
 
 namespace {
 struct USBComm {
@@ -64,11 +65,15 @@ struct Bluetooth {
         return data_input;
     }
 
-    void flush() {
-        size_t l{data_output.hasData()};
-        if (!l)
-            return;
-        Serial1.write(data_output.pop(), l);
+    uint32_t flush(uint32_t times) {
+        for (uint32_t i = 0; i < times; ++i) {
+            size_t l{data_output.hasData()};
+            if (!l) {
+                return i;
+            }
+            Serial1.write(data_output.pop(), l);
+        }
+        return times;
     }
 
    private:
@@ -111,7 +116,7 @@ struct Bluetooth {
         }
 
        private:
-        static constexpr size_t bufferCount{40};
+        static constexpr size_t bufferCount{100};
         static constexpr size_t bufferChunk{20};
         static constexpr size_t bufferSize{bufferCount * bufferChunk};
         uint8_t data[bufferSize];
@@ -171,18 +176,22 @@ void setBluetoothUart(const DeviceName& name) {
 }
 
 CobsReaderBuffer* readSerial() {
-    if (usb_comm.read())
-        return &usb_comm.buffer();
+    if (usb_mode::get() == usb_mode::BLUETOOTH_MIRROR) {
+        if (usb_comm.read())
+            return &usb_comm.buffer();
+    }
     if (bluetooth.read())
         return &bluetooth.buffer();
     return nullptr;
 }
 
 void writeSerial(uint8_t* data, size_t length) {
-    usb_comm.write(data, length);
+    if (usb_mode::get() == usb_mode::BLUETOOTH_MIRROR) {
+        usb_comm.write(data, length);
+    }
     bluetooth.write(data, length);
 }
 
-void flushSerial() {
-    bluetooth.flush();
+uint32_t flushSerial(uint32_t times) {
+    return bluetooth.flush(times);
 }

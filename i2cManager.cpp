@@ -39,7 +39,7 @@ void I2CManager::addTransfer(uint8_t address, uint8_t send_count, uint8_t* send_
     transfers.push(I2CTransfer{address, send_count, send_data, receive_count, receive_data, callback});
 }
 
-void I2CManager::update() {
+bool I2CManager::update() {
     if (waiting_for_data) {
         if (Wire.available() == transfers.front().receive_count) {
             for (uint8_t i = 0; i < transfers.front().receive_count; i++)
@@ -47,6 +47,7 @@ void I2CManager::update() {
             transfers.front().callback();
             transfers.pop();
             waiting_for_data = false;
+            return true;
         }
     } else if (!transfers.empty() && !waiting_for_data) {
         // begin new transfer
@@ -56,10 +57,12 @@ void I2CManager::update() {
         if (error == 0 && transfers.front().receive_count > 0) {
             waiting_for_data = true;
             Wire.requestFrom(transfers.front().address, transfers.front().receive_count);
+            return true;
         } else {
             // how do we want to handle errors? ignore for now
         }
     }
+    return false;
 }
 
 uint8_t I2CManager::readByte(uint8_t address, uint8_t subAddress) {
