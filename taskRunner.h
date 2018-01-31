@@ -43,7 +43,6 @@ class TaskRunner {
         last_update_us = micros();
     }
 
-   private:
     void logExecution(uint32_t delay, uint32_t duration) {
         delay_track.log(delay);
         duration_track.log(duration);
