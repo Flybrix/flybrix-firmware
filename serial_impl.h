@@ -1,3 +1,9 @@
+/*
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
+    *
+    *  http://www.flybrix.com
+*/
+
 #ifndef SERIAL_IMPL_H
 #define SERIAL_IMPL_H
 
@@ -18,7 +24,7 @@ template <std::size_t N>
 inline void WriteToOutput(CobsPayload<N>& payload, bool use_logger = false) {
     auto package = payload.Encode();
     if (use_logger) {
-        sdcard::write(package.data, package.length);
+        sdcard::writing::write(package.data, package.length);
     } else {
         writeSerial(package.data, package.length);
     }

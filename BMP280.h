@@ -1,21 +1,13 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
-
-    <BMP280.h/cpp>
-
-    Driver code for our barometer.
-
+    *  http://www.flybrix.com
 */
 
 #ifndef BMP280_h
 #define BMP280_h
 
 #include "Arduino.h"
-#include "i2cManager.h"
-
-class State;
 
 struct __attribute__((packed)) BMP_calibration {
     uint16_t dig_T1;    // 0x88 / 0x89 dig_T1 unsigned short
@@ -38,9 +30,9 @@ union BMP_calibration_union {
     uint8_t raw[sizeof(struct BMP_calibration)];
 };
 
-class BMP280 : public CallbackProcessor {
+class BMP280 {
    public:
-    BMP280(State *state, I2CManager *i2c);  // base type
+    BMP280();  // base type
 
     void restart();
 
@@ -51,10 +43,15 @@ class BMP280 : public CallbackProcessor {
     bool startMeasurement();
     void triggerCallback();  // handles return for getPT()
 
-   private:
-    State *state;
-    I2CManager *i2c;
+    void recalibrateP0() {
+        p0 = pressure;
+    }
 
+    uint16_t temperature = 0;
+    uint32_t pressure = 0;
+    uint32_t p0 = 25600000;  // initial pressure, set to 1 bar by default
+
+   private:
     uint8_t getStatusByte();
 
     BMP_calibration_union CALIBRATION;

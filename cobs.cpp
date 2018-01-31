@@ -1,3 +1,9 @@
+/*
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
+    *
+    *  http://www.flybrix.com
+*/
+
 #include "cobs.h"
 
 size_t cobsEncode(uint8_t* dst_ptr, const uint8_t* src_begin, const uint8_t* src_end) {

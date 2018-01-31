@@ -1,13 +1,17 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
-    *
-    *
+    *  http://www.flybrix.com
 */
 
 #include "i2cManager.h"
 #include <i2c_t3.h>
+
+I2CManager i2c_;
+
+I2CManager& i2c() {
+    return i2c_;
+}
 
 I2CTransfer& I2CManager::TransferQueue::front() const {
     return firstItem->item;
@@ -31,8 +35,8 @@ bool I2CManager::TransferQueue::empty() const {
     return !firstItem;
 }
 
-void I2CManager::addTransfer(uint8_t address, uint8_t send_count, uint8_t* send_data, uint8_t receive_count, uint8_t* receive_data, CallbackProcessor* cb_object) {
-    transfers.push(I2CTransfer{address, send_count, send_data, receive_count, receive_data, cb_object});
+void I2CManager::addTransfer(uint8_t address, uint8_t send_count, uint8_t* send_data, uint8_t receive_count, uint8_t* receive_data, std::function<void()> callback) {
+    transfers.push(I2CTransfer{address, send_count, send_data, receive_count, receive_data, callback});
 }
 
 void I2CManager::update() {
@@ -40,7 +44,7 @@ void I2CManager::update() {
         if (Wire.available() == transfers.front().receive_count) {
             for (uint8_t i = 0; i < transfers.front().receive_count; i++)
                 transfers.front().receive_data[i] = Wire.read();
-            transfers.front().cb_object->triggerCallback();
+            transfers.front().callback();
             transfers.pop();
             waiting_for_data = false;
         }

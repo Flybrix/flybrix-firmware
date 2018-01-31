@@ -1,11 +1,11 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
+    *  http://www.flybrix.com
 */
 
 #include "led.h"
-#include "state.h"
+#include "stateFlag.h"
 
 CRGB fade(CRGB color) {
     return color.fadeLightBy(230);
@@ -14,23 +14,21 @@ CRGB fade(CRGB color) {
 // fading is in 256ths : https://github.com/FastLED/FastLED/wiki/Pixel-reference
 LED::States::States()
     : states{
-          LED::StateCase(STATUS_MPU_FAIL, LED::SOLID, fade(CRGB::Black), fade(CRGB::Red), true),
-          LED::StateCase(STATUS_BMP_FAIL, LED::SOLID, fade(CRGB::Red), fade(CRGB::Black), true),
-          LED::StateCase(STATUS_BOOT, LED::SOLID, fade(CRGB::Green)),
-          LED::StateCase(STATUS_RX_FAIL, LED::FLASH, fade(CRGB::Orange)),
-          LED::StateCase(STATUS_FAIL_OTHER, LED::ALTERNATE, fade(CRGB::Blue)),
-          LED::StateCase(STATUS_FAIL_STABILITY, LED::FLASH, fade(CRGB::Black), fade(CRGB::Blue)),
-          LED::StateCase(STATUS_FAIL_ANGLE, LED::FLASH, fade(CRGB::Blue), fade(CRGB::Black)),
-          LED::StateCase(STATUS_OVERRIDE, LED::BEACON, fade(CRGB::Red)),
-          LED::StateCase(STATUS_TEMP_WARNING, LED::FLASH, fade(CRGB::Red)),
-          LED::StateCase(STATUS_BATTERY_LOW, LED::BEACON, fade(CRGB::Orange)),
-          LED::StateCase(STATUS_ENABLING, LED::FLASH, fade(CRGB::Blue)),
-          LED::StateCase(STATUS_ENABLED, LED::BEACON, fade(CRGB::Blue)),
-          LED::StateCase(STATUS_IDLE, LED::BEACON, fade(CRGB::Green)),
+          LED::StateCase(Status::MPU_FAIL, LED::SOLID, fade(CRGB::Black), fade(CRGB::Red), true),
+          LED::StateCase(Status::BMP_FAIL, LED::SOLID, fade(CRGB::Red), fade(CRGB::Black), true),
+          LED::StateCase(Status::BOOT, LED::SOLID, fade(CRGB::Green)),
+          LED::StateCase(Status::RX_FAIL, LED::FLASH, fade(CRGB::Orange)),
+          LED::StateCase(Status::FAIL_OTHER, LED::ALTERNATE, fade(CRGB::Blue)),
+          LED::StateCase(Status::FAIL_STABILITY, LED::FLASH, fade(CRGB::Black), fade(CRGB::Blue)),
+          LED::StateCase(Status::FAIL_ANGLE, LED::FLASH, fade(CRGB::Blue), fade(CRGB::Black)),
+          LED::StateCase(Status::OVERRIDE, LED::BEACON, fade(CRGB::Red)),
+          LED::StateCase(Status::TEMP_WARNING, LED::FLASH, fade(CRGB::Red)),
+          LED::StateCase(Status::BATTERY_LOW, LED::BEACON, fade(CRGB::Orange)),
+          LED::StateCase(Status::ENABLING, LED::FLASH, fade(CRGB::Blue)),
+          LED::StateCase(Status::ENABLED, LED::BEACON, fade(CRGB::Blue)),
+          LED::StateCase(Status::IDLE, LED::BEACON, fade(CRGB::Green)),
       } {
 }
-
-void (*LEDFastUpdate)(){nullptr};
 
 namespace {
 class LEDDriver {
@@ -71,26 +69,7 @@ inline uint8_t scaleLight(uint8_t light, uint8_t scale) {
 LEDDriver::LEDDriver() {
     setColor(CRGB::Black);
     setPattern(LED::SOLID);
-#ifndef ALPHA
     FastLED.addLeds<WS2812B, board::led::DATA_PIN>(leds, board::led::COUNT);
-#else
-    pinMode(board::LED_A_RED, OUTPUT);
-    pinMode(board::LED_A_GRN, OUTPUT);
-    pinMode(board::LED_A_BLU, OUTPUT);
-    pinMode(board::LED_B_RED, OUTPUT);
-    pinMode(board::LED_B_GRN, OUTPUT);
-    pinMode(board::LED_B_BLU, OUTPUT);
-    LEDFastUpdate = []() {
-        static uint8_t cycle;
-        uint8_t threshold = scrambleCycle(++cycle);
-        digitalWriteFast(board::LED_A_RED, (scaleLight(LED_driver.leds[0].red, LED_driver.scale) > threshold) ? LOW : HIGH);
-        digitalWriteFast(board::LED_B_RED, (scaleLight(LED_driver.leds[1].red, LED_driver.scale) > threshold) ? LOW : HIGH);
-        digitalWriteFast(board::LED_A_GRN, (scaleLight(LED_driver.leds[0].green, LED_driver.scale) > threshold) ? LOW : HIGH);
-        digitalWriteFast(board::LED_B_GRN, (scaleLight(LED_driver.leds[1].green, LED_driver.scale) > threshold) ? LOW : HIGH);
-        digitalWriteFast(board::LED_A_BLU, (scaleLight(LED_driver.leds[0].blue, LED_driver.scale) > threshold) ? LOW : HIGH);
-        digitalWriteFast(board::LED_B_BLU, (scaleLight(LED_driver.leds[1].blue, LED_driver.scale) > threshold) ? LOW : HIGH);
-    };
-#endif
 }
 
 uint8_t LEDDriver::getCycleIndex() const {
@@ -106,9 +85,7 @@ inline bool isInside(const board::led::Position& p, const board::led::Position& 
 }
 
 void LEDDriver::setColor(CRGB color, board::led::Position lower_left, board::led::Position upper_right) {
-#ifndef ALPHA
     color = CRGB(color.green, color.red, color.blue);
-#endif
     for (size_t idx = 0; idx < board::led::COUNT; ++idx) {
         if (!isInside(board::led::POSITION[idx], lower_left, upper_right))
             continue;
@@ -137,12 +114,7 @@ void LEDDriver::update() {
     writeToDisplay();
     if (!hasChanges)
         return;
-#ifndef ALPHA
     FastLED.show(scale);
-#else
-    if (LEDFastUpdate)
-        LEDFastUpdate();
-#endif
     hasChanges = false;
 }
 
@@ -209,7 +181,7 @@ void LEDDriver::writeToDisplay() {
 }
 }  // namespace
 
-LED::LED(State* __state) : state(__state) {
+LED::LED(StateFlag& flag) : flag_(flag) {
     // indicator leds are not inverted
     pinMode(board::GREEN_LED, OUTPUT);
     pinMode(board::RED_LED, OUTPUT);
@@ -236,8 +208,8 @@ void LED::set(Pattern pattern, CRGB color, bool red_indicator, bool green_indica
 }
 
 void LED::update() {
-    if (!override && oldStatus != state->status) {
-        oldStatus = state->status;
+    if (!override && oldStatus != flag_.value()) {
+        oldStatus = flag_.value();
         changeLights();
     }
     if (LED_driver.getPattern() == LED::ALTERNATE && !(LED_driver.getCycleIndex() & 15)) {
@@ -281,7 +253,7 @@ void LED::setWhite(board::led::Position lower_left, board::led::Position upper_r
 
 void LED::changeLights() {
     for (const StateCase& s : states.states) {
-        if (!s.status || state->is(s.status)) {
+        if (!s.status || flag_.is(s.status)) {
             use(s.pattern, s.color_right_front.crgb(), s.color_right_back.crgb(), s.color_left_front.crgb(), s.color_left_back.crgb(), s.indicator_red, s.indicator_green);
             return;
         }
@@ -290,7 +262,7 @@ void LED::changeLights() {
 }
 
 void LED::parseConfig() {
-    oldStatus = ~state->status;
+    oldStatus = ~flag_.value();
     update();
 }
 

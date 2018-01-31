@@ -1,49 +1,57 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
-
-    <power.h/cpp>
-
-    Power monitoring using ADC inputs.
-
+    *  http://www.flybrix.com
 */
 
 #ifndef power_h
 #define power_h
-#include "Arduino.h"
+#include <Arduino.h>
 #include <ADC.h>
-
-class State;
 
 class PowerMonitor {
    public:
-    PowerMonitor(State* state);
+    PowerMonitor();
 
-    void measureRawLevels();
+    void updateLevels();
 
-    float getTotalPower();
+    float totalPower() const;
     // battery power in mW
 
-    float getElectronicsPower();
+    float electronicsPower() const;
     // electronics power in mW
 
-    float getV0();
+    uint16_t rawV0() const {
+        return V0_;
+    }
+
+    uint16_t rawI0() const {
+        return I0_;
+    }
+
+    uint16_t rawI1() const {
+        return I1_;
+    }
+
+    float V0() const;
     // measured at battery input terminal in V
 
-    float getI0();
+    float I0() const;
     // total current from battery in mA
 
-    float getI1();
+    float I1() const;
     // electronics load current in mA; assume DC/DC output voltage is 3.6V
 
    private:
-    State* state;
     ADC adc;
 
     uint16_t getV0Raw();
     uint16_t getI0Raw();
     uint16_t getI1Raw();
+
+    uint16_t V0_;
+    uint16_t I0_;
+    uint16_t I1_;
 
 };  // class PowerMonitor
 

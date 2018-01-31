@@ -1,23 +1,14 @@
-#include "devicename.h"
+/*
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
+    *
+    *  http://www.flybrix.com
+*/
 
-#include "Arduino.h"
+#include "devicename.h"
 
 #include "debug.h"
 
-DeviceName::DeviceName() : DeviceName("FLYBRIX") {
-}
-
-DeviceName::DeviceName(const String& name) {
-    std::size_t l{name.length()};
-    if (l > 8) {
-        l = 8;
-    }
-    for (std::size_t i{0}; i < l; ++i) {
-        value[i] = name.charAt(i);
-    }
-    for (std::size_t i{l}; i < MAX_NAME_LENGTH + 1; ++i) {
-        value[i] = 0;
-    }
+DeviceName::DeviceName() : value{"FLYBRIX"} {
 }
 
 bool badChar(char c);
@@ -25,6 +16,7 @@ bool badChar(char c);
 bool DeviceName::verify() const {
     if (!value[0]) {
         DebugPrint("Name cannot be empty");
+        return false;
     }
     for (char c : value) {
         if (badChar(c)) {

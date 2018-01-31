@@ -1,12 +1,7 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
-
-    <led.h/cpp>
-
-    Manages all leds.
-
+    *  http://www.flybrix.com
 */
 
 #ifndef led_h
@@ -18,9 +13,7 @@
 
 #include "board.h"
 
-class State;
-
-extern void (*LEDFastUpdate)();
+class StateFlag;
 
 class LED {
    public:
@@ -33,7 +26,7 @@ class LED {
         SOLID = 5,
     };
 
-    explicit LED(State* state);
+    explicit LED(StateFlag& flag);
 
     void update();
 
@@ -115,7 +108,7 @@ class LED {
     void indicatorRedOff();
     void indicatorGreenOff();
 
-    State* state;
+    StateFlag& flag_;
     uint16_t oldStatus{0};
     bool override{false};
 

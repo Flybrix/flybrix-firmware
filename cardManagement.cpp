@@ -1,36 +1,32 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
-
-    <cardManagement.h/cpp>
-
-    General interaction with the SD card, in the forms of logging or reading.
+    *  http://www.flybrix.com
 */
 
 #include "cardManagement.h"
 
 #include <SPI.h>
 #include <SdFat.h>
-#include <SdFatUtil.h>
 #include <cstdio>
 #include "board.h"
 #include "debug.h"
+#include "loop_stopper.h"
 #include "version.h"
-
-#ifdef ALPHA
-#define SKIP_SD
-#endif
 
 namespace sdcard {
 namespace {
+State card_state{State::Closed};
+
 SdFat sd;
-bool locked = false;
 
 bool openSDHardwarePort() {
 #ifdef SKIP_SD
     return false;
 #else
+    SPI.setMOSI(7);
+    SPI.setMISO(8);
+    SPI.setSCK(14);
     bool opened = sd.begin(board::spi::SD_CARD, SPI_FULL_SPEED);
     if (!opened)
         DebugPrint("Failed to open connection to SD card!");
@@ -42,8 +38,34 @@ bool openSD() {
     static bool sd_open{openSDHardwarePort()};
     return sd_open;
 }
+}  // namespace
+
+void startup() {
+    loops::Stopper _stopper;
+    openSD();
+}
+
+State getState() {
+    return card_state;
+}
+
+namespace writing {
+namespace {
 
 SdBaseFile binFile;
+
+bool isWriting() {
+    return card_state == State::WriteStates || card_state == State::WriteCommands;
+}
+
+struct SenseCloseIIFE {
+    ~SenseCloseIIFE() {
+        if (!binFile.isOpen() && isWriting()) {
+            card_state = State::Closed;
+        }
+    };
+};
+
 uint32_t bgnBlock, endBlock;
 uint8_t* cache;
 
@@ -111,6 +133,7 @@ uint8_t* WritingBuffer::popBlock() {
 }
 
 bool openFileHelper(const char* filename) {
+    SenseCloseIIFE close_iife;
     binFile.close();
     if (!binFile.createContiguous(sd.vwd(), filename, 512 * FILE_BLOCK_COUNT))
         return false;
@@ -141,9 +164,11 @@ bool openFileHelper(const char* filename) {
 }
 
 bool openFile(const char* base_name) {
-    if (!openSD())
+    SenseCloseIIFE close_iife;
+    if (card_state != State::Closed) {
         return false;
-    if (binFile.isOpen())
+    }
+    if (!openSD())
         return false;
     char file_dir[64];
     char filename[64];
@@ -158,20 +183,23 @@ bool openFile(const char* base_name) {
         // Look for the first non-existing filename of the format /<A>_<B>_<C>/<base_name>_<idx>.bin
         if (!sd.exists(filename)) {
             bool success = openFileHelper(filename);
-            if (!success)
+            if (success) {
+                card_state = sdcard::State::WriteStates;
+            } else {
                 DebugPrintf("Failed to open file %s on SD card!", filename);
+            }
+
             return success;
         }
     }
     return false;
 }
+
+bool locked = false;
 }  // namespace
 
-void startup() {
-    openSD();
-}
-
-void openFile() {
+void open() {
+    loops::Stopper _stopper;
     if (locked)
         return;
     if (!openSD())
@@ -179,14 +207,10 @@ void openFile() {
     openFile("st");
 }
 
-bool isOpen() {
-    return binFile.isOpen();
-}
-
 void write(const uint8_t* data, size_t length) {
     if (!openSD())
         return;
-    if (!binFile.isOpen())
+    if (!isWriting())
         return;
     if (block_number == FILE_BLOCK_COUNT)
         return;
@@ -201,13 +225,17 @@ void write(const uint8_t* data, size_t length) {
     block_number++;
 }
 
-void closeFile() {
+void close() {
+    loops::Stopper _stopper;
+    SenseCloseIIFE close_iife;
+    if (!isWriting()) {
+        return;
+    }
     if (locked)
         return;
     if (!openSD())
         return;
-    if (!binFile.isOpen())
-        return;
+
     if (!sd.card()->writeStop()) {
         DebugPrint("Write stop failed");
         return;
@@ -230,4 +258,60 @@ void setLock(bool enable) {
 bool isLocked() {
     return locked;
 }
+}  // namespace writing
+
+namespace reading {
+namespace {
+File read_file;
+
+bool isReading() {
+    return card_state == State::ReadCommands;
+}
+
+struct SenseCloseIIFE {
+    ~SenseCloseIIFE() {
+        if (!read_file.isOpen() && isReading()) {
+            card_state = State::Closed;
+        }
+    };
+};
+}  // namespace
+
+void open() {
+    loops::Stopper _stopper;
+    if (!openSD()) {
+        return;
+    }
+    if (read_file) {
+        return;
+    }
+    read_file = sd.open("commands.bin");
+    if (!read_file) {
+        return;
+    }
+    card_state = State::ReadCommands;
+}
+
+void close() {
+    loops::Stopper _stopper;
+    SenseCloseIIFE close_iife;
+    if (!isReading()) {
+        return;
+    }
+    if (!openSD()) {
+        return;
+    }
+    read_file.close();
+    DebugPrint("File closing successful");
+}
+
+bool hasMore() {
+    return read_file.available();
+}
+
+char read() {
+    return read_file.read();
+}
+}  // namespace reading
+
 }  // namespace sdcard

@@ -1,40 +1,37 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
-
-    <MPU9250.h/cpp>
-
-    Driver code for our inertial sensor.
-
+    *  http://www.flybrix.com
 */
 
 #ifndef MPU9250_h
 #define MPU9250_h
 
+#include <functional>
 #include "Arduino.h"
-#include "i2cManager.h"
-
-class State;
+#include "utility/vector3.h"
 
 // we have three coordinate systems here:
 // 1. REGISTER coordinates: native values as read
 // 2. IC/PCB coordinates: matches FLYER system if the pcb is in standard orientation
 // 3. FLYER coordinates: if the pcb is mounted in a non-standard way the FLYER system is a rotation of the IC/PCB system
 
-class MPU9250 : public CallbackProcessor {
-   public:  // all in FLYER system
-    MPU9250(State *state, I2CManager *i2c);
+class MPU9250 {
+   public:
+    MPU9250();
 
     void restart();  // calculate bias and prepare for flight
 
     bool ready;
 
-    void correctBiasValues();  // set bias values from state
+    // set bias values from state
+    void correctBiasValues(const Vector3<float>& accel_filter, const Vector3<float>& gyro_filter);
     void forgetBiasValues();  // discard bias values
 
-    bool startMeasurement();
-    void triggerCallback();  // handles return for getAccelGryo()
+    // Callback parameters:
+    // linear acceleration in g's -- (x,y,z)
+    // angular velocity in deg/sec -- (x,y,z)
+    bool startMeasurement(std::function<void(Vector3<float>, Vector3<float>)> on_success);
 
     float getTemp() {
         return (float)temperatureCount[0] / 333.87 + 21.0;
@@ -45,25 +42,21 @@ class MPU9250 : public CallbackProcessor {
     void setFilters(uint8_t gyrofilter, uint8_t accelfilter);
 
    private:
-    State *state;
-    I2CManager *i2c;
+    void triggerCallback(std::function<void(Vector3<float>, Vector3<float>)> on_success);
 
     bool dataReadyInterrupt();  // check interrupt
     uint8_t getStatusByte();
 
-    void rotate(float R[3][3], float x[3]);
-
     void reset();
     void configure();  // set up filters and resolutions for flight
 
-    float invSqrt(float x);
     const float aRes = 8.0 / 32768.0;     // +/- 8g
     const float gRes = 1000.0 / 32768.0;  // +/- 1000 deg/s
 
     // 16-bit raw values, bias correction, factory calibration
     int16_t temperatureCount[1] = {0};
-    int16_t gyroCount[3] = {0, 0, 0}, accelCount[3] = {0, 0, 0};
-    float gyroBias[3] = {0.0, 0.0, 0.0}, accelBias[3] = {0.0, 0.0, 0.0};
+    Vector3<int16_t> gyroCount = {0, 0, 0}, accelCount = {0, 0, 0};
+    Vector3<float> gyroBias = {0.0, 0.0, 0.0}, accelBias = {0.0, 0.0, 0.0};
 
     // buffers for processCallback
     uint8_t data_to_read[14];

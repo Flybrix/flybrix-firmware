@@ -1,20 +1,16 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
+    *  http://www.flybrix.com
 
-    <R415X.h/cpp>
-
-    Uses a timer to receive data from the Orange R415X receiver module.
-
+    Uses a timer to receive data from a 6 channel cPPM output.
 */
 
 #ifndef R415X_h
 #define R415X_h
 
 #include "Arduino.h"
-
-class State;
+#include "utility/rcHelpers.h"
 
 class PPMchannel {
    public:
@@ -65,7 +61,10 @@ class PPMchannel {
 class R415X {
    public:
     R415X();
-    void getCommandData(State* state);
+    RcState query();
+
+    static constexpr uint8_t recovery_rate{1};
+    static constexpr uint8_t refresh_delay_tolerance{1};
 
     struct __attribute__((packed)) ChannelProperties {
         ChannelProperties();
@@ -79,6 +78,22 @@ class R415X {
     static_assert(sizeof(ChannelProperties) == 6 + 1 + 6 * 2 * 2, "Data is not packed");
 
    private:
+    // Detects in-flight failure by noticing a pattern that is impossible to perform by hand:
+    // * RC sending both an arming AUX and a nonzero throttle
+    // * Next frame we send disarm and a zero throttle
+    // Perfect frame timing would need the operator to intentionally time things down to 10ms
+    // Since that will not happen while normally operating the device, we know that this
+    // happens only when R415X switches to default
+    class ErrorTracker final {
+       public:
+        bool check(const RcCommand&);
+        void reportFailure();
+
+       private:
+        bool was_legal_{false};
+        bool was_flying_{false};
+    } error_tracker_;
+
     PPMchannel throttle;
     PPMchannel pitch;
     PPMchannel roll;

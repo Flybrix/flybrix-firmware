@@ -1,11 +1,7 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
-
-    <serial.h/cpp>
-
-    Serial data transfers are encoded as packets using COBS. Data is parsed assuming a known byte order according to an inclusion bitmask.
+    *  http://www.flybrix.com
 */
 
 #ifndef serial_h
@@ -13,18 +9,53 @@
 
 #include <Arduino.h>
 #include "cobs.h"
+#include "utility/rcHelpers.h"
+#include "R415X.h"
 
+class BMP280;
 class PilotCommand;
 class Control;
 class LED;
 class State;
+class StateFlag;
+class Imu;
+class Autopilot;
 struct Systems;
+struct PowerMonitor;
+struct ControlVectors;
+struct RcSources;
 
 using CobsPayloadGeneric = CobsPayload<1000>;  // impacts memory use only; packet size should be <= client packet size
 
 static constexpr uint32_t FLAG(uint8_t field) {
     return uint32_t{1} << field;
 }
+
+class SerialRc final {
+   public:
+    RcState query() {
+        RcStatus status = fresh_ ? RcStatus::Ok : RcStatus::Timeout;
+        fresh_ = false;
+        return {status, command_};
+    }
+    void update(uint8_t auxmask, uint16_t throttle, uint16_t pitch, uint16_t roll, uint16_t yaw) {
+        command_.parseAuxMask(auxmask);
+        command_.throttle = throttle;
+        command_.pitch = pitch;
+        command_.roll = roll;
+        command_.yaw = yaw;
+        fresh_ = true;
+    }
+    void clear() {
+        fresh_ = false;
+    }
+    static constexpr uint8_t recovery_rate{20};
+    static constexpr uint8_t refresh_delay_tolerance{40};
+
+   private:
+    bool fresh_{false};
+    RcCommand command_;
+};
 
 class SerialComm {
    public:
@@ -35,12 +66,13 @@ class SerialComm {
         Timelog = 2,
         DebugString = 3,
         HistoryData = 4,
+        AutopilotWait = 254,
     };
 
     enum Commands : uint8_t;
     enum States : uint8_t;
 
-    explicit SerialComm(State* state, const volatile uint16_t* ppm, const Control* control, Systems* systems, LED* led, PilotCommand* command);
+    SerialComm(Systems& systems, const volatile uint16_t* ppm);
 
     void Read();
 
@@ -61,17 +93,27 @@ class SerialComm {
     template <uint8_t I>
     inline void readSubstate(CobsPayloadGeneric& payload) const;
 
-   private:
-    void ProcessData(CobsReaderBuffer& data_input);
+    void ProcessData(CobsReaderBuffer& data_input, bool allow_response);
 
+   private:
     uint16_t PacketSize(uint32_t mask) const;
 
-    State* state;
+    const State& state_;
     const volatile uint16_t* ppm;
-    const Control* control;
-    Systems* systems;
-    LED* led;
-    PilotCommand* command;
+    const Control& control_;
+    Systems& systems_;
+    LED& led_;
+    const BMP280& bmp_;
+    Imu& imu_;
+    StateFlag& flag_;
+    PilotCommand& pilot_;
+    PowerMonitor& pwr_;
+    RcCommand& command_vector_;
+    RcMux<SerialRc, R415X>& rc_mux_;
+    SerialRc& serial_rc_;
+    Autopilot& autopilot_;
+    ControlVectors& control_vectors_;
+
     uint16_t send_state_delay{1001};  // anything over 1000 turns off state messages
     uint16_t sd_card_state_delay{2};  // write to SD at the highest rate by default
     uint32_t state_mask{0x7fffff};

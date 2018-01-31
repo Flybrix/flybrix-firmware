@@ -1,13 +1,11 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
+    *  http://www.flybrix.com
 */
 
 #include "R415X.h"
-
 #include "board.h"
-#include "state.h"
 #include "debug.h"
 
 // RX -- PKZ3341 sends: RHS left/right, RHS up/down, LHS up/down, LHS
@@ -106,16 +104,34 @@ extern "C" void ftm1_isr(void) {
     startPulse = stopPulse;  // Save time at pulse start
 }
 
-void R415X::getCommandData(State* state) {
+bool R415X::ErrorTracker::check(const RcCommand& command) {
+    bool armed{command.aux1 == RcCommand::AUX::Low};
+    bool nonzero_throttle{command.throttle > 0};
+    bool is_legal{armed || nonzero_throttle};
+    if (was_legal_ && !was_flying_) {
+        is_legal = true;
+    }
+    was_legal_ = is_legal;
+    was_flying_ = armed && nonzero_throttle;
+    return is_legal;
+}
+
+void R415X::ErrorTracker::reportFailure() {
+    was_legal_ = false;
+}
+
+RcState R415X::query() {
+    RcState rc_state;
     cli();  // disable interrupts
 
     // if R415X is working, we should never see anything less than 900!
     for (uint8_t i = 0; i < RC_CHANNEL_COUNT; i++) {
         if (RX[i] < 900) {
             // tell state that R415X is not ready and return
-            state->command_source_mask &= ~COMMAND_READY_R415X;
-            sei();   // enable interrupts
-            return;  // don't load bad data into state
+            sei();  // enable interrupts
+            rc_state.status = RcStatus::Timeout;
+            error_tracker_.reportFailure();
+            return rc_state;
         }
     }
 
@@ -145,25 +161,10 @@ void R415X::getCommandData(State* state) {
 
     sei();  // enable interrupts
 
-    // tell state R415X is working and translate PPMChannel data into the four command level and aux mask
-    state->command_source_mask |= COMMAND_READY_R415X;
+    // Translate PPMChannel data into the four command level and aux mask
+    rc_state.status = RcStatus::Ok;
 
-    state->command_AUX_mask = 0x00;  // reset the AUX mode bitmask
-    // bitfield order is {AUX1_low, AUX1_mid, AUX1_high, AUX2_low, AUX2_mid, AUX2_high, x, x} (LSB-->MSB)
-    if (AUX1.isLow()) {
-        state->command_AUX_mask |= (1 << 0);
-    } else if (AUX1.isMid()) {
-        state->command_AUX_mask |= (1 << 1);
-    } else if (AUX1.isHigh()) {
-        state->command_AUX_mask |= (1 << 2);
-    }
-    if (AUX2.isLow()) {
-        state->command_AUX_mask |= (1 << 3);
-    } else if (AUX2.isMid()) {
-        state->command_AUX_mask |= (1 << 4);
-    } else if (AUX2.isHigh()) {
-        state->command_AUX_mask |= (1 << 5);
-    }
+    rc_state.command.parseBools(AUX1.isLow(), AUX1.isMid(), AUX1.isHigh(), AUX2.isLow(), AUX2.isMid(), AUX2.isHigh());
 
     // in some cases it is impossible to get a ppm channel to be close enought to the midpoint (~1500 usec) because the controller trim is too coarse to correct a small error
     // we get around this by creating a small dead zone around the midpoint of signed channel, specified in usec units
@@ -173,8 +174,14 @@ void R415X::getCommandData(State* state) {
 
     uint16_t throttle_threshold = ((throttle.max - throttle.min) / 10) + throttle.min;  // keep bottom 10% of throttle stick to mean 'off'
 
-    state->command_throttle = constrain((throttle.val - throttle_threshold) * 4095 / (throttle.max - throttle_threshold), 0, 4095);
-    state->command_pitch = constrain((1 - 2 * ((channel.inversion >> 1) & 1)) * (pitch.val - pitch.mid) * 4095 / (pitch.max - pitch.min), -2047, 2047);
-    state->command_roll = constrain((1 - 2 * ((channel.inversion >> 2) & 1)) * (roll.val - roll.mid) * 4095 / (roll.max - roll.min), -2047, 2047);
-    state->command_yaw = constrain((1 - 2 * ((channel.inversion >> 3) & 1)) * (yaw.val - yaw.mid) * 4095 / (yaw.max - yaw.min), -2047, 2047);
+    rc_state.command.throttle = constrain((throttle.val - throttle_threshold) * 4095 / (throttle.max - throttle_threshold), 0, 4095);
+    rc_state.command.pitch = constrain((1 - 2 * ((channel.inversion >> 1) & 1)) * (pitch.val - pitch.mid) * 4095 / (pitch.max - pitch.min), -2047, 2047);
+    rc_state.command.roll = constrain((1 - 2 * ((channel.inversion >> 2) & 1)) * (roll.val - roll.mid) * 4095 / (roll.max - roll.min), -2047, 2047);
+    rc_state.command.yaw = constrain((1 - 2 * ((channel.inversion >> 3) & 1)) * (yaw.val - yaw.mid) * 4095 / (yaw.max - yaw.min), -2047, 2047);
+
+    if (!error_tracker_.check(rc_state.command)) {
+        rc_state.status = RcStatus::Timeout;
+    }
+
+    return rc_state;
 }

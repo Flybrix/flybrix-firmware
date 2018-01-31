@@ -1,3 +1,9 @@
+/*
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
+    *
+    *  http://www.flybrix.com
+*/
+
 #ifndef COBS_H
 #define COBS_H
 
@@ -46,7 +52,7 @@ class CobsReader final {
             buffer_length = cobsDecode(buffer, buffer);
             if (!buffer_length)
                 buffer[0] = 1;
-            for (int i = 1; i < buffer_length; ++i)
+            for (std::size_t i = 1; i < buffer_length; ++i)
                 buffer[0] ^= buffer[i];
             // It is done only if the check results in a zero
             if (!buffer[0]) {
@@ -54,6 +60,18 @@ class CobsReader final {
                 done = true;
             }
         }
+    }
+
+    template <class T>
+    bool PeekInto(T& data) {
+        if (!CanContain<T>())
+            return false;
+        uint8_t* v_begin{(uint8_t*)&data};
+        uint8_t* v_end{v_begin + sizeof(T)};
+        const uint8_t* buffer_pointer{buffer + output_start};
+        while (v_begin < v_end)
+            *v_begin++ = *buffer_pointer++;
+        return true;
     }
 
     template <class T>
