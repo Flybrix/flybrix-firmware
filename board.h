@@ -67,6 +67,12 @@ enum PositionSimpleName : int8_t {
     RIGHT = 1,
 };
 struct Position {
+    static constexpr Position Min() {
+        return Position{-128, -128};
+    }
+    static constexpr Position Max() {
+        return Position{127, 127};
+    }
     int8_t x;  // left < 0 < right
     int8_t y;  // back < 0 < front
 };

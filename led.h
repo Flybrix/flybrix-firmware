@@ -36,7 +36,8 @@ class LED {
     void set(Pattern pattern, CRGB color_right, CRGB color_left, bool red_indicator, bool green_indicator);
     void set(Pattern pattern, CRGB color, bool red_indicator = false, bool green_indicator = false);
 
-    void setWhite(board::led::Position lower_left = {-128, -128}, board::led::Position upper_right = {127, 127}, bool red_indicator = false, bool green_indicator = false);
+    void setWhite(board::led::Position lower_left = board::led::Position::Min(), board::led::Position upper_right = board::led::Position::Max(), bool red_indicator = false,
+                  bool green_indicator = false, uint8_t fading = 0);
 
     struct __attribute__((packed)) Color {
         Color() : Color(CRGB::Black) {
