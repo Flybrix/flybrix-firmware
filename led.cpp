@@ -7,8 +7,12 @@
 #include "led.h"
 #include "state.h"
 
-CRGB fade(CRGB color) {
-    return color.fadeLightBy(230);
+inline CRGB fadeBy(CRGB color, uint8_t amount) {
+    return color.fadeLightBy(amount);
+}
+
+inline CRGB fade(CRGB color) {
+    return fadeBy(color, 230);
 }
 
 // fading is in 256ths : https://github.com/FastLED/FastLED/wiki/Pixel-reference
@@ -268,7 +272,7 @@ void LED::use(Pattern pattern, CRGB color_right_front, CRGB color_right_back, CR
     LED_driver.setColor(color_left_back, {-128, -128}, {0, 0});
 }
 
-void LED::setWhite(board::led::Position lower_left, board::led::Position upper_right, bool red_indicator, bool green_indicator) {
+void LED::setWhite(board::led::Position lower_left, board::led::Position upper_right, bool red_indicator, bool green_indicator, uint8_t fading) {
     color_right_front = color_right_back = color_left_front = color_left_back = CRGB::Black;
     override = true;
     oldStatus = 0;
@@ -276,7 +280,7 @@ void LED::setWhite(board::led::Position lower_left, board::led::Position upper_r
     green_indicator ? indicatorGreenOn() : indicatorGreenOff();
     LED_driver.setPattern(LED::SOLID);
     LED_driver.setColor(CRGB::Black);
-    LED_driver.setColor(CRGB::White, lower_left, upper_right);
+    LED_driver.setColor(fadeBy(CRGB::White, fading), lower_left, upper_right);
 }
 
 void LED::changeLights() {

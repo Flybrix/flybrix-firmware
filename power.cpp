@@ -16,17 +16,17 @@ PowerMonitor::PowerMonitor(State* __state) {
     pinMode(board::I0_DETECT, INPUT);
     pinMode(board::I1_DETECT, INPUT);
 
-    adc.setReference(ADC_REF_1V2, ADC_0);
-    adc.setAveraging(1, ADC_0);                     // set number of averages
-    adc.setResolution(16, ADC_0);                   // set bits of resolution
-    adc.setConversionSpeed(ADC_HIGH_SPEED, ADC_0);  // change the conversion speed
-    adc.setSamplingSpeed(ADC_HIGH_SPEED, ADC_0);    // change the sampling speed
+    adc.setReference(ADC_REFERENCE::REF_1V2, ADC_0);
+    adc.setAveraging(1, ADC_0);                                       // set number of averages
+    adc.setResolution(16, ADC_0);                                     // set bits of resolution
+    adc.setConversionSpeed(ADC_CONVERSION_SPEED::HIGH_SPEED, ADC_0);  // change the conversion speed
+    adc.setSamplingSpeed(ADC_SAMPLING_SPEED::HIGH_SPEED, ADC_0);      // change the sampling speed
 
     adc.setReference(BOARD_ADC_REF, ADC_1);
-    adc.setAveraging(1, ADC_1);                     // set number of averages
-    adc.setResolution(16, ADC_1);                   // set bits of resolution
-    adc.setConversionSpeed(ADC_HIGH_SPEED, ADC_1);  // change the conversion speed
-    adc.setSamplingSpeed(ADC_HIGH_SPEED, ADC_1);    // change the sampling speed
+    adc.setAveraging(1, ADC_1);                                       // set number of averages
+    adc.setResolution(16, ADC_1);                                     // set bits of resolution
+    adc.setConversionSpeed(ADC_CONVERSION_SPEED::HIGH_SPEED, ADC_1);  // change the conversion speed
+    adc.setSamplingSpeed(ADC_SAMPLING_SPEED::HIGH_SPEED, ADC_1);      // change the sampling speed
 }
 
 void PowerMonitor::measureRawLevels(void) {

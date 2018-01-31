@@ -46,7 +46,7 @@ class CobsReader final {
             buffer_length = cobsDecode(buffer, buffer);
             if (!buffer_length)
                 buffer[0] = 1;
-            for (int i = 1; i < buffer_length; ++i)
+            for (std::size_t i = 1; i < buffer_length; ++i)
                 buffer[0] ^= buffer[i];
             // It is done only if the check results in a zero
             if (!buffer[0]) {

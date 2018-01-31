@@ -14,23 +14,21 @@
 #include "motors.h"
 #include "state.h"
 
-void runTestRoutine(State& state, LED& led, Motors& motors, size_t led_id, size_t motor_id) {
+void runTestRoutine(State& state, Motors& motors, size_t motor_id) {
     for (auto& motorOut : state.MotorOut) {
         motorOut = 0;
     }
     state.MotorOut[motor_id] = 4095;
     motors.updateAllChannels();
-    led.setWhite(board::led::POSITION[led_id], board::led::POSITION[led_id], led_id % 2 == 0, led_id % 2 == 1);
-    led.update();
 }
 
 void runTestMode(State& state, LED& led, Motors& motors) {
     state.set(STATUS_ENABLED);
-    size_t led_id{0};
     size_t motor_id{0};
+    led.setWhite(board::led::Position::Min(), board::led::Position::Max(), true, true, 250);
+    led.update();
     while (true) {
-        runTestRoutine(state, led, motors, led_id, motor_id);
-        led_id = (led_id + 1) % 4;
+        runTestRoutine(state, motors, motor_id);
         motor_id = (motor_id + 1) % 8;
         delay(500);
     }
