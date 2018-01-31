@@ -193,16 +193,16 @@ bool printTasks() {
     if (usb_mode::get() != usb_mode::PERFORMANCE_REPORT) {
         return false;
     }
-    Serial.println("Performance report:");
+    Serial.println("Performance report (Hz and ms):");
     for (size_t i = 0; i < TASK_COUNT; ++i) {
         TaskRunner& task = tasks[i];
         if (!task.log_count) {
             continue;
         }
         float rate = (task.log_count * 1000000.0f) / (task.delay_track.value_sum + task.duration_track.value_sum + task.desired_interval_us);
-        Serial.printf("[%s] rate: %7.2f delay: %7.2f %7.2f %7.2f duration: %7.2f %7.2f %7.2f\n", task_names[i], rate, task.delay_track.value_min / 1000000.0f,
-                      task.delay_track.value_sum / (1000000.0f * task.log_count), task.delay_track.value_max / 1000000.0f, task.duration_track.value_min / 1000000.0f,
-                      task.duration_track.value_sum / (1000000.0f * task.log_count), task.duration_track.value_max / 1000000.0f);
+        Serial.printf("[%s] rate: %7.2f delay: %7.2f %7.2f %7.2f duration: %7.2f %7.2f %7.2f\n", task_names[i], rate, task.delay_track.value_min / 1000.0f,
+                      task.delay_track.value_sum / (1000.0f * task.log_count), task.delay_track.value_max / 1000.0f, task.duration_track.value_min / 1000.0f,
+                      task.duration_track.value_sum / (1000.0f * task.log_count), task.duration_track.value_max / 1000.0f);
     }
     return true;
 }
