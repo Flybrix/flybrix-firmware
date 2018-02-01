@@ -76,42 +76,48 @@ struct Bluetooth {
     void setBluetoothUart(const DeviceName& name);
 
     bool read() {
+        size_t length{0};
         while (Serial1.available()) {
             bytes_received++;
+            length++;
             char c = Serial1.read();
-            
-            //Serial.write((c<0x10) ? "RCVD: 0x0" : "RCVD: 0x");
-            //Serial.print(c, HEX);
-            //Serial.println();
+
+            /*
+            Serial.write((c<0x10) ? "READ: 0x0" : "READ: 0x");
+            Serial.print(c, HEX);
+            Serial.println();
+            */
             
             data_input.AppendToBuffer(c);
-            if (data_input.IsDone())
+            if (data_input.IsDone()) {
+                //Serial.write("{+] READ: ");
+                //Serial.println(length, DEC);
                 return true;
+            }
         }
+        /*
+        if (length>0) {
+            Serial.write("[-] READ: ");
+            Serial.println(length, DEC);
+        }
+        */
         return false;
     }
 
     void write(uint8_t* data, size_t length) {
-        /*
         bytes_sent += length;
         data_output.push(data, length);
-        */
-        constexpr size_t UART_CHUNK_SIZE = 20; // Serial1's buffer is 64 bytes
-        size_t i = 0;
-        while ( i < length && i < UART_CHUNK_SIZE) {
+
+        /*
+        Serial.write("BYTES BUFFERED: ");
+        Serial.println(length, DEC);
+        for (size_t i = 0; i < length; i++) {
             uint8_t c = data[i++];
-            Serial1.write(c);
-
-            //Serial.write((c<0x10) ? "SENT: 0x0" : "SENT: 0x");
-            //Serial.print(c, HEX);
-            //Serial.println();
+            Serial.write((c<0x10) ? "BUFFERED: 0x0" : "BUFFERED: 0x");
+            Serial.print(c, HEX);
+            Serial.println();
         }
-        
-
-        bytes_sent += i;
-        if (length > UART_CHUNK_SIZE){
-            write(data + UART_CHUNK_SIZE, length - UART_CHUNK_SIZE);
-        }
+        */
     }
 
     void printStats(){
@@ -123,14 +129,28 @@ struct Bluetooth {
     }
 
     bool flush() {
-        /*
-        size_t l{data_output.hasData()};
-        if (!l) {
+        size_t length{data_output.hasData()};
+        if (!length) {
             return false;
         }
-        Serial1.write(data_output.pop(), l);
+        const uint8_t *data = data_output.pop();
+        Serial1.write(data, length); //put only 20 bytes into FIFO!
+        /*
+        for (; length < 20; length++) {
+            Serial1.write(0); //zero pad
+        }
         */
-        Serial1.flush(); //send now.
+        Serial1.flush(); //force it to send
+        /*
+        Serial.write("BYTES SENT: ");
+        Serial.println(length, DEC);
+        for (size_t i = 0; i < length; i++) {
+            uint8_t c = data[i++];
+            Serial.write((c<0x10) ? "SENT: 0x0" : "SENT: 0x");
+            Serial.print(c, HEX);
+            Serial.println();
+        }
+        */
         return true;
     }
 
@@ -286,7 +306,7 @@ void writeSerialDebug(uint8_t* data, size_t length) {
     // bluetooth.write(data, length);
 }
 
-bool flushBluetoothUART() {
+bool sendBluetoothUART() {
     return bluetooth.flush();
 }
 

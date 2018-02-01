@@ -94,7 +94,7 @@ bool runAutopilot() {
 }
 
 bool flushBluetoothSerial() {
-    return flushBluetoothUART();
+    return sendBluetoothUART();
 }
 
 bool updateControlVectors() {
@@ -159,7 +159,7 @@ TaskRunner tasks[] = {
     {processSerialInput, hzToMicros(200)},          //
     {updateStateEstimate, hzToMicros(200)},         //
     {runAutopilot, hzToMicros(100)},                //
-    {flushBluetoothSerial, 30000 /*usec*/},         //
+    {flushBluetoothSerial, 32000 /*usec*/},         // /* Rigado BMDWare limits us to 20B each 30msec no matter the UART speed */
     {updateControlVectors, hzToMicros(400)},        //
     {processPilotInput, hzToMicros(40)},            //
     {checkBatteryUse, hzToMicros(10)},              //
