@@ -50,6 +50,7 @@ struct Bluetooth {
 
     bool read() {
         while (Serial1.available()) {
+            bytes_received++;
             data_input.AppendToBuffer(Serial1.read());
             if (data_input.IsDone())
                 return true;
@@ -58,7 +59,12 @@ struct Bluetooth {
     }
 
     void write(uint8_t* data, size_t length) {
+        bytes_sent += length;
         data_output.push(data, length);
+    }
+
+    void printStats(){
+        Serial.printf("BT bytes sent/received: %d / %d \n", bytes_sent, bytes_received);
     }
 
     CobsReaderBuffer& buffer() {
@@ -107,8 +113,9 @@ struct Bluetooth {
             if (bufferSize - writerPointer < length)
                 lengthSubtraction = length - (bufferSize - writerPointer);
             length -= lengthSubtraction;
-            for (size_t pos = 0; pos < length; ++pos)
+            for (size_t pos = 0; pos < length; ++pos) {
                 data[writerPointer++] = input_data[pos];
+            }
             if (writerPointer == bufferSize) {
                 writerPointer = 0;
                 push(input_data + length, lengthSubtraction);
@@ -127,6 +134,8 @@ struct Bluetooth {
     size_t writerPosition{0};
     BluetoothBuffer data_output;
     CobsReaderBuffer data_input;
+    uint32_t bytes_sent{0};
+    uint32_t bytes_received{0};    
 };
 
 Bluetooth bluetooth;
@@ -194,4 +203,8 @@ void writeSerial(uint8_t* data, size_t length) {
 
 uint32_t flushSerial(uint32_t times) {
     return bluetooth.flush(times);
+}
+
+void printSerialReport() {
+    bluetooth.printStats();
 }
