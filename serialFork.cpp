@@ -61,6 +61,7 @@ struct Bluetooth {
         Serial1.begin(57600);
         //Serial1.attachRts(6);
         //Serial1.attachCts(20);
+        Serial1.clear();
         
         pinMode(board::bluetooth::RESET, OUTPUT);
         digitalWrite(board::bluetooth::RESET, HIGH);
@@ -78,29 +79,28 @@ struct Bluetooth {
     bool read() {
         size_t length{0};
         while (Serial1.available()) {
+            Serial.write(".");
+            if (length%100 == 0) {
+                Serial.println();
+            }
+           
             bytes_received++;
             length++;
             char c = Serial1.read();
 
-            /*
-            Serial.write((c<0x10) ? "READ: 0x0" : "READ: 0x");
-            Serial.print(c, HEX);
-            Serial.println();
-            */
+            //Serial.write((c<0x10) ? "READ: 0x0" : "READ: 0x");
+            //Serial.print(c, HEX);
+            //Serial.println();
             
             data_input.AppendToBuffer(c);
-            if (data_input.IsDone()) {
-                //Serial.write("{+] READ: ");
-                //Serial.println(length, DEC);
+            bool COBS_ready = data_input.IsDone();
+            if (COBS_ready) {
+                Serial.write("READ: ");
+                Serial.print(length, DEC);
+                Serial.println(COBS_ready ? " --> COBS COMPLETE" : "");
                 return true;
             }
         }
-        /*
-        if (length>0) {
-            Serial.write("[-] READ: ");
-            Serial.println(length, DEC);
-        }
-        */
         return false;
     }
 

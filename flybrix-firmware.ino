@@ -156,10 +156,10 @@ TaskRunner tasks[] = {
     {updateI2C, hzToMicros(800)},                   //
     {updateIndicatorLights, hzToMicros(30)},        //
     {processPressureSensor, hzToMicros(100)},       //
-    {processSerialInput, hzToMicros(200)},          //
+    {processSerialInput, hzToMicros(30)},           //
     {updateStateEstimate, hzToMicros(200)},         //
     {runAutopilot, hzToMicros(100)},                //
-    {flushBluetoothSerial, 32000 /*usec*/},         // /* Rigado BMDWare limits us to 20B each 30msec no matter the UART speed */
+    {flushBluetoothSerial, 35000 /*usec*/},         // /* Rigado BMDWare limits us to 20B each 30msec no matter the UART speed */
     {updateControlVectors, hzToMicros(400)},        //
     {processPilotInput, hzToMicros(40)},            //
     {checkBatteryUse, hzToMicros(10)},              //
