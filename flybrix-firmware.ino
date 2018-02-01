@@ -208,8 +208,8 @@ bool printTasks() {
         for (size_t j = i+1; j < TASK_COUNT; ++j) {
             TaskRunner& task = tasks[s[j]];
             TaskRunner& mintask = tasks[s[min]];
-            uint32_t task_d = (!task.call_count) ? 10000000+j : task.delay_track.value_max;
-            uint32_t mintask_d = (!mintask.call_count) ?  20000000 : mintask.delay_track.value_max;
+            uint32_t task_d = (!task.call_count) ? 10000000+j : task.delay_track.value_sum / task.call_count;
+            uint32_t mintask_d = (!mintask.call_count) ?  20000000 : mintask.delay_track.value_sum / mintask.call_count;
             if ( task_d <= mintask_d) {
                 min = j;
             }
@@ -226,10 +226,8 @@ bool printTasks() {
         }
         float rate = (task.call_count * 1000000.0f) / ((float) task.delay_track.value_sum);
         float average_duration_msec = task.duration_track.value_sum / (1000.0f * task.call_count);
-        
         processor_load_percent += 0.1 * average_duration_msec * rate; // 100%/1000 msec *  msec/cycle * cycles/second
-        
-        
+
         Serial.printf("[%s %11d] rate: %7.2f    delay: %7.2f %7.2f %7.2f      duration: %7.2f %7.2f %7.2f\n", 
                       task_names[s[i]], task.work_count, rate, 
                       task.delay_track.value_min / 1000.0f, task.delay_track.value_sum / (1000.0f * task.call_count), task.delay_track.value_max / 1000.0f, 
