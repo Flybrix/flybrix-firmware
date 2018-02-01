@@ -94,7 +94,7 @@ bool runAutopilot() {
 }
 
 bool flushBluetoothSerial() {
-    return (flushSerial(1) > 0);
+    return flushBluetoothUART();
 }
 
 bool updateControlVectors() {
@@ -156,10 +156,10 @@ TaskRunner tasks[] = {
     {updateI2C, hzToMicros(800)},                   //
     {updateIndicatorLights, hzToMicros(30)},        //
     {processPressureSensor, hzToMicros(100)},       //
-    {processSerialInput, hzToMicros(100)},          //
+    {processSerialInput, hzToMicros(200)},          //
     {updateStateEstimate, hzToMicros(200)},         //
     {runAutopilot, hzToMicros(100)},                //
-    {flushBluetoothSerial, hzToMicros(200)},        //
+    {flushBluetoothSerial, 30000 /*usec*/},         //
     {updateControlVectors, hzToMicros(400)},        //
     {processPilotInput, hzToMicros(40)},            //
     {checkBatteryUse, hzToMicros(10)},              //
@@ -196,7 +196,7 @@ bool printTasks() {
     
     loops::Stopper _stopper;
 
-    Serial.printf("\nPerformance report (Hz and ms):\n");
+    Serial.printf("\n[%10d] Performance Report (Hz and ms): \n", micros());
 
     // print tasks in order from fastest to slowest
     size_t s[TASK_COUNT];
@@ -257,8 +257,6 @@ void setup() {
 
     sys.version.display(sys.led);
 
-    setBluetoothUart(sys.name);
-
     sys.flag.set(Status::BMP_FAIL);
     sys.led.update();
     sys.bmp.restart();
@@ -296,6 +294,9 @@ void setup() {
 
     // Perform intial check for an SD card
     sdcard::startup();
+
+    // Do Bluetooth last becauase we have to wait 2.5 seconds for AT mode
+    setBluetoothUart(sys.name);
 
     sys.flag.clear(Status::BOOT);
     sys.led.update();

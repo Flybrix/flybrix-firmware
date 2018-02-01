@@ -18,6 +18,7 @@ struct USBComm {
 
     bool read() {
         while (Serial.available()) {
+            bytes_received++;
             data_input.AppendToBuffer(Serial.read());
             if (data_input.IsDone())
                 return true;
@@ -26,24 +27,50 @@ struct USBComm {
     }
 
     void write(uint8_t* data, size_t length) {
+        bytes_sent += length;
         Serial.write(data, length);
     }
 
     CobsReaderBuffer& buffer() {
         return data_input;
     }
-
+    
+    void printStats(){
+        Serial.printf("USB bytes sent/received: %8d / %8d \n", bytes_sent, bytes_received);
+    }
+    
    private:
     CobsReaderBuffer data_input;
+    uint32_t bytes_sent{0};
+    uint32_t bytes_received{0};  
 };
 
 USBComm usb_comm;
 
 struct Bluetooth {
     Bluetooth() {
+        // PIN 12 of teensy is BMD (P0.13)
+        // PIN 30 of teensy is BMD (PO.14) AT Mode
+        // PIN 28 of teensy is BMD RST
+        // 20 - CTS P0.05
+        // 0 - Rx P0.06
+        // 6 - RTS P0.05
+        // 1 - Tx
+        Serial1.setTX(1); //change to board::bluetooth:PIN eventually
+        Serial1.setRX(0);
+        Serial1.begin(57600);
+        //Serial1.attachRts(6);
+        //Serial1.attachCts(20);
+        
         pinMode(board::bluetooth::RESET, OUTPUT);
         digitalWrite(board::bluetooth::RESET, HIGH);
-        Serial1.begin(57600);
+        pinMode(board::bluetooth::MODE, OUTPUT);
+        digitalWriteFast(board::bluetooth::MODE, LOW);   // set AT mode
+        
+        digitalWriteFast(board::bluetooth::RESET, LOW);  // reset BMD
+        delay(100);
+        digitalWriteFast(board::bluetooth::RESET, HIGH);  // reset BMD complete, now in AT mode
+        start_time = micros(); //we need to wait about 2500msec total
     }
 
     void setBluetoothUart(const DeviceName& name);
@@ -51,7 +78,13 @@ struct Bluetooth {
     bool read() {
         while (Serial1.available()) {
             bytes_received++;
-            data_input.AppendToBuffer(Serial1.read());
+            char c = Serial1.read();
+            
+            //Serial.write((c<0x10) ? "RCVD: 0x0" : "RCVD: 0x");
+            //Serial.print(c, HEX);
+            //Serial.println();
+            
+            data_input.AppendToBuffer(c);
             if (data_input.IsDone())
                 return true;
         }
@@ -59,27 +92,46 @@ struct Bluetooth {
     }
 
     void write(uint8_t* data, size_t length) {
+        /*
         bytes_sent += length;
         data_output.push(data, length);
+        */
+        constexpr size_t UART_CHUNK_SIZE = 20; // Serial1's buffer is 64 bytes
+        size_t i = 0;
+        while ( i < length && i < UART_CHUNK_SIZE) {
+            uint8_t c = data[i++];
+            Serial1.write(c);
+
+            //Serial.write((c<0x10) ? "SENT: 0x0" : "SENT: 0x");
+            //Serial.print(c, HEX);
+            //Serial.println();
+        }
+        
+
+        bytes_sent += i;
+        if (length > UART_CHUNK_SIZE){
+            write(data + UART_CHUNK_SIZE, length - UART_CHUNK_SIZE);
+        }
     }
 
     void printStats(){
-        Serial.printf("BT bytes sent/received: %d / %d \n", bytes_sent, bytes_received);
+        Serial.printf(" BT bytes sent/received: %8d / %8d \n", bytes_sent, bytes_received);
     }
 
     CobsReaderBuffer& buffer() {
         return data_input;
     }
 
-    uint32_t flush(uint32_t times) {
-        for (uint32_t i = 0; i < times; ++i) {
-            size_t l{data_output.hasData()};
-            if (!l) {
-                return i;
-            }
-            Serial1.write(data_output.pop(), l);
+    bool flush() {
+        /*
+        size_t l{data_output.hasData()};
+        if (!l) {
+            return false;
         }
-        return times;
+        Serial1.write(data_output.pop(), l);
+        */
+        Serial1.flush(); //send now.
+        return true;
     }
 
    private:
@@ -133,6 +185,7 @@ struct Bluetooth {
 
     size_t writerPosition{0};
     BluetoothBuffer data_output;
+    uint32_t start_time{0};
     CobsReaderBuffer data_input;
     uint32_t bytes_sent{0};
     uint32_t bytes_received{0};    
@@ -145,34 +198,60 @@ void flushATmodeResponse() {
     delay(100);
     while (!Serial1.available()) {
     }
-    while (Serial1.read() != '\n') {
+    while (Serial1.available()) {
+        char c = Serial1.read();
+        //Serial.write(c); //OK or ERR
+        if (c == '\n'){
+            break;
+        }
     }
 }
 
 void Bluetooth::setBluetoothUart(const DeviceName& name) {
-    // PIN 12 of teensy is BMD (P0.13)
-    // PIN 30 of teensy is BMD (PO.14) AT Mode
-    // PIN 28 of teensy is BMD RST
-    // 20 - CTS P0.05
-    // 0 - Rx P0.06
-    // 6 - RTS P0.05
-    // 1 - Tx
-    pinMode(board::bluetooth::MODE, OUTPUT);
-    pinMode(board::bluetooth::RESET, OUTPUT);
-    digitalWriteFast(board::bluetooth::MODE, LOW);   // set AT mode
-    digitalWriteFast(board::bluetooth::RESET, LOW);  // reset BMD
-    delay(100);
-    digitalWriteFast(board::bluetooth::RESET, HIGH);  // reset BMD complete, now in AT mode
-    delay(2500);                                      // time needed initialization of AT mode
 
-    Serial1.print("at$uen 01\n");
-    flushATmodeResponse();
-
+    uint32_t waited = (micros() - start_time)/1000;
+    if (waited < 2500) {
+        Serial.printf("\nFinishing delay for AT mode. Waiting %d msec.\n", 2500-waited);
+        delay(2500-waited); // time needed initialization of AT mode
+    }
+    else {
+        Serial.printf("\nAlready waited %d msec. AT mode should be ready.\n", waited);
+    }
+                                    
     Serial1.print("at$name ");
     Serial1.print(name.value);
     Serial1.print("\n");
     flushATmodeResponse();
+    
+    Serial1.print("at$btxpwr 04\n"); //enable +4dBm beacon
+    flushATmodeResponse();
 
+    Serial1.print("at$ctxpwr 04\n"); //enable +4dBm connectable
+    flushATmodeResponse();
+    
+    Serial1.print("at$uen 01\n"); //enable pass-through UART
+    flushATmodeResponse();    
+    
+    Serial1.print("at$ubr 57600\n"); //set pass-through UART baud rate
+    flushATmodeResponse();
+    
+    Serial1.print("at$ufc 00\n"); //enable flow control (req'd over 57k)
+    flushATmodeResponse();
+    
+    /*
+    Serial1.print("at$ubr 115200\n"); //set pass-through UART baud rate
+    flushATmodeResponse();
+    
+    Serial1.print("at$ufc 01\n"); //enable flow control (req'd over 57k)
+    flushATmodeResponse();
+
+    Serial1.end();
+    Serial1.setTX(1);
+    Serial1.setRX(0);
+    Serial1.begin(115200);
+    Serial1.attachRts(6); //change to board::bluetooth:RTS eventually
+    Serial1.attachCts(20);
+    */
     digitalWriteFast(board::bluetooth::MODE, HIGH);
     digitalWriteFast(board::bluetooth::RESET, LOW);  // reset BMD
     delay(100);
@@ -207,10 +286,11 @@ void writeSerialDebug(uint8_t* data, size_t length) {
     // bluetooth.write(data, length);
 }
 
-uint32_t flushSerial(uint32_t times) {
-    return bluetooth.flush(times);
+bool flushBluetoothUART() {
+    return bluetooth.flush();
 }
 
 void printSerialReport() {
+    usb_comm.printStats();
     bluetooth.printStats();
 }
