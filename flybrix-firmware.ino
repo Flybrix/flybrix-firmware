@@ -157,9 +157,9 @@ TaskRunner tasks[] = {
     {updateIndicatorLights, hzToMicros(30)},        //
     {processPressureSensor, hzToMicros(100)},       //
     {processSerialInput, hzToMicros(100)},          //
-    {updateStateEstimate, hzToMicros(300)},         //
+    {updateStateEstimate, hzToMicros(200)},         //
     {runAutopilot, hzToMicros(100)},                //
-    {flushBluetoothSerial, hzToMicros(500)},        //
+    {flushBluetoothSerial, hzToMicros(200)},        //
     {updateControlVectors, hzToMicros(400)},        //
     {processPilotInput, hzToMicros(40)},            //
     {checkBatteryUse, hzToMicros(10)},              //
@@ -196,19 +196,49 @@ bool printTasks() {
     
     loops::Stopper _stopper;
 
-    Serial.println("Performance report (Hz and ms):");
+    Serial.printf("\nPerformance report (Hz and ms):\n");
+
+    // print tasks in order from fastest to slowest
+    size_t s[TASK_COUNT];
     for (size_t i = 0; i < TASK_COUNT; ++i) {
-        TaskRunner& task = tasks[i];
-        if (!task.log_count) {
+        s[i] = i;
+    }
+    for (size_t i = 0; i < TASK_COUNT-1; ++i) {
+        size_t min = i;
+        for (size_t j = i+1; j < TASK_COUNT; ++j) {
+            TaskRunner& task = tasks[s[j]];
+            TaskRunner& mintask = tasks[s[min]];
+            uint32_t task_d = (!task.call_count) ? 10000000+j : task.delay_track.value_max;
+            uint32_t mintask_d = (!mintask.call_count) ?  20000000 : mintask.delay_track.value_max;
+            if ( task_d <= mintask_d) {
+                min = j;
+            }
+        }         
+        size_t temp=s[i]; s[i]=s[min]; s[min]=temp; //swap(s[i], s[min])
+    }
+    float processor_load_percent{0.0f};
+    for (size_t i = 0; i < TASK_COUNT; ++i) {
+        TaskRunner& task = tasks[s[i]];
+        //Serial.printf("[%2d] ", s[i]);
+        if (!task.call_count) {
+            Serial.printf("[%s %11d]\n", task_names[s[i]], 0);
             continue;
         }
-        float rate = (task.log_count * 1000000.0f) / ((float) task.delay_track.value_sum);
-        Serial.printf("[%s] rate: %7.2f delay: %7.2f %7.2f %7.2f duration: %7.2f %7.2f %7.2f\n", task_names[i], rate, task.delay_track.value_min / 1000.0f,
-                      task.delay_track.value_sum / (1000.0f * task.log_count), task.delay_track.value_max / 1000.0f, task.duration_track.value_min / 1000.0f,
-                      task.duration_track.value_sum / (1000.0f * task.log_count), task.duration_track.value_max / 1000.0f);
+        float rate = (task.call_count * 1000000.0f) / ((float) task.delay_track.value_sum);
+        float average_duration_msec = task.duration_track.value_sum / (1000.0f * task.call_count);
+        
+        processor_load_percent += 0.1 * average_duration_msec * rate; // 100%/1000 msec *  msec/cycle * cycles/second
+        
+        
+        Serial.printf("[%s %11d] rate: %7.2f    delay: %7.2f %7.2f %7.2f      duration: %7.2f %7.2f %7.2f\n", 
+                      task_names[s[i]], task.work_count, rate, 
+                      task.delay_track.value_min / 1000.0f, task.delay_track.value_sum / (1000.0f * task.call_count), task.delay_track.value_max / 1000.0f, 
+                      task.duration_track.value_min / 1000.0f, average_duration_msec, task.duration_track.value_max / 1000.0f);
     }
     printSerialReport();
     
+    Serial.printf("Average processor use is %4.2f%%.\n", processor_load_percent);
+
     Serial.flush();
     return true;
 }
