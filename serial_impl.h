@@ -31,6 +31,13 @@ inline void WriteToOutput(CobsPayload<N>& payload, bool use_logger = false) {
 }
 
 template <std::size_t N>
+inline void WriteDebugToOutput(CobsPayload<N>& payload) {
+    auto package = payload.Encode();
+    // decide where to route Debug info here
+    writeSerialDebug(package.data, package.length);
+}
+
+template <std::size_t N>
 inline void WritePIDData(CobsPayload<N>& payload, const PID& pid) {
     payload.Append(pid.lastTime(), pid.input(), pid.setpoint(), pid.pTerm(), pid.iTerm(), pid.dTerm());
 }

@@ -14,6 +14,7 @@ class DeviceName;
 
 CobsReaderBuffer* readSerial();
 void writeSerial(uint8_t* data, size_t length);
+void writeSerialDebug(uint8_t* data, size_t length);
 uint32_t flushSerial(uint32_t times);
 void printSerialReport();
 void setBluetoothUart(const DeviceName& name);

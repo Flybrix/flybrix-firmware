@@ -201,6 +201,12 @@ void writeSerial(uint8_t* data, size_t length) {
     bluetooth.write(data, length);
 }
 
+void writeSerialDebug(uint8_t* data, size_t length) {
+    usb_comm.write(data, length);
+    // if we're connected, mirror to bluetooth?
+    // bluetooth.write(data, length);
+}
+
 uint32_t flushSerial(uint32_t times) {
     return bluetooth.flush(times);
 }

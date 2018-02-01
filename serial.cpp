@@ -123,7 +123,7 @@ void SerialComm::SendDebugString(const String& string, MessageType type) const {
     for (size_t i = 0; i < str_len; ++i)
         payload.Append(string.charAt(i));
     payload.Append(uint8_t(0));
-    WriteToOutput(payload);
+    WriteDebugToOutput(payload);
 }
 
 void SerialComm::SendState(uint32_t mask, bool redirect_to_sd_card) const {
