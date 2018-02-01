@@ -19,13 +19,10 @@ bool TaskRunner::process() {
     }
 
     last_update_us = micros();
-
-    if (!task()) {
-        return false;
+    bool did_something = task();
+    if (did_something){
+        work_count++;
     }
-    
-    //work was done!
-    
     logExecution(delay, micros() - last_update_us);
-    return true;
+    return did_something;
 }
