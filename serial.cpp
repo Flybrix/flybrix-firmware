@@ -73,13 +73,13 @@ SerialComm::SerialComm(Systems& systems, const volatile uint16_t* ppm)
 
 bool SerialComm::Read() {
     bool did_something{false};
-    for (;;) {
+    while(1) {
         CobsReaderBuffer* buffer{readSerial()};
         if (buffer == nullptr) {
             return did_something;
         }
-        did_something = true;
         ProcessData(*buffer, true);
+        did_something = true;
     }
 }
 
