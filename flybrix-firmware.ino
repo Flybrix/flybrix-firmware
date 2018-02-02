@@ -272,7 +272,7 @@ void setup() {
     sys.flag.set(Status::BOOT);
     sys.led.update();
 
-    // EEPROM.write(0, 255); //mark EEPROM empty for factory reset
+    //EEPROM.write(0, 255); //mark EEPROM empty for factory reset
 
     bool go_to_test_mode{isEmptyEEPROM()};
 
