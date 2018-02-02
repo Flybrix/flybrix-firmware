@@ -12,6 +12,7 @@
 #include "imu.h"
 #include "cardManagement.h"
 #include "stateFlag.h"
+#include "debug.h"
 
 PilotCommand::PilotCommand(Systems& systems) : bmp_(systems.bmp), state_(systems.state), imu_(systems.imu), flag_(systems.flag) {
     setControlState(ControlState::AwaitingAuxDisable);
@@ -67,6 +68,7 @@ bool PilotCommand::stable() const {
 }
 
 void PilotCommand::processMotorEnablingIterationHelper() {
+
     if (!canRequestEnabling()) {
         return;
     }
@@ -81,29 +83,24 @@ void PilotCommand::processMotorEnablingIterationHelper() {
     }
 
     enable_attempts_++;  // we call this routine from "command" at 40Hz
+    
     if (!upright()) {
         setControlState(ControlState::FailAngle);
         return;
     }
-    // wait ~1 seconds for the IIR filters to adjust to their bias free values
-    if (enable_attempts_ == 41) {
+    
+    if (enable_attempts_ == 21) {
         if (!stable()) {
             setControlState(ControlState::FailStability);
         } else {
             imu_.readBiasValues();  // update filter values if they are not fresh
+            bmp_.recalibrateP0();
         }
         return;
     }
-
-    // reset the filter to start letting state reconverge with bias corrected mpu data
-    if (enable_attempts_ == 42) {
-        //state_.resetState(); //UKF requires up to 15 seconds to converge!
-        bmp_.recalibrateP0();
-        return;
-    }
-    // wait ~1 seconds for the state filter to converge
+    
     // check one more time to see if we were stable
-    if (enable_attempts_ > 81) {
+    if (enable_attempts_ == 41) {
         if (!stable()) {
             setControlState(ControlState::FailStability);
         } else {
