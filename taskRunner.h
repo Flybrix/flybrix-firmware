@@ -40,8 +40,8 @@ class TaskRunner {
 
     bool process();
 
-    void reset() {
-        last_update_us = micros();
+    void reset(uint32_t reset_time_us) {
+        last_update_us = reset_time_us;
     }
 
     void logExecution(uint32_t delay, uint32_t duration) {

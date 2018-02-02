@@ -342,16 +342,18 @@ void loop() {
     tasks[1].enabled = (sys.conf.GetSdCardStateDelay() < 1000);
     tasks[1].setDesiredInterval(sys.conf.GetSdCardStateDelay() * 1000);
 
-    bool reset_tasks = loops::consumeStop();
+    bool reset_tasks = loops::wereStopped();
+    uint32_t loop_reset_time_us = loops::lastStart();
 
     for (size_t i = 0; i < TASK_COUNT; ++i) {
         TaskRunner& task = tasks[i];
         
-        if (reset_tasks)
-            task.reset();
-
-        if (task.enabled)
+        if (reset_tasks){
+            task.reset(loop_reset_time_us);
+        }
+        else if (task.enabled){
             task.process();
+        }
         
     }
 }
