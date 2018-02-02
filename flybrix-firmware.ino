@@ -177,7 +177,7 @@ TaskRunner tasks[] = {
     {usb_send, hzToMicros(10)},                     //
     {usb_get, hzToMicros(55)} ,                     //
     {bluetooth_send, 33000 /*usec*/},               // /* Rigado BMDWare limits us to 20B each 30msec no matter the UART speed */
-    {bluetooth_get, hzToMicros(45)},                //
+    {bluetooth_get, hzToMicros(500)},               //
     {updateControlVectors, hzToMicros(400)},        //
     {processPilotInput, hzToMicros(40)},            //
     {checkBatteryUse, hzToMicros(10)},              //
