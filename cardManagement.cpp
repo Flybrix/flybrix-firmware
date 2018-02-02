@@ -41,6 +41,7 @@ bool openSD() {
 }  // namespace
 
 void startup() {
+    DebugPrint("Stopping loops for SD card startup!");
     loops::Stopper _stopper;
     openSD();
 }
@@ -199,11 +200,13 @@ bool locked = false;
 }  // namespace
 
 void open() {
-    loops::Stopper _stopper;
     if (locked)
         return;
     if (!openSD())
         return;
+        
+    DebugPrint("Stopping loops for SD card writing::open!");
+    loops::Stopper _stopper;
     openFile("st");
 }
 
@@ -226,7 +229,6 @@ void write(const uint8_t* data, size_t length) {
 }
 
 void close() {
-    loops::Stopper _stopper;
     SenseCloseIIFE close_iife;
     if (!isWriting()) {
         return;
@@ -235,6 +237,9 @@ void close() {
         return;
     if (!openSD())
         return;
+
+    DebugPrint("Stopping loops for SD card writing::close!");
+    loops::Stopper _stopper;
 
     if (!sd.card()->writeStop()) {
         DebugPrint("Write stop failed");
@@ -278,13 +283,16 @@ struct SenseCloseIIFE {
 }  // namespace
 
 void open() {
-    loops::Stopper _stopper;
     if (!openSD()) {
         return;
     }
     if (read_file) {
         return;
     }
+    
+    DebugPrint("Stopping loops for SD card reading::open!");
+    loops::Stopper _stopper;
+    
     read_file = sd.open("commands.bin");
     if (!read_file) {
         return;
@@ -293,7 +301,6 @@ void open() {
 }
 
 void close() {
-    loops::Stopper _stopper;
     SenseCloseIIFE close_iife;
     if (!isReading()) {
         return;
@@ -301,6 +308,9 @@ void close() {
     if (!openSD()) {
         return;
     }
+    DebugPrint("Stopping loops for SD card reading::close!");
+    loops::Stopper _stopper;
+    
     read_file.close();
     DebugPrint("File closing successful");
 }
