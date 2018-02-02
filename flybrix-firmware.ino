@@ -167,7 +167,7 @@ bool bluetooth_processCommand() {
 TaskRunner tasks[] = {
     {serial_writeState, hzToMicros(1)},             //
     {sd_sendState, hzToMicros(1)},                  //
-    {updateLoopCount, hzToMicros(600)},             //
+    {updateLoopCount, hzToMicros(800)},             //
     {updateI2C, hzToMicros(598)},                   //
     {updateIndicatorLights, hzToMicros(30)},        // /* pattern timing assumes 30Hz */
     {processPressureSensor, hzToMicros(98)},        //
@@ -331,6 +331,7 @@ void setup() {
 }
 
 void loop() {
+
     if (loops::stopped()) {
         Serial.println("loops stopped?!?!");
         return;
@@ -342,10 +343,9 @@ void loop() {
         }
     }
 
-    tasks[0].running = (sys.conf.GetSendStateDelay() > 1000);
+    tasks[0].running = (sys.conf.GetSendStateDelay() < 1000);
     tasks[0].setDesiredInterval(sys.conf.GetSendStateDelay() * 1000);
-
-    tasks[1].running = (sys.conf.GetSdCardStateDelay() > 1000);
+    tasks[1].running = (sys.conf.GetSdCardStateDelay() < 1000);
     tasks[1].setDesiredInterval(sys.conf.GetSdCardStateDelay() * 1000);
 
     for (TaskRunner& task : tasks) {

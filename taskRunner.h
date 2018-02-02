@@ -52,7 +52,7 @@ class TaskRunner {
 
     TaskPtr task;
     uint32_t desired_interval_us;
-    bool running{true};
+    bool running;
     uint32_t last_update_us;
     StatTrack delay_track{0};
     StatTrack duration_track{0};
