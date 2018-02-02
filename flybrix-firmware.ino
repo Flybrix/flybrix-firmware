@@ -139,8 +139,8 @@ bool sd_sendState(){
     return true;
 }
 
-bool usb_writeState() {
-    sys.conf.SendState(); //TODO: revise into writeState and send
+bool serial_writeState() {
+    sys.conf.SendState(); //fills bluetooth and/or usb buffers
     return true;
 }
 
@@ -165,30 +165,30 @@ bool bluetooth_processCommand() {
 }
 
 TaskRunner tasks[] = {
-    {usb_writeState, hzToMicros(1)},                //
+    {serial_writeState, hzToMicros(1)},             //
     {sd_sendState, hzToMicros(1)},                  //
     {updateLoopCount, hzToMicros(600)},             //
     {updateI2C, hzToMicros(598)},                   //
-    {updateIndicatorLights, hzToMicros(30)},        //
+    {updateIndicatorLights, hzToMicros(30)},        // /* pattern timing assumes 30Hz */
     {processPressureSensor, hzToMicros(98)},        //
     {bluetooth_processCommand, hzToMicros(30)},     //
     {updateStateEstimate, hzToMicros(200)},         //
     {runAutopilot, hzToMicros(100)},                //
     {usb_send, hzToMicros(10)},                     //
     {usb_get, hzToMicros(55)} ,                     //
-    {bluetooth_send, 35000 /*usec*/},               // /* Rigado BMDWare limits us to 20B each 30msec no matter the UART speed */
+    {bluetooth_send, 33000 /*usec*/},               // /* Rigado BMDWare limits us to 20B each 30msec no matter the UART speed */
     {bluetooth_get, hzToMicros(495)},               //
     {updateControlVectors, hzToMicros(400)},        //
     {processPilotInput, hzToMicros(40)},            //
     {checkBatteryUse, hzToMicros(10)},              //
     {updateMagnetometer, hzToMicros(10)},           //
     {performInertialMeasurement, hzToMicros(400)},  //
-    {printTasks, hzToMicros(1)},                    //
+    {printTasks, hzToMicros(0.66)},                  //
 };
 
 const char* task_names[] = {
-    "write state to USB",  //
-    "send state to SD  ",  //
+    "state serial out  ",  //
+    "state SDCard out  ",  //
     "loop count        ",  //
     "update i2c        ",  //
     "update lights     ",  //
@@ -215,7 +215,7 @@ bool printTasks() {
     if (usb_mode::get() != usb_mode::PERFORMANCE_REPORT) {
         return false;
     }
-    
+
     loops::Stopper _stopper;
 
     Serial.printf("\n[%10d] Performance Report (Hz and ms): \n", micros());
@@ -255,6 +255,7 @@ bool printTasks() {
                       task.delay_track.value_min / 1000.0f, task.delay_track.value_sum / (1000.0f * task.call_count), task.delay_track.value_max / 1000.0f, 
                       task.duration_track.value_min / 1000.0f, average_duration_msec, task.duration_track.value_max / 1000.0f);
     }
+    
     printSerialReport();
     
     Serial.printf("Average loop time use is %4.2f%%.\n", processor_load_percent);
@@ -271,10 +272,13 @@ void setup() {
     sys.flag.set(Status::BOOT);
     sys.led.update();
 
+    // EEPROM.write(0, 255); //mark EEPROM empty for factory reset
+
     bool go_to_test_mode{isEmptyEEPROM()};
 
     // load stored settings (this will reinitialize if there is no data in the EEPROM!
     readEEPROM().applyTo(sys);
+
     sys.state.resetState();
 
     sys.version.display(sys.led);
@@ -328,6 +332,7 @@ void setup() {
 
 void loop() {
     if (loops::stopped()) {
+        Serial.println("loops stopped?!?!");
         return;
     }
 
@@ -337,10 +342,15 @@ void loop() {
         }
     }
 
+    tasks[0].running = (sys.conf.GetSendStateDelay() > 1000);
     tasks[0].setDesiredInterval(sys.conf.GetSendStateDelay() * 1000);
+
+    tasks[1].running = (sys.conf.GetSdCardStateDelay() > 1000);
     tasks[1].setDesiredInterval(sys.conf.GetSdCardStateDelay() * 1000);
 
     for (TaskRunner& task : tasks) {
-        task.process();
+        if (task.running){
+            task.process();
+        }
     }
 }
