@@ -82,12 +82,10 @@ class Channel{
     bool get() {
         bool did_work{false};
         while (_serial_available()) { // we can't seem to keep up with incoming data...
-            Serial.write('.');
             bytes_read++;
             data_input.AppendToBuffer(_serial_read());
             did_work = true;
         }
-        if (did_work){Serial.println();}
         return did_work;
     }
 
