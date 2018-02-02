@@ -81,11 +81,13 @@ class Channel{
 
     bool get() {
         bool did_work{false};
-        if (_serial_available()) { // we can't seem to keep up with incoming data...
+        while (_serial_available()) { // we can't seem to keep up with incoming data...
+            Serial.write('.');
             bytes_read++;
             data_input.AppendToBuffer(_serial_read());
             did_work = true;
         }
+        if (did_work){Serial.println();}
         return did_work;
     }
 
@@ -96,8 +98,8 @@ class Channel{
         }
         const uint8_t *data = data_output->pop();
         _serial_write(data, length);
-        _serial_flush();
-        bytes_written += length;
+        //_serial_flush();
+        bytes_sent += length;
         return true;
     }
 

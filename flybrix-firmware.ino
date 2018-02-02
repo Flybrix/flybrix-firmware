@@ -259,8 +259,8 @@ bool printTasks() {
     printSerialReport();
     
     Serial.printf("Average loop time use is %4.2f%%.\n", processor_load_percent);
-
     Serial.flush();
+
     return true;
 }
 
@@ -350,8 +350,8 @@ void loop() {
         if (reset_tasks)
             task.reset();
 
-        if (task.enabled){
+        if (task.enabled)
             task.process();
-        }
+        
     }
 }
