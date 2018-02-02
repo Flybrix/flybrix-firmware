@@ -95,6 +95,8 @@ class SerialComm {
 
     void ProcessData(CobsReaderBuffer& data_input, bool allow_response);
 
+    bool processBluetoothCommand();
+
    private:
     uint16_t PacketSize(uint32_t mask) const;
 

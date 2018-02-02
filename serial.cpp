@@ -71,16 +71,14 @@ SerialComm::SerialComm(Systems& systems, const volatile uint16_t* ppm)
       control_vectors_(systems.control_vectors) {
 }
 
-bool SerialComm::Read() {
+bool SerialComm::processBluetoothCommand(){
     bool did_something{false};
-    while(1) {
-        CobsReaderBuffer* buffer{readSerial()};
-        if (buffer == nullptr) {
-            return did_something;
-        }
-        ProcessData(*buffer, true);
+    CobsReaderBuffer* data_input = bluetooth_readData();
+    if (data_input != nullptr) {
+        ProcessData(*data_input, true);
         did_something = true;
     }
+    return did_something;
 }
 
 void SerialComm::ProcessData(CobsReaderBuffer& data_input, bool allow_response) {

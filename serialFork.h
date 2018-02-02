@@ -12,10 +12,20 @@
 
 class DeviceName;
 
-CobsReaderBuffer* readSerial();
 void writeSerial(uint8_t* data, size_t length);
 void writeSerialDebug(uint8_t* data, size_t length);
-bool sendBluetoothUART();
-void printSerialReport();
 void setBluetoothUart(const DeviceName& name);
+
+bool usb_sendData();
+bool usb_getData();
+bool bluetooth_sendData();
+bool bluetooth_getData();
+
+CobsReaderBuffer* bluetooth_readData();
+
+void printSerialReport();
 #endif
+
+
+
+

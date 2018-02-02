@@ -10,45 +10,149 @@
 #include "devicename.h"
 #include "usbModeSelector.h"
 
-namespace {
-struct USBComm {
-    USBComm() {
-        Serial.begin(9600);  // USB is always 12 Mbit/sec
-    }
+class ChannelBuffer {
+  public:
+    ChannelBuffer(size_t _bufferCount, size_t _bufferChunk) {
+        bufferCount = _bufferCount;
+        bufferChunk = _bufferChunk;
+        bufferSize = bufferCount * bufferChunk;
+        data = (uint8_t*) malloc(bufferSize);
+    };
+    ~ChannelBuffer() {
+        free(data);
+    };
 
-    bool read() {
-        while (Serial.available()) {
-            bytes_received++;
-            data_input.AppendToBuffer(Serial.read());
-            if (data_input.IsDone())
-                return true;
+    size_t hasData() {
+        size_t increment{(readerPointer <= writerPointer) ? (writerPointer - readerPointer) : (bufferSize - readerPointer)};
+        if (increment > bufferChunk)
+            return bufferChunk;
+        return increment;
+    };
+
+    bool canFit(size_t size) {
+        if (readerPointer <= writerPointer)
+            return bufferSize - (writerPointer - readerPointer) > size;
+        else
+            return readerPointer - writerPointer > size;
+    };
+
+    const uint8_t* pop() {
+        size_t outputPointer{readerPointer};
+        readerPointer += hasData();
+        if (readerPointer >= bufferSize)
+            readerPointer -= bufferSize;
+        return data + outputPointer;
+    };
+
+    void push(uint8_t* input_data, size_t length) {
+        if (!canFit(length))  // The buffer is too full
+            return;
+        size_t lengthSubtraction{0};
+        if (bufferSize - writerPointer < length)
+            lengthSubtraction = length - (bufferSize - writerPointer);
+        length -= lengthSubtraction;
+        for (size_t pos = 0; pos < length; ++pos) {
+            data[writerPointer++] = input_data[pos];
         }
-        return false;
+        if (writerPointer == bufferSize) {
+            writerPointer = 0;
+            push(input_data + length, lengthSubtraction);
+        }
+    };
+  private:
+    size_t bufferCount;
+    size_t bufferChunk;
+    size_t bufferSize;
+    uint8_t *data;
+    size_t writerPointer{0};
+    size_t readerPointer{0};
+};
+
+class Channel{
+  public:
+    Channel(size_t bufferCount, size_t bufferChunk) {
+        data_output = new ChannelBuffer(bufferCount, bufferChunk);
+    };
+
+    virtual uint8_t _serial_available();
+    virtual uint8_t _serial_read();
+    virtual uint8_t _serial_write(const uint8_t *data, size_t length);
+    virtual void _serial_flush();
+
+    bool get() {
+        bool did_work{false};
+        if (_serial_available()) { // we can't seem to keep up with incoming data...
+            bytes_read++;
+            data_input.AppendToBuffer(_serial_read());
+            did_work = true;
+        }
+        return did_work;
     }
 
+    bool send() {
+        size_t length{data_output->hasData()};
+        if (!length) {
+            return false;
+        }
+        const uint8_t *data = data_output->pop();
+        _serial_write(data, length);
+        _serial_flush();
+        bytes_written += length;
+        return true;
+    }
+
+    CobsReaderBuffer* read() {
+        if (data_input.IsDone()){
+            return &data_input;
+        }
+        return nullptr;
+    }
+    
     void write(uint8_t* data, size_t length) {
-        bytes_sent += length;
-        Serial.write(data, length);
-    }
-
-    CobsReaderBuffer& buffer() {
-        return data_input;
+        bytes_written += length;
+        data_output->push(data, length);
     }
     
     void printStats(){
-        Serial.printf("USB bytes sent/received: %8d / %8d \n", bytes_sent, bytes_received);
+        Serial.printf("bytes written/sent/received: %8d / %8d / %8d", bytes_written, bytes_sent, bytes_read);
     }
     
-   private:
+  private:
+    ChannelBuffer *data_output;
     CobsReaderBuffer data_input;
+    
+    uint32_t bytes_written{0};
+    uint32_t bytes_read{0};
     uint32_t bytes_sent{0};
-    uint32_t bytes_received{0};  
+};
+
+class USBComm : public Channel {
+  public:
+  
+    USBComm() : Channel(20,64) {
+        Serial.begin(9600);  // USB is always 12 Mbit/sec
+        
+    };
+
+    uint8_t _serial_available(){
+        return Serial.available();
+    };
+    uint8_t _serial_read(){
+        return Serial.read();
+    };
+    uint8_t _serial_write(const uint8_t *data, size_t length){
+        return Serial.write(data, length);
+    };
+    void _serial_flush(){
+        return Serial.flush();
+    };
 };
 
 USBComm usb_comm;
 
-struct Bluetooth {
-    Bluetooth() {
+class Bluetooth : public Channel {
+  public:
+    Bluetooth() : Channel(100,20) {
         // PIN 12 of teensy is BMD (P0.13)
         // PIN 30 of teensy is BMD (PO.14) AT Mode
         // PIN 28 of teensy is BMD RST
@@ -72,143 +176,24 @@ struct Bluetooth {
         delay(100);
         digitalWriteFast(board::bluetooth::RESET, HIGH);  // reset BMD complete, now in AT mode
         start_time = micros(); //we need to wait about 2500msec total
-    }
-
-    void setBluetoothUart(const DeviceName& name);
-
-    bool read() {
-        size_t length{0};
-        while (Serial1.available()) {
-            Serial.write(".");
-            if (length%100 == 0) {
-                Serial.println();
-            }
-           
-            bytes_received++;
-            length++;
-            char c = Serial1.read();
-
-            //Serial.write((c<0x10) ? "READ: 0x0" : "READ: 0x");
-            //Serial.print(c, HEX);
-            //Serial.println();
-            
-            data_input.AppendToBuffer(c);
-            bool COBS_ready = data_input.IsDone();
-            if (COBS_ready) {
-                Serial.write("READ: ");
-                Serial.print(length, DEC);
-                Serial.println(COBS_ready ? " --> COBS COMPLETE" : "");
-                return true;
-            }
-        }
-        return false;
-    }
-
-    void write(uint8_t* data, size_t length) {
-        bytes_sent += length;
-        data_output.push(data, length);
-
-        /*
-        Serial.write("BYTES BUFFERED: ");
-        Serial.println(length, DEC);
-        for (size_t i = 0; i < length; i++) {
-            uint8_t c = data[i++];
-            Serial.write((c<0x10) ? "BUFFERED: 0x0" : "BUFFERED: 0x");
-            Serial.print(c, HEX);
-            Serial.println();
-        }
-        */
-    }
-
-    void printStats(){
-        Serial.printf(" BT bytes sent/received: %8d / %8d \n", bytes_sent, bytes_received);
-    }
-
-    CobsReaderBuffer& buffer() {
-        return data_input;
-    }
-
-    bool flush() {
-        size_t length{data_output.hasData()};
-        if (!length) {
-            return false;
-        }
-        const uint8_t *data = data_output.pop();
-        Serial1.write(data, length); //put only 20 bytes into FIFO!
-        /*
-        for (; length < 20; length++) {
-            Serial1.write(0); //zero pad
-        }
-        */
-        Serial1.flush(); //force it to send
-        /*
-        Serial.write("BYTES SENT: ");
-        Serial.println(length, DEC);
-        for (size_t i = 0; i < length; i++) {
-            uint8_t c = data[i++];
-            Serial.write((c<0x10) ? "SENT: 0x0" : "SENT: 0x");
-            Serial.print(c, HEX);
-            Serial.println();
-        }
-        */
-        return true;
-    }
-
-   private:
-    struct BluetoothBuffer {
-        size_t hasData() {
-            size_t increment{(readerPointer <= writerPointer) ? (writerPointer - readerPointer) : (bufferSize - readerPointer)};
-            if (increment > bufferChunk)
-                return bufferChunk;
-            return increment;
-        }
-
-        bool canFit(size_t size) {
-            if (readerPointer <= writerPointer)
-                return bufferSize - (writerPointer - readerPointer) > size;
-            else
-                return readerPointer - writerPointer > size;
-        }
-
-        const uint8_t* pop() {
-            size_t outputPointer{readerPointer};
-            readerPointer += hasData();
-            if (readerPointer >= bufferSize)
-                readerPointer -= bufferSize;
-            return data + outputPointer;
-        }
-
-        void push(uint8_t* input_data, size_t length) {
-            if (!canFit(length))  // The buffer is too full
-                return;
-            size_t lengthSubtraction{0};
-            if (bufferSize - writerPointer < length)
-                lengthSubtraction = length - (bufferSize - writerPointer);
-            length -= lengthSubtraction;
-            for (size_t pos = 0; pos < length; ++pos) {
-                data[writerPointer++] = input_data[pos];
-            }
-            if (writerPointer == bufferSize) {
-                writerPointer = 0;
-                push(input_data + length, lengthSubtraction);
-            }
-        }
-
-       private:
-        static constexpr size_t bufferCount{100};
-        static constexpr size_t bufferChunk{20};
-        static constexpr size_t bufferSize{bufferCount * bufferChunk};
-        uint8_t data[bufferSize];
-        size_t writerPointer{0};
-        size_t readerPointer{0};
     };
 
-    size_t writerPosition{0};
-    BluetoothBuffer data_output;
-    uint32_t start_time{0};
-    CobsReaderBuffer data_input;
-    uint32_t bytes_sent{0};
-    uint32_t bytes_received{0};    
+    uint8_t _serial_available(){
+        return Serial1.available();
+    };
+    uint8_t _serial_read(){
+        return Serial1.read();
+    };
+    uint8_t _serial_write(const uint8_t *data, size_t length){
+        return Serial1.write(data, length);
+    };
+    void _serial_flush(){
+        return Serial1.flush();
+    };
+    void setBluetoothUart(const DeviceName& name);
+
+  private:
+    uint32_t start_time{0}; //used in setup
 };
 
 Bluetooth bluetooth;
@@ -277,23 +262,13 @@ void Bluetooth::setBluetoothUart(const DeviceName& name) {
     delay(100);
     digitalWriteFast(board::bluetooth::RESET, HIGH);  // reset BMD complete, now not in AT mode
 }
-}  // namespace
 
 void setBluetoothUart(const DeviceName& name) {
     bluetooth.setBluetoothUart(name);
 }
 
-CobsReaderBuffer* readSerial() {
-    if (usb_mode::get() == usb_mode::BLUETOOTH_MIRROR) {
-        if (usb_comm.read())
-            return &usb_comm.buffer();
-    }
-    if (bluetooth.read())
-        return &bluetooth.buffer();
-    return nullptr;
-}
-
 void writeSerial(uint8_t* data, size_t length) {
+    //this only puts the data into the buffers; it doesn't send!
     if (usb_mode::get() == usb_mode::BLUETOOTH_MIRROR) {
         usb_comm.write(data, length);
     }
@@ -306,11 +281,27 @@ void writeSerialDebug(uint8_t* data, size_t length) {
     // bluetooth.write(data, length);
 }
 
-bool sendBluetoothUART() {
-    return bluetooth.flush();
+bool usb_sendData(){
+    return usb_comm.send();
+}
+
+bool usb_getData(){
+    return usb_comm.get();
+}
+
+bool bluetooth_sendData(){
+    return bluetooth.send();
+}
+
+bool bluetooth_getData(){
+    return bluetooth.get();
+}
+
+CobsReaderBuffer* bluetooth_readData(){
+    return bluetooth.read();
 }
 
 void printSerialReport() {
-    usb_comm.printStats();
-    bluetooth.printStats();
+    Serial.print("USB "); usb_comm.printStats(); Serial.println();
+    Serial.print("BT  "); bluetooth.printStats(); Serial.println();
 }

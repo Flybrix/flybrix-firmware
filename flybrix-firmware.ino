@@ -47,16 +47,6 @@
 Systems sys;
 uint8_t low_battery_counter = 0;
 
-bool writeToSerial() {
-    sys.conf.SendState();
-    return true;
-}
-
-bool writeToSdCard() {
-    sys.conf.SendState(0xFFFFFFFF, true);
-    return true;
-}
-
 bool updateLoopCount() {
     sys.state.loopCount++;
     return true;
@@ -80,10 +70,6 @@ bool processPressureSensor() {
     return true;
 }
 
-bool processSerialInput() {
-    return sys.conf.Read();
-}
-
 bool updateStateEstimate() {
     sys.state.updateFilter(micros());
     return true;
@@ -91,10 +77,6 @@ bool updateStateEstimate() {
 
 bool runAutopilot() {
     return sys.autopilot.run(micros());
-}
-
-bool flushBluetoothSerial() {
-    return sendBluetoothUART();
 }
 
 bool updateControlVectors() {
@@ -149,17 +131,53 @@ bool performInertialMeasurement() {
 
 bool printTasks();
 
+// channel (sd/usb/bluetooth) operations include buffer (read,write) and physical (get,send) transfers
+// "higher level" channel commands include "writeState" and "processCommand"
+
+bool sd_sendState(){ 
+    sys.conf.SendState(0xFFFFFFFF, true); //TODO: split into writeState and send
+    return true;
+}
+
+bool usb_writeState() {
+    sys.conf.SendState(); //TODO: revise into writeState and send
+    return true;
+}
+
+bool usb_send() {
+    return usb_sendData();
+}
+
+bool usb_get() {
+    return usb_getData();
+}
+
+bool bluetooth_send() {
+    return bluetooth_sendData();
+}
+
+bool bluetooth_get() {
+    return bluetooth_getData();
+}
+
+bool bluetooth_processCommand() {
+    return sys.conf.processBluetoothCommand();
+}
+
 TaskRunner tasks[] = {
-    {writeToSerial, hzToMicros(1)},                 //
-    {writeToSdCard, hzToMicros(1)},                 //
-    {updateLoopCount, hzToMicros(1000)},            //
-    {updateI2C, hzToMicros(800)},                   //
+    {usb_writeState, hzToMicros(1)},                //
+    {sd_sendState, hzToMicros(1)},                  //
+    {updateLoopCount, hzToMicros(600)},             //
+    {updateI2C, hzToMicros(598)},                   //
     {updateIndicatorLights, hzToMicros(30)},        //
-    {processPressureSensor, hzToMicros(100)},       //
-    {processSerialInput, hzToMicros(30)},           //
+    {processPressureSensor, hzToMicros(98)},        //
+    {bluetooth_processCommand, hzToMicros(30)},     //
     {updateStateEstimate, hzToMicros(200)},         //
     {runAutopilot, hzToMicros(100)},                //
-    {flushBluetoothSerial, 35000 /*usec*/},         // /* Rigado BMDWare limits us to 20B each 30msec no matter the UART speed */
+    {usb_send, hzToMicros(10)},                     //
+    {usb_get, hzToMicros(55)} ,                     //
+    {bluetooth_send, 35000 /*usec*/},               // /* Rigado BMDWare limits us to 20B each 30msec no matter the UART speed */
+    {bluetooth_get, hzToMicros(495)},               //
     {updateControlVectors, hzToMicros(400)},        //
     {processPilotInput, hzToMicros(40)},            //
     {checkBatteryUse, hzToMicros(10)},              //
@@ -169,27 +187,31 @@ TaskRunner tasks[] = {
 };
 
 const char* task_names[] = {
-    "write to serial",  //
-    "write to sd    ",  //
-    "loop count     ",  //
-    "update i2c     ",  //
-    "update lights  ",  //
-    "pressure sensor",  //
-    "serial input   ",  //
-    "state estimate ",  //
-    "autopilot      ",  //
-    "flush bluetooth",  //
-    "control vectors",  //
-    "pilot input    ",  //
-    "check battery  ",  //
-    "run magnet     ",  //
-    "run imu        ",  //
-    "print tasks    ",  //
+    "write state to USB",  //
+    "send state to SD  ",  //
+    "loop count        ",  //
+    "update i2c        ",  //
+    "update lights     ",  //
+    "pressure sensor   ",  //
+    "process bluetooth ",  //
+    "state estimate    ",  //
+    "autopilot         ",  //
+    "send usb          ",  //
+    "get usb           ",  //
+    "send bluetooth    ",  //
+    "get bluetooth     ",  //
+    "control vectors   ",  //
+    "pilot input       ",  //
+    "check battery     ",  //
+    "run magnet        ",  //
+    "run imu           ",  //
+    "print tasks       ",  //
 };
 
-constexpr size_t TASK_COUNT = 16;
+constexpr size_t TASK_COUNT = 19;
 
 bool printTasks() {
+
     if (usb_mode::get() != usb_mode::PERFORMANCE_REPORT) {
         return false;
     }
@@ -235,7 +257,7 @@ bool printTasks() {
     }
     printSerialReport();
     
-    Serial.printf("Average processor use is %4.2f%%.\n", processor_load_percent);
+    Serial.printf("Average loop time use is %4.2f%%.\n", processor_load_percent);
 
     Serial.flush();
     return true;
