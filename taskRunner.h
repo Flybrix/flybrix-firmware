@@ -32,6 +32,7 @@ struct StatTrack {
 class TaskRunner {
    public:
     TaskRunner(TaskPtr task, uint32_t desired_interval_us);
+    TaskRunner(TaskPtr task, uint32_t desired_interval_us, bool running);
 
     void setDesiredInterval(uint32_t value) {
         desired_interval_us = value;
@@ -51,6 +52,7 @@ class TaskRunner {
 
     TaskPtr task;
     uint32_t desired_interval_us;
+    bool running{true};
     uint32_t last_update_us;
     StatTrack delay_track{0};
     StatTrack duration_track{0};
