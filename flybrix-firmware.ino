@@ -177,13 +177,13 @@ TaskRunner tasks[] = {
     {usb_send, hzToMicros(10)},                     //
     {usb_get, hzToMicros(55)} ,                     //
     {bluetooth_send, 33000 /*usec*/},               // /* Rigado BMDWare limits us to 20B each 30msec no matter the UART speed */
-    {bluetooth_get, hzToMicros(495)},               //
+    {bluetooth_get, hzToMicros(45)},                //
     {updateControlVectors, hzToMicros(400)},        //
     {processPilotInput, hzToMicros(40)},            //
     {checkBatteryUse, hzToMicros(10)},              //
     {updateMagnetometer, hzToMicros(10)},           //
     {performInertialMeasurement, hzToMicros(400)},  //
-    {printTasks, hzToMicros(0.66)},                  //
+    {printTasks, hzToMicros(0.21)},                 //
 };
 
 const char* task_names[] = {
@@ -333,23 +333,24 @@ void setup() {
 void loop() {
 
     if (loops::stopped()) {
-        Serial.println("loops stopped?!?!");
+        Serial.println("ERROR: loops stopped?!?!");
         return;
     }
 
-    if (loops::consumeStop()) {
-        for (TaskRunner& task : tasks) {
-            task.reset();
-        }
-    }
-
-    tasks[0].running = (sys.conf.GetSendStateDelay() < 1000);
+    tasks[0].enabled = (sys.conf.GetSendStateDelay() < 1000);
     tasks[0].setDesiredInterval(sys.conf.GetSendStateDelay() * 1000);
-    tasks[1].running = (sys.conf.GetSdCardStateDelay() < 1000);
+    tasks[1].enabled = (sys.conf.GetSdCardStateDelay() < 1000);
     tasks[1].setDesiredInterval(sys.conf.GetSdCardStateDelay() * 1000);
 
-    for (TaskRunner& task : tasks) {
-        if (task.running){
+    bool reset_tasks = loops::consumeStop();
+
+    for (size_t i = 0; i < TASK_COUNT; ++i) {
+        TaskRunner& task = tasks[i];
+        
+        if (reset_tasks)
+            task.reset();
+
+        if (task.enabled){
             task.process();
         }
     }

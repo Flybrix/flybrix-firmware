@@ -6,10 +6,10 @@
 
 #include "taskRunner.h"
 
-TaskRunner::TaskRunner(TaskPtr task, uint32_t desired_interval_us) : task{task}, desired_interval_us{desired_interval_us}, last_update_us{micros()}, running{true} {
+TaskRunner::TaskRunner(TaskPtr task, uint32_t desired_interval_us) : task{task}, desired_interval_us{desired_interval_us}, last_update_us{micros()}, enabled{true} {
 }
 
-TaskRunner::TaskRunner(TaskPtr task, uint32_t desired_interval_us, bool running) : task{task}, desired_interval_us{desired_interval_us}, last_update_us{micros()}, running{running} {
+TaskRunner::TaskRunner(TaskPtr task, uint32_t desired_interval_us, bool enabled) : task{task}, desired_interval_us{desired_interval_us}, last_update_us{micros()}, enabled{enabled} {
 }
 
 bool TaskRunner::process() {
