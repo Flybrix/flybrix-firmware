@@ -10,17 +10,19 @@
 
 namespace loops {
 namespace {
-static bool last_stop_has_been_processed{true};
+static bool ready{true};
 static uint32_t starts_needed{1};
 static uint32_t last_start_micros{0};
 static uint32_t last_stop_micros{0};
 static uint32_t overall_delay{0};
 }  // namespace
 
-bool wereStopped() {
-    bool value{last_stop_has_been_processed};
-    last_stop_has_been_processed = true;
-    return !value;
+void reset(){
+    ready = true;
+}
+
+bool used() {
+    return !ready;
 }
 
 uint32_t lastStart() {
@@ -28,7 +30,7 @@ uint32_t lastStart() {
 }
 
 void stop() {
-    last_stop_has_been_processed = false;
+    ready = false;
     if (starts_needed++) {
         return;
     }

@@ -114,7 +114,7 @@ class Channel{
     }
     
     void printStats(){
-        Serial.printf("bytes written/sent/received: %8d / %8d / %8d", bytes_written, bytes_sent, bytes_read);
+        Serial.printf("bytes buffered/sent/received: %8d / %8d / %8d", bytes_written, bytes_sent, bytes_read);
     }
     
   private:

@@ -5,6 +5,7 @@
 */
 
 #include "taskRunner.h"
+#include "loop_stopper.h"
 
 TaskRunner::TaskRunner(TaskPtr task, uint32_t desired_interval_us) : task{task}, desired_interval_us{desired_interval_us}, last_update_us{micros()}, enabled{true} {
 }
@@ -26,6 +27,8 @@ bool TaskRunner::process() {
     if (did_something){
         work_count++;
     }
-    logExecution(delay, micros() - last_update_us);
+    if (!loops::used()) {
+        logExecution(delay, micros() - last_update_us);
+    }
     return did_something;
 }

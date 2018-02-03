@@ -23,7 +23,8 @@ class Stopper final {
     }
 };
 
-bool wereStopped(); // Returns true if there was a stop since the last call
+bool used();
+void reset();
 bool stopped();
 uint32_t delay();
 uint32_t lastStart();

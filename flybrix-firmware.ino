@@ -134,8 +134,13 @@ bool printTasks();
 // channel (sd/usb/bluetooth) operations include buffer (read,write) and physical (get,send) transfers
 // "higher level" channel commands include "writeState" and "processCommand"
 
-bool sd_sendState(){ 
-    sys.conf.SendState(0xFFFFFFFF, true); //TODO: split into writeState and send
+bool sd_writeState(){ 
+    sys.conf.SendState(0xFFFFFFFF, true); //only filles sd buffer
+    return true;
+}
+
+bool sd_send(){
+    sdcard::writing::send();
     return true;
 }
 
@@ -165,30 +170,32 @@ bool bluetooth_processCommand() {
 }
 
 TaskRunner tasks[] = {
-    {serial_writeState, hzToMicros(1)},             //
-    {sd_sendState, hzToMicros(1)},                  //
-    {updateLoopCount, hzToMicros(800)},             //
-    {updateI2C, hzToMicros(598)},                   //
-    {updateIndicatorLights, hzToMicros(30)},        // /* pattern timing assumes 30Hz */
-    {processPressureSensor, hzToMicros(98)},        //
-    {bluetooth_processCommand, hzToMicros(30)},     //
-    {updateStateEstimate, hzToMicros(200)},         //
-    {runAutopilot, hzToMicros(100)},                //
-    {usb_send, hzToMicros(10)},                     //
-    {usb_get, hzToMicros(55)} ,                     //
-    {bluetooth_send, 33000 /*usec*/},               // /* Rigado BMDWare limits us to 20B each 30msec no matter the UART speed */
+    {serial_writeState, hzToMicros(1)},             // set dynamically
+    {sd_writeState, hzToMicros(1)},                 // set dynamically
+    {sd_send, hzToMicros(500)},                     // make faster than fastest sd writes (200Hz goal)
+    {updateLoopCount, hzToMicros(1000)},            // overall pacing 1kHz
+    {updateI2C, hzToMicros(999)},                   // update i2c often to reduce sensor latency
+    {updateIndicatorLights, hzToMicros(30)},        // keep at 30Hz for visual effects
+    {processPressureSensor, hzToMicros(26.3)},      // bmp280 datasheet output data rate
+    {bluetooth_processCommand, hzToMicros(40)},     // we expect 20Hz rcData; oversample
+    {updateStateEstimate, hzToMicros(368)},         // this takes about 2 msec; run at 2x gyro rate
+    {runAutopilot, hzToMicros(1)},                  // (future)
+    {usb_send, hzToMicros(100)},                    // 
+    {usb_get, hzToMicros(500)} ,                    //
+    {bluetooth_send, 33000 /*usec*/},               // Rigado BMDWare limited to 20B each 30msec
     {bluetooth_get, hzToMicros(500)},               //
-    {updateControlVectors, hzToMicros(400)},        //
-    {processPilotInput, hzToMicros(40)},            //
+    {updateControlVectors, hzToMicros(368)},        // match state updates
+    {processPilotInput, hzToMicros(40)},            // cPPM signals come at ~40Hz
     {checkBatteryUse, hzToMicros(10)},              //
     {updateMagnetometer, hzToMicros(10)},           //
-    {performInertialMeasurement, hzToMicros(400)},  //
-    {printTasks, hzToMicros(0.21)},                 //
+    {performInertialMeasurement, hzToMicros(200)},  // gyro rate is 184Hz
+    {printTasks, hzToMicros(0.1), false},           // debug
 };
 
 const char* task_names[] = {
-    "state serial out  ",  //
-    "state SDCard out  ",  //
+    "serial state out  ",  //
+    "SD state out      ",  //
+    "send SD block     ",  //
     "loop count        ",  //
     "update i2c        ",  //
     "update lights     ",  //
@@ -208,7 +215,7 @@ const char* task_names[] = {
     "print tasks       ",  //
 };
 
-constexpr size_t TASK_COUNT = 19;
+constexpr size_t TASK_COUNT = 20;
 
 bool printTasks() {
 
@@ -255,7 +262,8 @@ bool printTasks() {
                       task.delay_track.value_min / 1000.0f, task.delay_track.value_sum / (1000.0f * task.call_count), task.delay_track.value_max / 1000.0f, 
                       task.duration_track.value_min / 1000.0f, average_duration_msec, task.duration_track.value_max / 1000.0f);
     }
-    
+
+    sdcard::writing::printReport();
     printSerialReport();
     
     Serial.printf("Average loop time use is %4.2f%%.\n", processor_load_percent);
@@ -340,16 +348,17 @@ void loop() {
     tasks[0].enabled = (sys.conf.GetSendStateDelay() < 1000);
     tasks[0].setDesiredInterval(sys.conf.GetSendStateDelay() * 1000);
     tasks[1].enabled = (sys.conf.GetSdCardStateDelay() < 1000);
-    tasks[1].setDesiredInterval(sys.conf.GetSdCardStateDelay() * 1000);
-
-    bool reset_tasks = loops::wereStopped();
-    uint32_t loop_reset_time_us = loops::lastStart();
+    tasks[1].setDesiredInterval(max( hzToMicros(100), sys.conf.GetSdCardStateDelay() * 1000)); // 100Hz test without buffer overruns
 
     for (size_t i = 0; i < TASK_COUNT; ++i) {
         TaskRunner& task = tasks[i];
         
-        if (reset_tasks){
-            task.reset(loop_reset_time_us);
+        if (loops::used()) { // process any stop immediately in case other tasks were scheduled for this iteration!
+            for (size_t j = 0; j < TASK_COUNT; ++j) {
+                TaskRunner& t = tasks[j];
+                t.reset(loops::lastStart());
+            }
+            loops::reset();
         }
         else if (task.enabled){
             task.process();

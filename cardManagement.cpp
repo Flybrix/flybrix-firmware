@@ -84,7 +84,7 @@ constexpr uint32_t ERASE_SIZE = 262144L;
 #ifdef SKIP_SD
 constexpr uint32_t BUFFER_BLOCK_COUNT = 0;
 #else
-constexpr uint32_t BUFFER_BLOCK_COUNT = 4;
+constexpr uint32_t BUFFER_BLOCK_COUNT = 8;
 #endif
 
 class WritingBuffer {
@@ -199,12 +199,19 @@ bool openFile(const char* base_name) {
 bool locked = false;
 }  // namespace
 
+uint32_t bytes_written{0};
+uint32_t bytes_sent{0};
+uint32_t bytes_read{0};
+
+void printReport(){
+    Serial.printf("SD  bytes buffered/sent/received: %8d / %8d / %8d\n", bytes_written, bytes_sent, bytes_read);
+}
+
 void open() {
     if (locked)
         return;
     if (!openSD())
         return;
-        
     DebugPrint("Stopping loops for SD card writing::open!");
     loops::Stopper _stopper;
     openFile("st");
@@ -217,8 +224,19 @@ void write(const uint8_t* data, size_t length) {
         return;
     if (block_number == FILE_BLOCK_COUNT)
         return;
-    if (length > 0)
+    if (length > 0){
         writingBuffer.write(data, length);
+        bytes_written += length;
+    }
+}
+
+void send() {
+    if (!openSD())
+        return;
+    if (!isWriting())
+        return;
+    if (block_number == FILE_BLOCK_COUNT)
+        return;
     if (sd.card()->isBusy())
         return;
     if (!writingBuffer.hasBlock())
@@ -226,6 +244,7 @@ void write(const uint8_t* data, size_t length) {
     if (!sd.card()->writeData(writingBuffer.popBlock()))
         DebugPrint("Failed to write data!");
     block_number++;
+    bytes_sent += 512;
 }
 
 void close() {
