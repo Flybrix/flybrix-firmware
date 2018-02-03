@@ -89,7 +89,7 @@ constexpr uint32_t BUFFER_BLOCK_COUNT = 8;
 
 class WritingBuffer {
    public:
-    void write(const uint8_t* data, size_t length);
+    size_t write(const uint8_t* data, size_t length);
     bool hasBlock() const;
     uint8_t* popBlock();
 
@@ -99,13 +99,20 @@ class WritingBuffer {
     uint16_t currentBlock{0};
     uint16_t currentPointer{0};
     bool overbuffered{false};
+    bool hideOverbufferedWarning{false};
 } writingBuffer;
 
-void WritingBuffer::write(const uint8_t* data, size_t length) {
-    if (overbuffered)
-        return;
+size_t WritingBuffer::write(const uint8_t* data, size_t length) {
+    if (overbuffered){
+        if (!hideOverbufferedWarning){
+            DebugPrint("SD card buffer is full");
+            hideOverbufferedWarning = true; //show only once
+        }
+        return length;
+    }
     for (size_t i = 0; i < length; ++i) {
         block[currentBlock][currentPointer++] = data[i];
+        
         if (currentPointer < 512)
             continue;
         currentPointer = 0;
@@ -113,10 +120,10 @@ void WritingBuffer::write(const uint8_t* data, size_t length) {
             currentBlock = 0;
         if (currentBlock == startBlock) {
             overbuffered = true;
-            DebugPrint("SD card buffer is full");
-            return;
+            return length - i; //bytes not buffered
         }
     }
+    return 0;
 }
 
 bool WritingBuffer::hasBlock() const {
@@ -130,6 +137,7 @@ uint8_t* WritingBuffer::popBlock() {
     if (++startBlock >= BUFFER_BLOCK_COUNT)
         startBlock = 0;
     overbuffered = false;
+    hideOverbufferedWarning = false;;
     return retval;
 }
 
@@ -201,10 +209,10 @@ bool locked = false;
 
 uint32_t bytes_written{0};
 uint32_t bytes_sent{0};
-uint32_t bytes_read{0};
+uint32_t bytes_dropped{0};
 
 void printReport(){
-    Serial.printf("SD  bytes buffered/sent/received: %8d / %8d / %8d\n", bytes_written, bytes_sent, bytes_read);
+    Serial.printf("SD  bytes buffered/sent/dropped:  %8d / %8d / %8d\n", bytes_written, bytes_sent, bytes_dropped);
 }
 
 void open() {
@@ -225,8 +233,13 @@ void write(const uint8_t* data, size_t length) {
     if (block_number == FILE_BLOCK_COUNT)
         return;
     if (length > 0){
-        writingBuffer.write(data, length);
-        bytes_written += length;
+        size_t bytes_not_buffered = writingBuffer.write(data, length);
+        if (bytes_not_buffered > 0){
+            bytes_dropped += bytes_not_buffered;
+        }
+        else {
+            bytes_written += length;
+        }
     }
 }
 
