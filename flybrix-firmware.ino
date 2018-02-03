@@ -189,7 +189,7 @@ TaskRunner tasks[] = {
     {checkBatteryUse, hzToMicros(10)},              //
     {updateMagnetometer, hzToMicros(10)},           //
     {performInertialMeasurement, hzToMicros(200)},  // gyro rate is 184Hz
-    {printTasks, hzToMicros(0.1), false},           // debug
+    {printTasks, hzToMicros(0.1), true},           // debug
 };
 
 const char* task_names[] = {
@@ -352,6 +352,10 @@ void loop() {
 
     for (size_t i = 0; i < TASK_COUNT; ++i) {
         TaskRunner& task = tasks[i];
+
+        if (task.enabled){
+            task.process();
+        }
         
         if (loops::used()) { // process any stop immediately in case other tasks were scheduled for this iteration!
             for (size_t j = 0; j < TASK_COUNT; ++j) {
@@ -360,9 +364,6 @@ void loop() {
             }
             loops::reset();
         }
-        else if (task.enabled){
-            task.process();
-        }
-        
+
     }
 }
