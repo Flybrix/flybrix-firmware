@@ -23,6 +23,13 @@ struct StatTrack {
         value_sum += value;
     }
 
+    void reset() {
+        value_last = 0;
+        value_min = 0xFFFFFFFF;
+        value_max = 0;
+        value_sum = 0;
+    }
+    
     uint32_t value_last{0};
     uint32_t value_min{0xFFFFFFFF};
     uint32_t value_max{0};
@@ -48,6 +55,12 @@ class TaskRunner {
         delay_track.log(delay);
         duration_track.log(duration);
         ++call_count;
+    }
+
+    void resetStats(){
+        delay_track.reset();
+        duration_track.reset();
+        call_count = 0;
     }
 
     TaskPtr task;

@@ -189,7 +189,7 @@ TaskRunner tasks[] = {
     {checkBatteryUse, hzToMicros(10)},              //
     {updateMagnetometer, hzToMicros(10)},           //
     {performInertialMeasurement, hzToMicros(200)},  // gyro rate is 184Hz
-    {printTasks, hzToMicros(0.1), true},           // debug
+    {printTasks, 30/*sec*/*1000*1000, true},               // debug interval
 };
 
 const char* task_names[] = {
@@ -216,6 +216,8 @@ const char* task_names[] = {
 };
 
 constexpr size_t TASK_COUNT = 20;
+
+float sd_rate_Hz = 100.0f;
 
 bool printTasks() {
 
@@ -268,6 +270,15 @@ bool printTasks() {
     
     Serial.printf("Average loop time use is %4.2f%%.\n", processor_load_percent);
     Serial.flush();
+    
+    /*
+    //test sd at different rates -- reset stats and increment test_rate_Hz
+    for (size_t i = 0; i < TASK_COUNT; ++i) {
+        TaskRunner& task = tasks[i];
+        task.resetStats();
+    }
+    sd_rate_Hz += 10.0;
+    */
 
     return true;
 }
@@ -348,7 +359,7 @@ void loop() {
     tasks[0].enabled = (sys.conf.GetSendStateDelay() < 1000);
     tasks[0].setDesiredInterval(sys.conf.GetSendStateDelay() * 1000);
     tasks[1].enabled = (sys.conf.GetSdCardStateDelay() < 1000);
-    tasks[1].setDesiredInterval(max( hzToMicros(100), sys.conf.GetSdCardStateDelay() * 1000)); // 100Hz test without buffer overruns
+    tasks[1].setDesiredInterval(max( hzToMicros(sd_rate_Hz), sys.conf.GetSdCardStateDelay() * 1000)); // 80Hz has occasional buffer overruns
 
     for (size_t i = 0; i < TASK_COUNT; ++i) {
         TaskRunner& task = tasks[i];
