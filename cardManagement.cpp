@@ -84,7 +84,7 @@ constexpr uint32_t ERASE_SIZE = 262144L;
 #ifdef SKIP_SD
 constexpr uint32_t BUFFER_BLOCK_COUNT = 0;
 #else
-constexpr uint32_t BUFFER_BLOCK_COUNT = 8;
+constexpr uint32_t BUFFER_BLOCK_COUNT = 4;
 #endif
 
 class WritingBuffer {
