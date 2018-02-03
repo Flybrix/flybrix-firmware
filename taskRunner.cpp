@@ -17,7 +17,7 @@ bool TaskRunner::process() {
     uint32_t test{micros()};
 
     uint32_t delay{test - last_update_us};
-
+    
     if (desired_interval_us > delay) {
         return false;
     }
@@ -28,7 +28,7 @@ bool TaskRunner::process() {
         work_count++;
     }
     if (!loops::used()) {
-        logExecution(delay, micros() - last_update_us);
+        logExecution(delay, micros() - last_update_us); //increments log_count
     }
     return did_something;
 }

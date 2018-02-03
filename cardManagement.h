@@ -35,6 +35,9 @@ void close();
 
 void write(const uint8_t* data, size_t length);
 void send();
+
+uint32_t bytesWritten();
+
 void printReport();
 // We can set a lock to SD opening/closing controls, which can only be overriden with serial commands
 void setLock(bool enable);

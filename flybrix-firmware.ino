@@ -135,7 +135,7 @@ bool printTasks();
 // "higher level" channel commands include "writeState" and "processCommand"
 
 bool sd_writeState(){ 
-    sys.conf.SendState(0xFFFFFFFF, true); //only filles sd buffer
+    sys.conf.SendState(0xFFFFFFFF, true); //only fills sd buffer
     return true;
 }
 
@@ -146,7 +146,7 @@ bool sd_send(){
 
 bool serial_writeState() {
     sys.conf.SendState(); //fills bluetooth and/or usb buffers
-    return true;
+    return (sdcard::writing::bytesWritten() > 0);
 }
 
 bool usb_send() {
@@ -189,7 +189,7 @@ TaskRunner tasks[] = {
     {checkBatteryUse, hzToMicros(10)},              //
     {updateMagnetometer, hzToMicros(10)},           //
     {performInertialMeasurement, hzToMicros(200)},  // gyro rate is 184Hz
-    {printTasks, 30/*sec*/*1000*1000, true},               // debug interval
+    {printTasks, 60/*sec*/*1000*1000, true},               // debug interval
 };
 
 const char* task_names[] = {
@@ -217,7 +217,7 @@ const char* task_names[] = {
 
 constexpr size_t TASK_COUNT = 20;
 
-float sd_rate_Hz = 100.0f;
+float sd_rate_Hz = 5.0f;
 
 bool printTasks() {
 
@@ -227,7 +227,8 @@ bool printTasks() {
 
     loops::Stopper _stopper;
 
-    Serial.printf("\n[%10d] Performance Report (Hz and ms): \n", micros());
+    /*
+    Serial.printf("\n[%10"PRIu32"] Performance Report (Hz and ms): \n", micros());
 
     // print tasks in order from fastest to slowest
     size_t s[TASK_COUNT];
@@ -239,8 +240,8 @@ bool printTasks() {
         for (size_t j = i+1; j < TASK_COUNT; ++j) {
             TaskRunner& task = tasks[s[j]];
             TaskRunner& mintask = tasks[s[min]];
-            uint32_t task_d = (!task.call_count) ? 10000000+j : task.delay_track.value_sum / task.call_count;
-            uint32_t mintask_d = (!mintask.call_count) ?  20000000 : mintask.delay_track.value_sum / mintask.call_count;
+            uint32_t task_d = (!task.call_count) ? 10000000+j : task.delay_track.value_sum / task.log_count;
+            uint32_t mintask_d = (!mintask.log_count) ?  20000000 : mintask.delay_track.value_sum / mintask.log_count;
             if ( task_d <= mintask_d) {
                 min = j;
             }
@@ -251,17 +252,17 @@ bool printTasks() {
     for (size_t i = 0; i < TASK_COUNT; ++i) {
         TaskRunner& task = tasks[s[i]];
         //Serial.printf("[%2d] ", s[i]);
-        if (!task.call_count) {
+        if (!task.log_count) {
             Serial.printf("[%s %11d]\n", task_names[s[i]], 0);
             continue;
         }
-        float rate = (task.call_count * 1000000.0f) / ((float) task.delay_track.value_sum);
-        float average_duration_msec = task.duration_track.value_sum / (1000.0f * task.call_count);
+        float rate = (task.log_count * 1000000.0f) / ((float) task.delay_track.value_sum);
+        float average_duration_msec = task.duration_track.value_sum / (1000.0f * task.log_count);
         processor_load_percent += 0.1 * average_duration_msec * rate; // 100%/1000 msec *  msec/cycle * cycles/second
 
         Serial.printf("[%s %11d] rate: %7.2f    delay: %7.2f %7.2f %7.2f      duration: %7.2f %7.2f %7.2f\n", 
                       task_names[s[i]], task.work_count, rate, 
-                      task.delay_track.value_min / 1000.0f, task.delay_track.value_sum / (1000.0f * task.call_count), task.delay_track.value_max / 1000.0f, 
+                      task.delay_track.value_min / 1000.0f, task.delay_track.value_sum / (1000.0f * task.log_count), task.delay_track.value_max / 1000.0f, 
                       task.duration_track.value_min / 1000.0f, average_duration_msec, task.duration_track.value_max / 1000.0f);
     }
 
@@ -269,17 +270,23 @@ bool printTasks() {
     printSerialReport();
     
     Serial.printf("Average loop time use is %4.2f%%.\n", processor_load_percent);
-    Serial.flush();
     
-    /*
+    */
+    
     //test sd at different rates -- reset stats and increment test_rate_Hz
+    TaskRunner& t = tasks[1];
+    if (t.log_count) {
+        float rate = (t.log_count * 1000000.0f) / ((float) t.delay_track.value_sum);
+        float average_duration_msec = t.duration_track.value_sum / (1000.0f * t.log_count);
+        Serial.printf("%12"PRIu32", %12"PRIu32",  %12"PRIu32", %7.2f, %7.2f, ", micros(), t.work_count, t.log_count, sd_rate_Hz, rate);
+        sdcard::writing::printReport();
+        Serial.flush();
+    }
     for (size_t i = 0; i < TASK_COUNT; ++i) {
         TaskRunner& task = tasks[i];
         task.resetStats();
     }
-    sd_rate_Hz += 10.0;
-    */
-
+    sd_rate_Hz += 5.0;
     return true;
 }
 

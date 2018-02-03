@@ -54,13 +54,13 @@ class TaskRunner {
     void logExecution(uint32_t delay, uint32_t duration) {
         delay_track.log(delay);
         duration_track.log(duration);
-        ++call_count;
+        ++log_count;
     }
 
     void resetStats(){
         delay_track.reset();
         duration_track.reset();
-        call_count = 0;
+        log_count = 0;
     }
 
     TaskPtr task;
@@ -69,7 +69,7 @@ class TaskRunner {
     uint32_t last_update_us;
     StatTrack delay_track{0};
     StatTrack duration_track{0};
-    uint32_t call_count{0};
+    uint32_t log_count{0};
     uint32_t work_count{0};
 };
 
