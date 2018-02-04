@@ -21,9 +21,8 @@ State card_state{State::Closed};
 SdFat sd;
 
 bool openSDHardwarePort() {
-#ifdef SKIP_SD
-    return false;
-#else
+    DebugPrint("Stopping loops to open SPI connection to SD card!");
+    loops::Stopper _stopper;
     SPI.setMOSI(7);
     SPI.setMISO(8);
     SPI.setSCK(14);
@@ -31,7 +30,6 @@ bool openSDHardwarePort() {
     if (!opened)
         DebugPrint("Failed to open connection to SD card!");
     return opened;
-#endif
 }
 
 bool openSD() {
@@ -41,8 +39,6 @@ bool openSD() {
 }  // namespace
 
 void startup() {
-    DebugPrint("Stopping loops for SD card startup!");
-    loops::Stopper _stopper;
     openSD();
 }
 
@@ -81,11 +77,8 @@ constexpr uint32_t ERASE_SIZE = 262144L;
 // random delays in the SD card
 // This can not fix overflows caused by too high data rates
 // This causes the program to take up 0.5kB of RAM per buffer block
-#ifdef SKIP_SD
-constexpr uint32_t BUFFER_BLOCK_COUNT = 0;
-#else
+
 constexpr uint32_t BUFFER_BLOCK_COUNT = 32;
-#endif
 
 class WritingBuffer {
    public:
@@ -244,6 +237,7 @@ void write(const uint8_t* data, size_t length) {
             DebugPrint("SD file has reached FILE_BLOCK_COUNT in writing::write!");
             hideFileBlockCountWarning = true;
         }
+        bytes_dropped += length;
         return;
     }
     if (length > 0){
@@ -266,10 +260,18 @@ void send() {
         return;
     if (block_number == FILE_BLOCK_COUNT)
         return;
-    if (sd.card()->isBusy())
-        return;
     if (!writingBuffer.hasBlock())
         return;
+    if (sd.card()->isBusy()) { // happens frequently
+        uint32_t start = micros();
+        uint32_t delay = 0;
+        while(sd.card()->isBusy() && delay < 100){
+            delay = micros() - start;
+        }
+        if (sd.card()->isBusy()) {
+            return;
+        }
+    }
     if (!sd.card()->writeData(writingBuffer.popBlock()))
         DebugPrint("Failed to write data!");
     block_number++;
