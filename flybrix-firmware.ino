@@ -136,7 +136,7 @@ bool printTasks();
 
 bool sd_writeState(){ 
     sys.conf.SendState(0xFFFFFFFF, true); //only fills sd buffer
-    return true;
+    return (sdcard::writing::bytesWritten() > 0);
 }
 
 bool sd_send(){
@@ -146,7 +146,7 @@ bool sd_send(){
 
 bool serial_writeState() {
     sys.conf.SendState(); //fills bluetooth and/or usb buffers
-    return (sdcard::writing::bytesWritten() > 0);
+    return true;
 }
 
 bool usb_send() {
@@ -189,7 +189,7 @@ TaskRunner tasks[] = {
     {checkBatteryUse, hzToMicros(10)},              //
     {updateMagnetometer, hzToMicros(10)},           //
     {performInertialMeasurement, hzToMicros(200)},  // gyro rate is 184Hz
-    {printTasks, 60/*sec*/*1000*1000, true},               // debug interval
+    {printTasks, 10/*sec*/*1000*1000, true},        // debug interval
 };
 
 const char* task_names[] = {
@@ -217,7 +217,7 @@ const char* task_names[] = {
 
 constexpr size_t TASK_COUNT = 20;
 
-float sd_rate_Hz = 5.0f;
+float sd_max_rate_Hz = 185.0f; //with 32 block buffer, we start to drop packets here (actual rate is ~180Hz)
 
 bool printTasks() {
 
@@ -227,7 +227,6 @@ bool printTasks() {
 
     loops::Stopper _stopper;
 
-    /*
     Serial.printf("\n[%10"PRIu32"] Performance Report (Hz and ms): \n", micros());
 
     // print tasks in order from fastest to slowest
@@ -240,7 +239,7 @@ bool printTasks() {
         for (size_t j = i+1; j < TASK_COUNT; ++j) {
             TaskRunner& task = tasks[s[j]];
             TaskRunner& mintask = tasks[s[min]];
-            uint32_t task_d = (!task.call_count) ? 10000000+j : task.delay_track.value_sum / task.log_count;
+            uint32_t task_d = (!task.log_count) ? 10000000+j : task.delay_track.value_sum / task.log_count;
             uint32_t mintask_d = (!mintask.log_count) ?  20000000 : mintask.delay_track.value_sum / mintask.log_count;
             if ( task_d <= mintask_d) {
                 min = j;
@@ -252,7 +251,7 @@ bool printTasks() {
     for (size_t i = 0; i < TASK_COUNT; ++i) {
         TaskRunner& task = tasks[s[i]];
         //Serial.printf("[%2d] ", s[i]);
-        if (!task.log_count) {
+        if (!task.log_count || !task.work_count) {
             Serial.printf("[%s %11d]\n", task_names[s[i]], 0);
             continue;
         }
@@ -271,8 +270,7 @@ bool printTasks() {
     
     Serial.printf("Average loop time use is %4.2f%%.\n", processor_load_percent);
     
-    */
-    
+    /*
     //test sd at different rates -- reset stats and increment test_rate_Hz
     TaskRunner& t = tasks[1];
     if (t.log_count) {
@@ -287,6 +285,8 @@ bool printTasks() {
         task.resetStats();
     }
     sd_rate_Hz += 5.0;
+    */
+    
     return true;
 }
 
@@ -366,7 +366,7 @@ void loop() {
     tasks[0].enabled = (sys.conf.GetSendStateDelay() < 1000);
     tasks[0].setDesiredInterval(sys.conf.GetSendStateDelay() * 1000);
     tasks[1].enabled = (sys.conf.GetSdCardStateDelay() < 1000);
-    tasks[1].setDesiredInterval(max( hzToMicros(sd_rate_Hz), sys.conf.GetSdCardStateDelay() * 1000)); // 80Hz has occasional buffer overruns
+    tasks[1].setDesiredInterval(max( hzToMicros(sd_max_rate_Hz), sys.conf.GetSdCardStateDelay() * 1000));
 
     for (size_t i = 0; i < TASK_COUNT; ++i) {
         TaskRunner& task = tasks[i];
