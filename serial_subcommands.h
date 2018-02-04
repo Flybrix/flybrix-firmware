@@ -11,6 +11,7 @@
 
 #include "autopilot.h"
 #include "command.h"
+#include "debug.h"
 
 enum SerialComm::Commands : uint8_t {
     REQ_RESPONSE,
@@ -49,11 +50,17 @@ enum SerialComm::Commands : uint8_t {
     template <>             \
     inline bool SerialComm::doSubcommand<SerialComm::Commands::name>(CobsReaderBuffer & input)
 
+//#define DEBUG(name) DebugPrint(#name);
+#define DEBUG(name) ;
+
+
 DO_SUBCOMMAND(REQ_RESPONSE) {
+    DEBUG(REQ_RESPONSE)
     return false;
 }
 
 DO_SUBCOMMAND(SET_EEPROM_DATA) {
+    DEBUG(SET_EEPROM_DATA)
     Config tmp_config;
     if (!tmp_config.readFrom(input)) {
         return false;
@@ -67,6 +74,7 @@ DO_SUBCOMMAND(SET_EEPROM_DATA) {
 }
 
 DO_SUBCOMMAND(REINIT_EEPROM_DATA) {
+    DEBUG(REINIT_EEPROM_DATA)
     const Config tmp_config;
     tmp_config.applyTo(systems_);
     tmp_config.writeTo(EEPROMCursor());
@@ -74,11 +82,13 @@ DO_SUBCOMMAND(REINIT_EEPROM_DATA) {
 }
 
 DO_SUBCOMMAND(REQ_EEPROM_DATA) {
+    DEBUG(REQ_EEPROM_DATA)
     SendConfiguration();
     return true;
 }
 
 DO_SUBCOMMAND(REQ_ENABLE_ITERATION) {
+    DEBUG(REQ_ENABLE_ITERATION)
     uint8_t flag;
     if (!input.ParseInto(flag)) {
         return false;
@@ -92,38 +102,47 @@ DO_SUBCOMMAND(REQ_ENABLE_ITERATION) {
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_0) {
+    DEBUG(MOTOR_OVERRIDE_SPEED_0)
     return pilot_.readMotor(0, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_1) {
+    DEBUG(MOTOR_OVERRIDE_SPEED_1)
     return pilot_.readMotor(1, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_2) {
+    DEBUG(MOTOR_OVERRIDE_SPEED_2)
     return pilot_.readMotor(2, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_3) {
+    DEBUG(MOTOR_OVERRIDE_SPEED_3)
     return pilot_.readMotor(3, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_4) {
+    DEBUG(MOTOR_OVERRIDE_SPEED_3)
     return pilot_.readMotor(4, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_5) {
+    DEBUG(MOTOR_OVERRIDE_SPEED_5)
     return pilot_.readMotor(5, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_6) {
+    DEBUG(MOTOR_OVERRIDE_SPEED_6)
     return pilot_.readMotor(6, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_7) {
+    DEBUG(MOTOR_OVERRIDE_SPEED_7)
     return pilot_.readMotor(7, input);
 }
 
 DO_SUBCOMMAND(SET_COMMAND_OVERRIDE) {
+    DEBUG(SET_COMMAND_OVERRIDE)
     uint8_t flag;
     if (!input.ParseInto(flag)) {
         return false;
@@ -134,6 +153,7 @@ DO_SUBCOMMAND(SET_COMMAND_OVERRIDE) {
 }
 
 DO_SUBCOMMAND(SET_STATE_MASK) {
+    DEBUG(SET_STATE_MASK)
     uint32_t new_state_mask;
     if (!input.ParseInto(new_state_mask)) {
         return false;
@@ -143,6 +163,7 @@ DO_SUBCOMMAND(SET_STATE_MASK) {
 }
 
 DO_SUBCOMMAND(SET_STATE_DELAY) {
+    DEBUG(SET_STATE_DELAY)
     uint16_t new_state_delay;
     if (!input.ParseInto(new_state_delay)) {
         return false;
@@ -152,6 +173,7 @@ DO_SUBCOMMAND(SET_STATE_DELAY) {
 }
 
 DO_SUBCOMMAND(SET_SD_WRITE_DELAY) {
+    DEBUG(SET_SD_WRITE_DELAY)
     uint16_t new_state_delay;
     if (!input.ParseInto(new_state_delay)) {
         return false;
@@ -161,6 +183,7 @@ DO_SUBCOMMAND(SET_SD_WRITE_DELAY) {
 }
 
 DO_SUBCOMMAND(SET_LED) {
+    DEBUG(SET_LED)
     uint8_t mode, r1, g1, b1, r2, g2, b2, ind_r, ind_g;
     if (!input.ParseInto(mode, r1, g1, b1, r2, g2, b2, ind_r, ind_g)) {
         return false;
@@ -170,6 +193,7 @@ DO_SUBCOMMAND(SET_LED) {
 }
 
 DO_SUBCOMMAND(SET_SERIAL_RC) {
+    DEBUG(SET_SERIAL_RC)
     uint8_t enabled;
     int16_t throttle, pitch, roll, yaw;
     uint8_t auxmask;
@@ -185,6 +209,7 @@ DO_SUBCOMMAND(SET_SERIAL_RC) {
 }
 
 DO_SUBCOMMAND(SET_CARD_RECORDING) {
+    DEBUG(SET_CARD_RECORDING)
     uint8_t recording_flags;
     if (!input.ParseInto(recording_flags)) {
         return false;
@@ -210,6 +235,7 @@ DO_SUBCOMMAND(SET_CARD_RECORDING) {
 }
 
 DO_SUBCOMMAND(SET_PARTIAL_EEPROM_DATA) {
+    DEBUG(SET_PARTIAL_EEPROM_DATA)
     Config tmp_config(systems_);
     uint16_t submask, led_mask;
     if (!tmp_config.readPartialFrom(input, submask, led_mask)) {
@@ -224,6 +250,7 @@ DO_SUBCOMMAND(SET_PARTIAL_EEPROM_DATA) {
 }
 
 DO_SUBCOMMAND(REINIT_PARTIAL_EEPROM_DATA) {
+    DEBUG(REINIT_PARTIAL_EEPROM_DATA)
     uint16_t submask, led_mask;
     if (!Config::readMasks(input, submask, led_mask)) {
         return false;
@@ -239,6 +266,7 @@ DO_SUBCOMMAND(REINIT_PARTIAL_EEPROM_DATA) {
 }
 
 DO_SUBCOMMAND(REQ_PARTIAL_EEPROM_DATA) {
+    DEBUG(REQ_PARTIAL_EEPROM_DATA)
     uint16_t submask, led_mask;
     if (!Config::readMasks(input, submask, led_mask)) {
         return false;
@@ -248,6 +276,7 @@ DO_SUBCOMMAND(REQ_PARTIAL_EEPROM_DATA) {
 }
 
 DO_SUBCOMMAND(REQ_CARD_RECORDING_STATE) {
+    DEBUG(REQ_CARD_RECORDING_STATE)
     CobsPayload<20> payload;
     WriteProtocolHead(SerialComm::MessageType::Command, FLAG(SET_SD_WRITE_DELAY) | FLAG(SET_CARD_RECORDING), payload);
     payload.Append(sd_card_state_delay);
@@ -264,6 +293,7 @@ DO_SUBCOMMAND(REQ_CARD_RECORDING_STATE) {
 }
 
 DO_SUBCOMMAND(SET_PARTIAL_TEMPORARY_CONFIG) {
+    DEBUG(SET_PARTIAL_TEMPORARY_CONFIG)
     Config tmp_config(systems_);
     uint16_t submask, led_mask;
     if (!tmp_config.readPartialFrom(input, submask, led_mask)) {
@@ -277,6 +307,7 @@ DO_SUBCOMMAND(SET_PARTIAL_TEMPORARY_CONFIG) {
 }
 
 DO_SUBCOMMAND(SET_COMMAND_SOURCES) {
+    DEBUG(SET_COMMAND_SOURCES)
     uint8_t sources;
     if (!input.ParseInto(sources)) {
         return false;
@@ -286,6 +317,7 @@ DO_SUBCOMMAND(SET_COMMAND_SOURCES) {
 }
 
 DO_SUBCOMMAND(SET_CALIBRATION) {
+    DEBUG(SET_CALIBRATION)
     uint8_t enabled;
     uint8_t mode;
     if (!input.ParseInto(enabled, mode)) {
@@ -315,6 +347,7 @@ DO_SUBCOMMAND(SET_CALIBRATION) {
 }
 
 DO_SUBCOMMAND(SET_AUTOPILOT) {
+    DEBUG(SET_AUTOPILOT)
     uint8_t enabled;
     if (!input.ParseInto(enabled)) {
         return false;
