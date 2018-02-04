@@ -189,7 +189,7 @@ TaskRunner tasks[] = {
     {checkBatteryUse, hzToMicros(10)},              //
     {updateMagnetometer, hzToMicros(10)},           //
     {performInertialMeasurement, hzToMicros(200)},  // gyro rate is 184Hz
-    {printTasks, 10/*sec*/*1000*1000, true},        // debug interval
+    {printTasks, 10/*sec*/*1000*1000, false},       // debug interval
 };
 
 const char* task_names[] = {

@@ -12,6 +12,7 @@
 #include "autopilot.h"
 #include "command.h"
 #include "debug.h"
+#include "loop_stopper.h"
 
 enum SerialComm::Commands : uint8_t {
     REQ_RESPONSE,
@@ -53,14 +54,16 @@ enum SerialComm::Commands : uint8_t {
 //#define DEBUG(name) DebugPrint(#name);
 #define DEBUG(name) ;
 
-
 DO_SUBCOMMAND(REQ_RESPONSE) {
-    DEBUG(REQ_RESPONSE)
+    //DEBUG(REQ_RESPONSE)
     return false;
 }
 
 DO_SUBCOMMAND(SET_EEPROM_DATA) {
     DEBUG(SET_EEPROM_DATA)
+    DebugPrint("Stopping loops to SET_EEPROM_DATA!");
+    loops::Stopper _stopper;
+    
     Config tmp_config;
     if (!tmp_config.readFrom(input)) {
         return false;
@@ -193,7 +196,7 @@ DO_SUBCOMMAND(SET_LED) {
 }
 
 DO_SUBCOMMAND(SET_SERIAL_RC) {
-    DEBUG(SET_SERIAL_RC)
+    //DEBUG(SET_SERIAL_RC)
     uint8_t enabled;
     int16_t throttle, pitch, roll, yaw;
     uint8_t auxmask;
@@ -236,6 +239,10 @@ DO_SUBCOMMAND(SET_CARD_RECORDING) {
 
 DO_SUBCOMMAND(SET_PARTIAL_EEPROM_DATA) {
     DEBUG(SET_PARTIAL_EEPROM_DATA)
+    
+    DebugPrint("Stopping loops to SET_PARTIAL_EEPROM_DATA!");
+    loops::Stopper _stopper;
+    
     Config tmp_config(systems_);
     uint16_t submask, led_mask;
     if (!tmp_config.readPartialFrom(input, submask, led_mask)) {
@@ -294,6 +301,10 @@ DO_SUBCOMMAND(REQ_CARD_RECORDING_STATE) {
 
 DO_SUBCOMMAND(SET_PARTIAL_TEMPORARY_CONFIG) {
     DEBUG(SET_PARTIAL_TEMPORARY_CONFIG)
+
+    DebugPrint("Stopping loops to SET_PARTIAL_TEMPORARY_CONFIG!");
+    loops::Stopper _stopper;
+    
     Config tmp_config(systems_);
     uint16_t submask, led_mask;
     if (!tmp_config.readPartialFrom(input, submask, led_mask)) {
