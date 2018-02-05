@@ -61,18 +61,21 @@ DO_SUBCOMMAND(REQ_RESPONSE) {
 
 DO_SUBCOMMAND(SET_EEPROM_DATA) {
     DEBUG(SET_EEPROM_DATA)
-    DebugPrint("Stopping loops to SET_EEPROM_DATA!");
-    loops::Stopper _stopper;
-    
+
     Config tmp_config;
     if (!tmp_config.readFrom(input)) {
         return false;
     }
     if (!tmp_config.verify()) {
         return false;
-    }
+    }  
+    
+    uint32_t start{micros()};
     tmp_config.applyTo(systems_);
     tmp_config.writeTo(EEPROMCursor());
+    DebugPrintf("Broke timing for SET_EEPROM_DATA [%d usec]", micros()-start);
+    loops::Stopper _stopper;
+    
     return true;
 }
 
@@ -240,9 +243,6 @@ DO_SUBCOMMAND(SET_CARD_RECORDING) {
 DO_SUBCOMMAND(SET_PARTIAL_EEPROM_DATA) {
     DEBUG(SET_PARTIAL_EEPROM_DATA)
     
-    DebugPrint("Stopping loops to SET_PARTIAL_EEPROM_DATA!");
-    loops::Stopper _stopper;
-    
     Config tmp_config(systems_);
     uint16_t submask, led_mask;
     if (!tmp_config.readPartialFrom(input, submask, led_mask)) {
@@ -251,8 +251,11 @@ DO_SUBCOMMAND(SET_PARTIAL_EEPROM_DATA) {
     if (!tmp_config.verify()) {
         return false;
     }
+    uint32_t start{micros()};
     tmp_config.applyTo(systems_);
     tmp_config.writeSkippableTo(EEPROMCursor(), submask, led_mask);
+    DebugPrintf("Broke timing for SET_PARTIAL_EEPROM_DATA [%d usec]", micros()-start);
+    loops::Stopper _stopper;
     return true;
 }
 
@@ -302,9 +305,6 @@ DO_SUBCOMMAND(REQ_CARD_RECORDING_STATE) {
 DO_SUBCOMMAND(SET_PARTIAL_TEMPORARY_CONFIG) {
     DEBUG(SET_PARTIAL_TEMPORARY_CONFIG)
 
-    DebugPrint("Stopping loops to SET_PARTIAL_TEMPORARY_CONFIG!");
-    loops::Stopper _stopper;
-    
     Config tmp_config(systems_);
     uint16_t submask, led_mask;
     if (!tmp_config.readPartialFrom(input, submask, led_mask)) {
@@ -313,7 +313,10 @@ DO_SUBCOMMAND(SET_PARTIAL_TEMPORARY_CONFIG) {
     if (!tmp_config.verify()) {
         return false;
     }
+    uint32_t start{micros()};
     tmp_config.applyTo(systems_);
+    DebugPrintf("Broke timing for SET_PARTIAL_TEMPORARY_CONFIG [%d usec]", micros()-start);
+    loops::Stopper _stopper;
     return true;
 }
 

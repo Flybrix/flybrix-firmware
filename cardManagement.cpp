@@ -21,12 +21,15 @@ State card_state{State::Closed};
 SdFat sd;
 
 bool openSDHardwarePort() {
-    DebugPrint("Stopping loops to open SPI connection to SD card!");
-    loops::Stopper _stopper;
     SPI.setMOSI(7);
     SPI.setMISO(8);
     SPI.setSCK(14);
+
+    uint32_t start{micros()};
     bool opened = sd.begin(board::spi::SD_CARD, SPI_FULL_SPEED);
+    DebugPrintf("Broke timing for openSDHardwarePort [%d usec]", micros()-start);
+    loops::Stopper _stopper;    
+    
     if (!opened)
         DebugPrint("Failed to open connection to SD card!");
     return opened;
@@ -78,7 +81,7 @@ constexpr uint32_t ERASE_SIZE = 262144L;
 // This can not fix overflows caused by too high data rates
 // This causes the program to take up 0.5kB of RAM per buffer block
 
-constexpr uint32_t BUFFER_BLOCK_COUNT = 32;
+constexpr uint32_t BUFFER_BLOCK_COUNT = 8;
 
 class WritingBuffer {
    public:
@@ -98,7 +101,7 @@ class WritingBuffer {
 size_t WritingBuffer::write(const uint8_t* data, size_t length) {
     if (overbuffered){
         if (!hideOverbufferedWarning){
-            DebugPrint("SD card buffer is full");
+            DebugPrint("WARNING: SD buffer overflow. Log data dropped!");
             hideOverbufferedWarning = true; //show only once
         }
         return length;
@@ -158,10 +161,9 @@ bool openFileHelper(const char* filename) {
         bgnErase = endErase + 1;
     }
 
-    DebugPrint("Starting file write");
+    //DebugPrint("Starting file write");
     if (!sd.card()->writeStart(bgnBlock, FILE_BLOCK_COUNT))
         return false;
-
     return true;
 }
 
@@ -215,10 +217,12 @@ void open() {
         return;
     if (!openSD())
         return;
-    DebugPrint("Stopping loops for SD card writing::open!");
-    loops::Stopper _stopper;
     hideFileBlockCountWarning = false;
+
+    uint32_t start{micros()};
     openFile("st");
+    DebugPrintf("Broke timing for sd writing::open [%d usec]", micros()-start);
+    loops::Stopper _stopper;    
 }
 
 uint32_t bytesWritten(){
@@ -262,20 +266,22 @@ void send() {
         return;
     if (!writingBuffer.hasBlock())
         return;
-    if (sd.card()->isBusy()) { // happens frequently
+    if (sd.card()->isBusy()) { // can last up to 150msec!
         uint32_t start = micros();
         uint32_t delay = 0;
-        while(sd.card()->isBusy() && delay < 100){
+        while(sd.card()->isBusy()){
             delay = micros() - start;
         }
-        if (sd.card()->isBusy()) {
-            return;
+        if (delay > 250) {
+            DebugPrintf("Broke timing for sd send stall [%d usec]", micros()-start);
+            loops::Stopper _stopper;
         }
     }
     if (!sd.card()->writeData(writingBuffer.popBlock()))
         DebugPrint("Failed to write data!");
     block_number++;
     bytes_sent += 512;
+    
 }
 
 void close() {
@@ -287,12 +293,8 @@ void close() {
         return;
     if (!openSD())
         return;
-
-    DebugPrint("Stopping loops for SD card writing::close!");
-    loops::Stopper _stopper;
-
     if (!sd.card()->writeStop()) {
-        DebugPrint("Write stop failed");
+        DebugPrint("ERROR: sd->writeStop() stop failed");
         return;
     }
     if (block_number != FILE_BLOCK_COUNT) {
@@ -302,8 +304,11 @@ void close() {
         }
     }
     block_number = 0;
+
+    uint32_t start{micros()};
     binFile.close();
-    DebugPrint("File closing successful");
+    DebugPrintf("Broke timing for sd writing::close [%d usec]", micros()-start);
+    loops::Stopper _stopper;    
 }
 
 void setLock(bool enable) {
@@ -339,11 +344,12 @@ void open() {
     if (read_file) {
         return;
     }
-    
-    DebugPrint("Stopping loops for SD card reading::open!");
-    loops::Stopper _stopper;
-    
+
+    uint32_t start{micros()};
     read_file = sd.open("commands.bin");
+    DebugPrintf("Broke timing for sd reading::open [%d usec]", micros()-start);
+    loops::Stopper _stopper;   
+
     if (!read_file) {
         return;
     }
@@ -358,11 +364,11 @@ void close() {
     if (!openSD()) {
         return;
     }
-    DebugPrint("Stopping loops for SD card reading::close!");
-    loops::Stopper _stopper;
-    
+
+    uint32_t start{micros()};
     read_file.close();
-    DebugPrint("File closing successful");
+    DebugPrintf("Broke timing for sd reading::close [%d usec]", micros()-start);
+    loops::Stopper _stopper;
 }
 
 bool hasMore() {
