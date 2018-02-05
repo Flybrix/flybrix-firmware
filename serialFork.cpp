@@ -96,7 +96,7 @@ class Channel{
         }
         const uint8_t *data = data_output->pop();
         _serial_write(data, length);
-        //_serial_flush();
+        _serial_flush();
         bytes_sent += length;
         return true;
     }
@@ -131,7 +131,6 @@ class USBComm : public Channel {
   
     USBComm() : Channel(20,64) {
         Serial.begin(9600);  // USB is always 12 Mbit/sec
-        
     };
 
     uint8_t _serial_available(){
@@ -240,9 +239,9 @@ void Bluetooth::setBluetoothUart(const DeviceName& name) {
     Serial1.print("at$ubr 57600\n"); //set pass-through UART baud rate
     flushATmodeResponse();
     
-    Serial1.print("at$ufc 00\n"); //enable flow control (req'd over 57k)
+    Serial1.print("at$ufc 00\n"); //disable flow control (req'd over 57k)
     flushATmodeResponse();
-    
+
     /*
     Serial1.print("at$ubr 115200\n"); //set pass-through UART baud rate
     flushATmodeResponse();
@@ -257,6 +256,7 @@ void Bluetooth::setBluetoothUart(const DeviceName& name) {
     Serial1.attachRts(6); //change to board::bluetooth:RTS eventually
     Serial1.attachCts(20);
     */
+    
     digitalWriteFast(board::bluetooth::MODE, HIGH);
     digitalWriteFast(board::bluetooth::RESET, LOW);  // reset BMD
     delay(100);
