@@ -42,9 +42,9 @@ class TaskRunner {
     TaskRunner(TaskPtr task, uint32_t desired_interval_us, bool enabled);
     TaskRunner(TaskPtr task, uint32_t desired_interval_us, bool enabled, bool always_log_stats);
 
-    void setDesiredInterval(uint32_t value, uint32_t disable_threshold) {
-        desired_interval_us = value;
-        if (value < disable_threshold){
+    void setDesiredInterval(uint32_t value_usec, uint32_t disable_threshold_usec) {
+        desired_interval_us = value_usec;
+        if (value_usec < disable_threshold_usec){
             if (!enabled)
                 last_update_us = micros();
             enabled = true;

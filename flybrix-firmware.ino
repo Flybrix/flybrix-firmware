@@ -360,8 +360,8 @@ void loop() {
         return;
     }
     
-    tasks[0].setDesiredInterval(sys.conf.GetSendStateDelay() * 1000, 1000);  
-    tasks[1].setDesiredInterval(max( hzToMicros(sd_max_rate_Hz), sys.conf.GetSdCardStateDelay() * 1000), 1000);
+    tasks[0].setDesiredInterval(sys.conf.GetSendStateDelay() * 1000, 1000*1000);  
+    tasks[1].setDesiredInterval(max( hzToMicros(sd_max_rate_Hz), sys.conf.GetSdCardStateDelay() * 1000), 1000*1000);
     
     for (size_t i = 0; i < TASK_COUNT; ++i) {
         if (loops::used()) { // process any stop immediately in case other tasks were scheduled for this iteration!
