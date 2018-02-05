@@ -189,7 +189,7 @@ TaskRunner tasks[] = {
     {checkBatteryUse, hzToMicros(10)},              //
     {updateMagnetometer, hzToMicros(10)},           //
     {performInertialMeasurement, hzToMicros(200)},  // gyro rate is 184Hz
-    {printTasks, 10/*sec*/*1000*1000, false},       // debug printing interval
+    {printTasks, 20/*sec*/*1000*1000, true, true},  // debug printing interval, run? (t/f), always log stats
 };
 
 const char* task_names[] = {
@@ -238,8 +238,8 @@ bool printTasks() {
         for (size_t j = i+1; j < TASK_COUNT; ++j) {
             TaskRunner& task = tasks[s[j]];
             TaskRunner& mintask = tasks[s[min]];
-            uint32_t task_d = (!task.log_count) ? 10000000+j : task.delay_track.value_sum / task.log_count;
-            uint32_t mintask_d = (!mintask.log_count) ?  20000000 : mintask.delay_track.value_sum / mintask.log_count;
+            uint32_t task_d = (!task.log_count) ? 10000000+j : (float) task.delay_track.value_sum / task.log_count;
+            uint32_t mintask_d = (!mintask.log_count) ?  20000000 : (float) mintask.delay_track.value_sum / mintask.log_count;
             if ( task_d <= mintask_d) {
                 min = j;
             }
@@ -250,7 +250,7 @@ bool printTasks() {
     for (size_t i = 0; i < TASK_COUNT; ++i) {
         TaskRunner& task = tasks[s[i]];
         //Serial.printf("[%2d] ", s[i]);
-        if (!task.log_count || !task.work_count) {
+        if (!task.log_count) {
             Serial.printf("[%s %11d]\n", task_names[s[i]], 0);
             continue;
         }
@@ -258,7 +258,7 @@ bool printTasks() {
         float average_duration_msec = task.duration_track.value_sum / (1000.0f * task.log_count);
         processor_load_percent += 0.1 * average_duration_msec * rate; // 100%/1000 msec *  msec/cycle * cycles/second
 
-        Serial.printf("[%s %11d] rate: %7.2f    delay: %7.2f %7.2f %7.2f      duration: %7.2f %7.2f %7.2f\n", 
+        Serial.printf("[%s %11d] rate: %7.2f       delay: %9.2f %9.2f %9.2f        duration: %9.2f %9.2f %9.2f\n", 
                       task_names[s[i]], task.work_count, rate, 
                       task.delay_track.value_min / 1000.0f, task.delay_track.value_sum / (1000.0f * task.log_count), task.delay_track.value_max / 1000.0f, 
                       task.duration_track.value_min / 1000.0f, average_duration_msec, task.duration_track.value_max / 1000.0f);

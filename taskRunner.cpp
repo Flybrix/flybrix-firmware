@@ -7,10 +7,13 @@
 #include "taskRunner.h"
 #include "loop_stopper.h"
 
-TaskRunner::TaskRunner(TaskPtr task, uint32_t desired_interval_us) : task{task}, desired_interval_us{desired_interval_us}, last_update_us{micros()}, enabled{true} {
+TaskRunner::TaskRunner(TaskPtr task, uint32_t desired_interval_us) : task{task}, desired_interval_us{desired_interval_us}, last_update_us{micros()}, enabled{true}, always_log_stats{false} {
 }
 
-TaskRunner::TaskRunner(TaskPtr task, uint32_t desired_interval_us, bool enabled) : task{task}, desired_interval_us{desired_interval_us}, last_update_us{micros()}, enabled{enabled} {
+TaskRunner::TaskRunner(TaskPtr task, uint32_t desired_interval_us, bool enabled) : task{task}, desired_interval_us{desired_interval_us}, last_update_us{micros()}, enabled{enabled}, always_log_stats{false} {
+}
+
+TaskRunner::TaskRunner(TaskPtr task, uint32_t desired_interval_us, bool enabled, bool always_log_stats) : task{task}, desired_interval_us{desired_interval_us}, last_update_us{micros()}, enabled{enabled}, always_log_stats{always_log_stats} {
 }
 
 bool TaskRunner::process() {
@@ -27,7 +30,7 @@ bool TaskRunner::process() {
     if (did_something){
         work_count++;
     }
-    if (!loops::used()) {
+    if (always_log_stats || !loops::used()) {
         logExecution(delay, micros() - last_update_us); //increments log_count
     }
     return did_something;

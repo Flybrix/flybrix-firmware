@@ -40,6 +40,7 @@ class TaskRunner {
    public:
     TaskRunner(TaskPtr task, uint32_t desired_interval_us);
     TaskRunner(TaskPtr task, uint32_t desired_interval_us, bool enabled);
+    TaskRunner(TaskPtr task, uint32_t desired_interval_us, bool enabled, bool always_log_stats);
 
     void setDesiredInterval(uint32_t value) {
         desired_interval_us = value;
@@ -66,6 +67,7 @@ class TaskRunner {
     TaskPtr task;
     uint32_t desired_interval_us;
     bool enabled;
+    bool always_log_stats;
     uint32_t last_update_us;
     StatTrack delay_track{0};
     StatTrack duration_track{0};
