@@ -189,7 +189,7 @@ TaskRunner tasks[] = {
     {checkBatteryUse, hzToMicros(10)},              //
     {updateMagnetometer, hzToMicros(10)},           //
     {performInertialMeasurement, hzToMicros(200)},  // gyro rate is 184Hz
-    {printTasks, 10/*sec*/*1000*1000, false},       // debug interval
+    {printTasks, 10/*sec*/*1000*1000, false},       // debug printing interval
 };
 
 const char* task_names[] = {
@@ -220,13 +220,12 @@ constexpr size_t TASK_COUNT = 20;
 float sd_max_rate_Hz = 185.0f; //with 32 block buffer, we start to drop packets here (actual rate is ~180Hz)
 
 bool printTasks() {
-
     if (usb_mode::get() != usb_mode::PERFORMANCE_REPORT) {
         return false;
     }
 
-    loops::Stopper _stopper;
-
+    uint32_t start{micros()};
+    
     Serial.printf("\n[%10"PRIu32"] Performance Report (Hz and ms): \n", micros());
 
     // print tasks in order from fastest to slowest
@@ -276,7 +275,7 @@ bool printTasks() {
     if (t.log_count) {
         float rate = (t.log_count * 1000000.0f) / ((float) t.delay_track.value_sum);
         float average_duration_msec = t.duration_track.value_sum / (1000.0f * t.log_count);
-        Serial.printf("%12"PRIu32", %12"PRIu32",  %12"PRIu32", %7.2f, %7.2f, ", micros(), t.work_count, t.log_count, sd_rate_Hz, rate);
+        Serial.printf("%12"PRIu32", %12"PRIu32",  %12"PRIu32", %7.2f, %7.2f, ", micros(), t.work_count, t.log_count, sd_max_rate_Hz, rate);
         sdcard::writing::printReport();
         Serial.flush();
     }
@@ -284,9 +283,10 @@ bool printTasks() {
         TaskRunner& task = tasks[i];
         task.resetStats();
     }
-    sd_rate_Hz += 5.0;
+    sd_max_rate_Hz += 5.0;
     */
-    
+    DebugPrintf("Broke timing for Performance Report [%d usec]", micros()-start);
+    loops::Stopper _stopper;
     return true;
 }
 
@@ -369,12 +369,6 @@ void loop() {
     tasks[1].setDesiredInterval(max( hzToMicros(sd_max_rate_Hz), sys.conf.GetSdCardStateDelay() * 1000));
 
     for (size_t i = 0; i < TASK_COUNT; ++i) {
-        TaskRunner& task = tasks[i];
-
-        if (task.enabled){
-            task.process();
-        }
-        
         if (loops::used()) { // process any stop immediately in case other tasks were scheduled for this iteration!
             for (size_t j = 0; j < TASK_COUNT; ++j) {
                 TaskRunner& t = tasks[j];
@@ -382,6 +376,11 @@ void loop() {
             }
             loops::reset();
         }
+        
+        TaskRunner& task = tasks[i];
 
+        if (task.enabled){
+            task.process();
+        }
     }
 }
