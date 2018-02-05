@@ -96,7 +96,7 @@ class Channel{
         }
         const uint8_t *data = data_output->pop();
         _serial_write(data, length);
-        _serial_flush();
+        //_serial_flush();
         bytes_sent += length;
         return true;
     }
