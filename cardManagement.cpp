@@ -79,7 +79,7 @@ constexpr uint32_t ERASE_SIZE = 262144L;
 // This can not fix overflows caused by too high data rates
 // This causes the program to take up 0.5kB of RAM per buffer block
 
-constexpr uint32_t BUFFER_BLOCK_COUNT = 8;
+constexpr uint32_t BUFFER_BLOCK_COUNT = 64;
 
 class WritingBuffer {
    public:
@@ -265,11 +265,15 @@ void send() {
     if (sd.card()->isBusy()) { // can last up to 150msec!
         uint32_t start = micros();
         uint32_t delay = 0;
-        while(sd.card()->isBusy()){
+        const uint32_t max_delay = 20; //usec; set <250 to buffer data
+        while(sd.card()->isBusy() && delay < max_delay){
             delay = micros() - start;
         }
         if (delay > 250) {
             loops::Stopper _stopper("wait for sd card", delay);
+        }
+        if (sd.card()->isBusy()) {
+            return; //use the buffer rather than delay loops
         }
     }
     if (!sd.card()->writeData(writingBuffer.popBlock()))
