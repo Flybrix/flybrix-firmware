@@ -42,8 +42,16 @@ class TaskRunner {
     TaskRunner(TaskPtr task, uint32_t desired_interval_us, bool enabled);
     TaskRunner(TaskPtr task, uint32_t desired_interval_us, bool enabled, bool always_log_stats);
 
-    void setDesiredInterval(uint32_t value) {
+    void setDesiredInterval(uint32_t value, uint32_t disable_threshold) {
         desired_interval_us = value;
+        if (value < disable_threshold){
+            if (!enabled)
+                last_update_us = micros();
+            enabled = true;
+        }
+        else {
+            enabled = false;
+        }
     }
 
     bool process();
@@ -66,13 +74,13 @@ class TaskRunner {
 
     TaskPtr task;
     uint32_t desired_interval_us;
-    bool enabled;
     bool always_log_stats;
     uint32_t last_update_us;
     StatTrack delay_track{0};
     StatTrack duration_track{0};
     uint32_t log_count{0};
     uint32_t work_count{0};
+    bool enabled;
 };
 
 #endif  // task_runner_h
