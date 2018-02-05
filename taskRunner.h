@@ -55,6 +55,9 @@ class TaskRunner {
     }
 
     bool process();
+    bool isEnabled(){
+        return enabled;
+    }
 
     void reset(uint32_t reset_time_us) {
         last_update_us = reset_time_us;
@@ -73,14 +76,16 @@ class TaskRunner {
     }
 
     TaskPtr task;
-    uint32_t desired_interval_us;
-    bool always_log_stats;
+    uint32_t desired_interval_us;  
     uint32_t last_update_us;
     StatTrack delay_track{0};
     StatTrack duration_track{0};
     uint32_t log_count{0};
     uint32_t work_count{0};
+  
+  private:
     bool enabled;
+    bool always_log_stats;
 };
 
 #endif  // task_runner_h

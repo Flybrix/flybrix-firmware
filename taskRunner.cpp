@@ -18,8 +18,6 @@ TaskRunner::TaskRunner(TaskPtr task, uint32_t desired_interval_us, bool enabled,
 }
 
 bool TaskRunner::process() {
-    uint32_t temp = last_update_us;
-
     uint32_t delay = micros() - last_update_us;
     
     if (desired_interval_us > delay) {
@@ -31,12 +29,7 @@ bool TaskRunner::process() {
     if (did_something){
         work_count++;
     }
-    if (always_log_stats || !loops::used()) {
-
-        if (delay>5000000){
-            DebugPrintf("  long delay? delay:%d, last_update:%d, duration:%d, did_something:%d, prev_last:%d, work_count:%d ", delay, last_update_us, micros()-last_update_us, did_something ? 1: 0, temp, work_count);
-        }
-        
+    if (always_log_stats || !loops::used()) {       
         logExecution(delay, micros() - last_update_us); //increments log_count
     }
     return did_something;

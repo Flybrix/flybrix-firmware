@@ -25,11 +25,9 @@ bool openSDHardwarePort() {
     SPI.setMISO(8);
     SPI.setSCK(14);
 
-    uint32_t start{micros()};
+    loops::Stopper _stopper("open sd card");
     bool opened = sd.begin(board::spi::SD_CARD, SPI_FULL_SPEED);
-    DebugPrintf("Broke timing for openSDHardwarePort [%d usec]", micros()-start);
-    loops::Stopper _stopper;    
-    
+
     if (!opened)
         DebugPrint("Failed to open connection to SD card!");
     return opened;
@@ -219,10 +217,8 @@ void open() {
         return;
     hideFileBlockCountWarning = false;
 
-    uint32_t start{micros()};
+    loops::Stopper _stopper("open sd file for writing");
     openFile("st");
-    DebugPrintf("Broke timing for sd writing::open [%d usec]", micros()-start);
-    loops::Stopper _stopper;    
 }
 
 uint32_t bytesWritten(){
@@ -273,8 +269,7 @@ void send() {
             delay = micros() - start;
         }
         if (delay > 250) {
-            DebugPrintf("Broke timing for sd send stall [%d usec]", micros()-start);
-            loops::Stopper _stopper;
+            loops::Stopper _stopper("wait for sd card", delay);
         }
     }
     if (!sd.card()->writeData(writingBuffer.popBlock()))
@@ -304,11 +299,8 @@ void close() {
         }
     }
     block_number = 0;
-
-    uint32_t start{micros()};
+    loops::Stopper _stopper("close sd file");
     binFile.close();
-    DebugPrintf("Broke timing for sd writing::close [%d usec]", micros()-start);
-    loops::Stopper _stopper;    
 }
 
 void setLock(bool enable) {
@@ -345,11 +337,8 @@ void open() {
         return;
     }
 
-    uint32_t start{micros()};
+    loops::Stopper _stopper("open sd file for reading");
     read_file = sd.open("commands.bin");
-    DebugPrintf("Broke timing for sd reading::open [%d usec]", micros()-start);
-    loops::Stopper _stopper;   
-
     if (!read_file) {
         return;
     }
@@ -365,10 +354,8 @@ void close() {
         return;
     }
 
-    uint32_t start{micros()};
+    loops::Stopper _stopper("close sd file");
     read_file.close();
-    DebugPrintf("Broke timing for sd reading::close [%d usec]", micros()-start);
-    loops::Stopper _stopper;
 }
 
 bool hasMore() {

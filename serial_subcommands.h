@@ -70,12 +70,10 @@ DO_SUBCOMMAND(SET_EEPROM_DATA) {
         return false;
     }  
     
-    uint32_t start{micros()};
+    loops::Stopper _stopper("SET_EEPROM_DATA");
     tmp_config.applyTo(systems_);
     tmp_config.writeTo(EEPROMCursor());
-    DebugPrintf("Broke timing for SET_EEPROM_DATA [%d usec]", micros()-start);
-    loops::Stopper _stopper;
-    
+
     return true;
 }
 
@@ -251,11 +249,9 @@ DO_SUBCOMMAND(SET_PARTIAL_EEPROM_DATA) {
     if (!tmp_config.verify()) {
         return false;
     }
-    uint32_t start{micros()};
+    loops::Stopper _stopper("SET_PARTIAL_EEPROM_DATA");
     tmp_config.applyTo(systems_);
     tmp_config.writeSkippableTo(EEPROMCursor(), submask, led_mask);
-    DebugPrintf("Broke timing for SET_PARTIAL_EEPROM_DATA [%d usec]", micros()-start);
-    loops::Stopper _stopper;
     return true;
 }
 
@@ -313,10 +309,8 @@ DO_SUBCOMMAND(SET_PARTIAL_TEMPORARY_CONFIG) {
     if (!tmp_config.verify()) {
         return false;
     }
-    uint32_t start{micros()};
+    loops::Stopper _stopper("SET_PARTIAL_TEMPORARY_CONFIG");
     tmp_config.applyTo(systems_);
-    DebugPrintf("Broke timing for SET_PARTIAL_TEMPORARY_CONFIG [%d usec]", micros()-start);
-    loops::Stopper _stopper;
     return true;
 }
 

@@ -189,7 +189,7 @@ TaskRunner tasks[] = {
     {checkBatteryUse, hzToMicros(10)},              //
     {updateMagnetometer, hzToMicros(10)},           //
     {performInertialMeasurement, hzToMicros(200)},  // gyro rate is 184Hz
-    {printTasks, 20/*sec*/*1000*1000, true, true},  // debug printing interval, run? (t/f), always log stats
+    {printTasks, 30/*sec*/*1000*1000, true, true},  // debug printing interval, run? (t/f), always log stats
 };
 
 const char* task_names[] = {
@@ -217,17 +217,25 @@ const char* task_names[] = {
 
 constexpr size_t TASK_COUNT = 20;
 
-float sd_max_rate_Hz = 185.0f; //with 32 block buffer, we start to drop packets here (actual rate is ~180Hz)
+float sd_max_rate_Hz = 185.0f; //occasional stalls but manageable, actual rate is ~180Hz
 
-bool printTasks() {
-    if (usb_mode::get() != usb_mode::PERFORMANCE_REPORT) {
-        return false;
+void sdLogTest(){
+    TaskRunner& t = tasks[1];
+    if (t.log_count) {
+        float rate = (t.log_count * 1000000.0f) / ((float) t.delay_track.value_sum);
+        Serial.printf("%12" PRIu32 ", %12" PRIu32 ",  %12" PRIu32 ", %7.2f, %7.2f, ", micros(), t.work_count, t.log_count, sd_max_rate_Hz, rate);
+        sdcard::writing::printReport();
+        Serial.flush();
     }
+    for (size_t i = 0; i < TASK_COUNT; ++i) {
+        TaskRunner& task = tasks[i];
+        task.resetStats();
+    }
+    sd_max_rate_Hz += 10.0;
+}
 
-    uint32_t start{micros()};
-    
-    Serial.printf("\n[%10"PRIu32"] Performance Report (Hz and ms): \n", micros());
-
+void performanceReport(){
+    Serial.printf("\n[%10" PRIu32 "] Performance Report (Hz and ms): \n", micros());
     // print tasks in order from fastest to slowest
     size_t s[TASK_COUNT];
     for (size_t i = 0; i < TASK_COUNT; ++i) {
@@ -263,30 +271,19 @@ bool printTasks() {
                       task.delay_track.value_min / 1000.0f, task.delay_track.value_sum / (1000.0f * task.log_count), task.delay_track.value_max / 1000.0f, 
                       task.duration_track.value_min / 1000.0f, average_duration_msec, task.duration_track.value_max / 1000.0f);
     }
-
     sdcard::writing::printReport();
     printSerialReport();
-    
     Serial.printf("Average loop time use is %4.2f%%.\n", processor_load_percent);
+}
+
+bool printTasks() {
+    if (usb_mode::get() != usb_mode::PERFORMANCE_REPORT) {
+        return false;
+    }
+    loops::Stopper _stopper("print report");
+    performanceReport();
+    //sdLogTest();
     
-    /*
-    //test sd at different rates -- reset stats and increment test_rate_Hz
-    TaskRunner& t = tasks[1];
-    if (t.log_count) {
-        float rate = (t.log_count * 1000000.0f) / ((float) t.delay_track.value_sum);
-        float average_duration_msec = t.duration_track.value_sum / (1000.0f * t.log_count);
-        Serial.printf("%12"PRIu32", %12"PRIu32",  %12"PRIu32", %7.2f, %7.2f, ", micros(), t.work_count, t.log_count, sd_max_rate_Hz, rate);
-        sdcard::writing::printReport();
-        Serial.flush();
-    }
-    for (size_t i = 0; i < TASK_COUNT; ++i) {
-        TaskRunner& task = tasks[i];
-        task.resetStats();
-    }
-    sd_max_rate_Hz += 5.0;
-    */
-    DebugPrintf("Broke timing for Performance Report [%d usec]", micros()-start);
-    loops::Stopper _stopper;
     return true;
 }
 
@@ -362,12 +359,10 @@ void loop() {
         Serial.println("ERROR: loops stopped?!?!");
         return;
     }
-
-    tasks[0].enabled = (sys.conf.GetSendStateDelay() < 1000);
-    tasks[0].setDesiredInterval(sys.conf.GetSendStateDelay() * 1000);
-    tasks[1].enabled = (sys.conf.GetSdCardStateDelay() < 1000);
-    tasks[1].setDesiredInterval(max( hzToMicros(sd_max_rate_Hz), sys.conf.GetSdCardStateDelay() * 1000));
-
+    
+    tasks[0].setDesiredInterval(sys.conf.GetSendStateDelay() * 1000, 1000);  
+    tasks[1].setDesiredInterval(max( hzToMicros(sd_max_rate_Hz), sys.conf.GetSdCardStateDelay() * 1000), 1000);
+    
     for (size_t i = 0; i < TASK_COUNT; ++i) {
         if (loops::used()) { // process any stop immediately in case other tasks were scheduled for this iteration!
             for (size_t j = 0; j < TASK_COUNT; ++j) {
@@ -376,11 +371,11 @@ void loop() {
             }
             loops::reset();
         }
-        
         TaskRunner& task = tasks[i];
 
-        if (task.enabled){
+        if (task.isEnabled()){
             task.process();
         }
+
     }
 }
