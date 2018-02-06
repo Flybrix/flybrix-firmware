@@ -292,6 +292,8 @@ void close() {
         return;
     if (!openSD())
         return;
+
+    loops::Stopper _stopper("close sd file");
     if (!sd.card()->writeStop()) {
         DebugPrint("ERROR: sd->writeStop() stop failed");
         return;
@@ -303,7 +305,6 @@ void close() {
         }
     }
     block_number = 0;
-    loops::Stopper _stopper("close sd file");
     binFile.close();
 }
 
