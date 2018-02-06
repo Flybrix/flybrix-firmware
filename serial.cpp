@@ -120,7 +120,7 @@ void SerialComm::SendDebugString(const String& string) const {
     size_t str_len = string.length();
     for (size_t i = 0; i < str_len; ++i)
         payload.Append(string.charAt(i));
-    payload.Append(uint8_t(0));
+    //payload.Append(uint8_t(0));
     WriteDebugToOutput(payload);
 }
 
