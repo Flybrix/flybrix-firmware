@@ -114,9 +114,9 @@ void SerialComm::SendPartialConfiguration(uint16_t submask, uint16_t led_mask) c
     WriteToOutput(payload);
 }
 
-void SerialComm::SendDebugString(const String& string, MessageType type) const {
+void SerialComm::SendDebugString(const String& string) const {
     CobsPayload<2000> payload;
-    WriteProtocolHead(type, 0xFFFFFFFF, payload);
+    WriteProtocolHead(SerialComm::MessageType::DebugString, 0xFFFFFFFF, payload);
     size_t str_len = string.length();
     for (size_t i = 0; i < str_len; ++i)
         payload.Append(string.charAt(i));

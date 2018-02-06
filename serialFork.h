@@ -13,7 +13,6 @@
 class DeviceName;
 
 void writeSerial(uint8_t* data, size_t length);
-void writeSerialDebug(uint8_t* data, size_t length);
 void setBluetoothUart(const DeviceName& name);
 
 bool usb_sendData();

@@ -78,7 +78,7 @@ class SerialComm {
 
     void SendConfiguration() const;
     void SendPartialConfiguration(uint16_t submask, uint16_t led_mask) const;
-    void SendDebugString(const String& string, MessageType type = MessageType::DebugString) const;
+    void SendDebugString(const String& string) const;
     void SendState(uint32_t mask = 0, bool redirect_to_sd_card = false) const;
     void SendResponse(uint32_t mask, uint32_t response) const;
 

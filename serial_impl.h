@@ -34,7 +34,7 @@ template <std::size_t N>
 inline void WriteDebugToOutput(CobsPayload<N>& payload) {
     auto package = payload.Encode();
     // decide where to route Debug info here
-    writeSerialDebug(package.data, package.length);
+    writeSerial(package.data, package.length);
 }
 
 template <std::size_t N>
