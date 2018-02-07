@@ -60,7 +60,74 @@ void LED::set(LEDPattern::Pattern pattern, CRGB color, bool red_indicator, bool 
     set(pattern, color, color, red_indicator, green_indicator);
 }
 
+void LED::errorStart(CRGB color_back, CRGB color_front, uint8_t count) {
+    error_state_.raise(color_back, color_front, count);
+    LED::update();
+}
+
+void LED::errorStop() {
+    error_state_.finish();
+    oldStatus = 0;
+}
+
+void LED::ErrorState::raise(CRGB color_back_, CRGB color_front_, uint8_t count_) {
+    raised = true;
+    raised_before = false;
+    color_front = fade(color_front_);
+    color_back = fade(color_back_);
+    count = count_;
+}
+
+void LED::ErrorState::finish() {
+    raised = false;
+    raised_before = true;
+}
+
+bool LED::ErrorState::isEdgeUp() {
+    if (!raised || raised_before) {
+        return false;
+    }
+    raised_before = true;
+    return true;
+}
+
+bool LED::ErrorState::isEdgeDown() {
+    if (raised || !raised_before) {
+        return false;
+    }
+    raised_before = false;
+    return true;
+}
+
+void LED::ErrorState::display() {
+    switch (count) {
+        case 0: {
+            LED_driver.setColor(color_back, {-128, -128}, {127, 127});
+        } break;
+        case 1: {
+            LED_driver.setColor(color_back, {-128, -128}, {127, 127});
+            LED_driver.setColor(color_front, {-128, 0}, {0, 127});
+        } break;
+        case 2: {
+            LED_driver.setColor(color_front, {-128, -128}, {0, 127});
+            LED_driver.setColor(color_back, {0, -128}, {127, 127});
+        } break;
+        case 3: {
+            LED_driver.setColor(color_front, {-128, -128}, {127, 127});
+            LED_driver.setColor(color_back, {0, 0}, {127, 127});
+        } break;
+        default: { LED_driver.setColor(color_front, {-128, -128}, {127, 127}); } break;
+    }
+    LED_driver.update();
+}
+
 void LED::update() {
+    if (error_state_.raised) {
+        if (error_state_.isEdgeUp()) {
+            error_state_.display();
+        }
+        return;
+    }
     if (!override && oldStatus != flag_.value()) {
         oldStatus = flag_.value();
         changeLights();

@@ -292,8 +292,7 @@ void setup() {
 
     // MPU9250 is limited to 400kHz bus speed.
     Wire.begin(I2C_MASTER, 0x00, board::I2C_PINS, board::I2C_PULLUP, I2C_RATE_400);  // For I2C pins 18 and 19
-    sys.flag.set(Status::BOOT);
-    sys.led.update();
+    sys.led.errorStart(CRGB::Green, CRGB::Orange, 0);
 
     //EEPROM.write(0, 255); //mark EEPROM empty for factory reset
 
@@ -304,13 +303,9 @@ void setup() {
 
     sys.state.resetState();
 
-    sys.version.display(sys.led);
-
-    sys.flag.set(Status::BMP_FAIL);
-    sys.led.update();
+    sys.led.errorStart(CRGB::Green, CRGB::Orange, 1);
     sys.bmp.restart();
     if (sys.bmp.getID() == 0x58) {
-        sys.flag.clear(Status::BMP_FAIL);
         // state is unhappy without an initial pressure
         sys.bmp.startMeasurement();     // important; otherwise we'll never set ready!
         i2c().update();                 // write data
@@ -318,19 +313,15 @@ void setup() {
         i2c().update();                 // read data
         sys.bmp.p0 = sys.bmp.pressure;  // initialize reference pressure
     } else {
-        sys.led.update();
         while (1)
             ;
     }
 
-    sys.flag.set(Status::MPU_FAIL);
-    sys.led.update();
+    sys.led.errorStart(CRGB::Green, CRGB::Orange, 2);
     sys.imu.restart();
     if (sys.imu.hasCorrectIDs()) {
-        sys.flag.clear(Status::MPU_FAIL);
         sys.imu.initialize();
     } else {
-        sys.led.update();
         while (1)
             ;
     }
@@ -338,17 +329,21 @@ void setup() {
     sys.led.update();
 
     // factory test pattern runs only once
-    if (go_to_test_mode)
+    if (go_to_test_mode) {
+        sys.led.errorStop();
         runTestMode(sys.state, sys.led, sys.pilot);
+    }
+
+    sys.led.errorStart(CRGB::Green, CRGB::Orange, 3);
 
     // Perform intial check for an SD card
     sdcard::startup();
 
+    sys.led.errorStop();
+    sys.version.display(sys.led);
+
     // Do Bluetooth last becauase we have to wait 2.5 seconds for AT mode
     setBluetoothUart(sys.name);
-
-    sys.flag.clear(Status::BOOT);
-    sys.led.update();
 
     loops::start();
 }
