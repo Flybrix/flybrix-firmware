@@ -25,7 +25,7 @@ uint32_t encode(uint32_t color) {
 }
 
 void Version::display(LED& led) const {
-    led.set(LED::SOLID, encode(minor), 0, encode(major), encode(patch), false, false);
+    led.set(LEDPattern::SOLID, encode(minor), 0, encode(major), encode(patch), false, false);
     led.update();
-    led.set(LED::NO_OVERRIDE, 0, false, false);
+    led.set(LEDPattern::NO_OVERRIDE, 0, false, false);
 }

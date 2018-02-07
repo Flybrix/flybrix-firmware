@@ -12,29 +12,21 @@
 #include "FastLED.h"
 
 #include "board.h"
+#include "ledDriver.h"
 
 class StateFlag;
 
 class LED {
    public:
-    enum Pattern : uint8_t {
-        NO_OVERRIDE = 0,
-        FLASH = 1,
-        BEACON = 2,
-        BREATHE = 3,
-        ALTERNATE = 4,
-        SOLID = 5,
-    };
-
     explicit LED(StateFlag& flag);
 
     void update();
 
-    void set(Pattern pattern, uint8_t red_a, uint8_t green_a, uint8_t blue_a, uint8_t red_b, uint8_t green_b, uint8_t blue_b, bool red_indicator, bool green_indicator);
+    void set(LEDPattern::Pattern pattern, uint8_t red_a, uint8_t green_a, uint8_t blue_a, uint8_t red_b, uint8_t green_b, uint8_t blue_b, bool red_indicator, bool green_indicator);
 
-    void set(Pattern pattern, CRGB color_right_front, CRGB color_right_back, CRGB color_left_front, CRGB color_left_back, bool red_indicator, bool green_indicator);
-    void set(Pattern pattern, CRGB color_right, CRGB color_left, bool red_indicator, bool green_indicator);
-    void set(Pattern pattern, CRGB color, bool red_indicator = false, bool green_indicator = false);
+    void set(LEDPattern::Pattern pattern, CRGB color_right_front, CRGB color_right_back, CRGB color_left_front, CRGB color_left_back, bool red_indicator, bool green_indicator);
+    void set(LEDPattern::Pattern pattern, CRGB color_right, CRGB color_left, bool red_indicator, bool green_indicator);
+    void set(LEDPattern::Pattern pattern, CRGB color, bool red_indicator = false, bool green_indicator = false);
 
     void setWhite(board::led::Position lower_left = board::led::Position::Min(), board::led::Position upper_right = board::led::Position::Max(), bool red_indicator = false,
                   bool green_indicator = false, uint8_t fading = 0);
@@ -55,7 +47,7 @@ class LED {
     static_assert(sizeof(Color) == 3, "Data is not packed");
 
     struct __attribute__((packed)) StateCase {
-        StateCase(uint16_t status, Pattern pattern, CRGB color_right_front, CRGB color_right_back, CRGB color_left_front, CRGB color_left_back, bool indicator_red = false,
+        StateCase(uint16_t status, LEDPattern::Pattern pattern, CRGB color_right_front, CRGB color_right_back, CRGB color_left_front, CRGB color_left_back, bool indicator_red = false,
                   bool indicator_green = false)
             : status{status},
               pattern{pattern},
@@ -66,18 +58,18 @@ class LED {
               indicator_red{indicator_red},
               indicator_green{indicator_green} {
         }
-        StateCase(uint16_t status, Pattern pattern, CRGB color_right, CRGB color_left, bool indicator_red = false, bool indicator_green = false)
+        StateCase(uint16_t status, LEDPattern::Pattern pattern, CRGB color_right, CRGB color_left, bool indicator_red = false, bool indicator_green = false)
             : StateCase{status, pattern, color_right, color_right, color_left, color_left, indicator_red, indicator_green} {
         }
 
-        StateCase(uint16_t status, Pattern pattern, CRGB color) : StateCase{status, pattern, color, color, false, false} {
+        StateCase(uint16_t status, LEDPattern::Pattern pattern, CRGB color) : StateCase{status, pattern, color, color, false, false} {
         }
 
-        StateCase() : StateCase{0, Pattern::NO_OVERRIDE, CRGB::Black} {
+        StateCase() : StateCase{0, LEDPattern::Pattern::NO_OVERRIDE, CRGB::Black} {
         }
 
         uint16_t status;
-        Pattern pattern;
+        LEDPattern::Pattern pattern;
         Color color_right_front;
         Color color_right_back;
         Color color_left_front;
@@ -101,7 +93,7 @@ class LED {
     void parseConfig();
 
    private:
-    void use(Pattern pattern, CRGB color_right_front, CRGB color_right_back, CRGB color_left_front, CRGB color_left_back, bool red_indicator, bool green_indicator);
+    void use(LEDPattern::Pattern pattern, CRGB color_right_front, CRGB color_right_back, CRGB color_left_front, CRGB color_left_back, bool red_indicator, bool green_indicator);
     void changeLights();
 
     void indicatorRedOn();
@@ -111,6 +103,7 @@ class LED {
 
     StateFlag& flag_;
     uint16_t oldStatus{0};
+    bool emergency{false};
     bool override{false};
 
     CRGB color_right_front{CRGB::Black};

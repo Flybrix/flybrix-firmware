@@ -68,8 +68,8 @@ DO_SUBCOMMAND(SET_EEPROM_DATA) {
     }
     if (!tmp_config.verify()) {
         return false;
-    }  
-    
+    }
+
     loops::Stopper _stopper("SET_EEPROM_DATA");
     tmp_config.applyTo(systems_);
     tmp_config.writeTo(EEPROMCursor());
@@ -192,7 +192,7 @@ DO_SUBCOMMAND(SET_LED) {
     if (!input.ParseInto(mode, r1, g1, b1, r2, g2, b2, ind_r, ind_g)) {
         return false;
     }
-    led_.set(LED::Pattern(mode), r1, g1, b1, r2, g2, b2, ind_r, ind_g);
+    led_.set(LEDPattern::Pattern(mode), r1, g1, b1, r2, g2, b2, ind_r, ind_g);
     return true;
 }
 
@@ -240,7 +240,7 @@ DO_SUBCOMMAND(SET_CARD_RECORDING) {
 
 DO_SUBCOMMAND(SET_PARTIAL_EEPROM_DATA) {
     DEBUG(SET_PARTIAL_EEPROM_DATA)
-    
+
     Config tmp_config(systems_);
     uint16_t submask, led_mask;
     if (!tmp_config.readPartialFrom(input, submask, led_mask)) {
