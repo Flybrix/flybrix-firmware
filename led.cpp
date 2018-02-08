@@ -132,17 +132,6 @@ void LED::update() {
         oldStatus = flag_.value();
         changeLights();
     }
-    if (LED_driver.getPattern() == LEDPattern::ALTERNATE && !(LED_driver.getCycleIndex() & 15)) {
-        if (LED_driver.getCycleIndex() & 16) {
-            LED_driver.setColor(color_right_front, {0, 0}, {127, 127});
-            LED_driver.setColor(color_right_back, {0, -128}, {127, 0});
-            LED_driver.setColor(CRGB::Black, {-128, -128}, {0, 127});
-        } else {
-            LED_driver.setColor(CRGB::Black, {0, -128}, {127, 127});
-            LED_driver.setColor(color_left_front, {-128, 0}, {0, 127});
-            LED_driver.setColor(color_left_back, {-128, -128}, {0, 0});
-        }
-    }
     LED_driver.update();
 }
 

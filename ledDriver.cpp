@@ -31,10 +31,10 @@ void LEDDriver::setColor(CRGB color, board::led::Position lower_left, board::led
     for (size_t idx = 0; idx < board::led::COUNT; ++idx) {
         if (!isInside(board::led::POSITION[idx], lower_left, upper_right))
             continue;
-        if (leds[idx].red == color.red && leds[idx].green == color.green && leds[idx].blue == color.blue)
+        if (colors[idx].red == color.red && colors[idx].green == color.green && colors[idx].blue == color.blue)
             continue;
         hasChanges = true;
-        leds[idx] = color;
+        colors[idx] = color;
     }
 }
 
@@ -44,6 +44,9 @@ void LEDDriver::setPattern(LEDPattern::Pattern pattern) {
     this->pattern = pattern;
     hasChanges = true;
     cycleIndex = 255;
+    for (size_t idx = 0; idx < board::led::COUNT; ++idx) {
+        shining[idx] = true;
+    }
 }
 
 void LEDDriver::set(LEDPattern::Pattern pattern, CRGB color) {
@@ -56,8 +59,29 @@ void LEDDriver::update() {
     writeToDisplay();
     if (!hasChanges)
         return;
+    for (size_t idx = 0; idx < board::led::COUNT; ++idx) {
+        leds[idx] = shining[idx] ? colors[idx] : CRGB::Black;
+    }
     FastLED.show(scale);
     hasChanges = false;
+}
+
+void LEDDriver::updateAlternate() {
+    if (LED_driver.getCycleIndex() & 15) {
+        return;
+    }
+    board::led::Position lower_left = board::led::Position::Min();
+    board::led::Position upper_right = board::led::Position::Max();
+    if (LED_driver.getCycleIndex() & 16) {
+        lower_left.x = 0;
+    } else {
+        upper_right.x = 0;
+    }
+
+    for (size_t idx = 0; idx < board::led::COUNT; ++idx) {
+        shining[idx] = isInside(board::led::POSITION[idx], lower_left, upper_right);
+    }
+    hasChanges = true;
 }
 
 void LEDDriver::updateFlash() {
@@ -114,8 +138,8 @@ void LEDDriver::writeToDisplay() {
             updateBreathe();
             break;
         case LEDPattern::ALTERNATE:
-        // Alternate is handled outside of the driver
-        // and here it's just a solid light
+            updateAlternate();
+            break;
         case LEDPattern::SOLID:
             updateSolid();
             break;

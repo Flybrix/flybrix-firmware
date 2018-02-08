@@ -36,6 +36,7 @@ class LEDDriver {
 
    private:
     void writeToDisplay();
+    void updateAlternate();
     void updateBeacon();   // 2sec periodic double pulse
     void updateFlash();    //~3Hz flasher
     void updateBreathe();  // 4sec periodic breathe
@@ -44,7 +45,9 @@ class LEDDriver {
     uint8_t cycleIndex{0};
     uint8_t pattern;
     uint8_t scale{0};
+    CRGB colors[board::led::COUNT];
     CRGB leds[board::led::COUNT];
+    bool shining[board::led::COUNT];
     bool hasChanges{true};
 };
 
