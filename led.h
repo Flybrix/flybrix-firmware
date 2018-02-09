@@ -28,7 +28,7 @@ class LED {
     void set(LEDPattern::Pattern pattern, CRGB color_right, CRGB color_left, bool red_indicator, bool green_indicator);
     void set(LEDPattern::Pattern pattern, CRGB color, bool red_indicator = false, bool green_indicator = false);
 
-    void errorStart(LEDPattern::Pattern pattern, CRGB color_back, CRGB color_front, uint8_t count);
+    void errorStart(LEDPattern::Pattern pattern, CRGB color_back, CRGB color_front, uint8_t count, bool fade = true);
     void errorStop();
 
     void setWhite(board::led::Position lower_left = board::led::Position::Min(), board::led::Position upper_right = board::led::Position::Max(), bool red_indicator = false,

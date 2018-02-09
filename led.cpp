@@ -60,8 +60,12 @@ void LED::set(LEDPattern::Pattern pattern, CRGB color, bool red_indicator, bool 
     set(pattern, color, color, red_indicator, green_indicator);
 }
 
-void LED::errorStart(LEDPattern::Pattern pattern, CRGB color_back, CRGB color_front, uint8_t count) {
+void LED::errorStart(LEDPattern::Pattern pattern, CRGB color_back, CRGB color_front, uint8_t count, bool fade) {
     error_raised = true;
+    if (fade) {
+        color_back = fade(color_back);
+        color_front = fade(color_front);
+    }
     switch (count) {
         case 0: {
             use(pattern, color_back, color_back, color_back, color_back, true, false);
