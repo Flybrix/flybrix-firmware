@@ -21,6 +21,7 @@ class BMP280;
 class State;
 class StateFlag;
 class Imu;
+class LED;
 
 class PilotCommand {
    public:
@@ -63,6 +64,9 @@ class PilotCommand {
     bool canRequestEnabling() const;
     void setControlState(ControlState state);
 
+    bool isFailingState() const;
+    uint8_t failToNumber() const;
+
     bool upright() const;
     bool stable() const;
 
@@ -70,6 +74,7 @@ class PilotCommand {
     State& state_;
     Imu& imu_;
     StateFlag& flag_;
+    LED& led_;
 
     Airframe airframe_;
     ControlState control_state_{ControlState::AwaitingAuxDisable};

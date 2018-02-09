@@ -7,14 +7,15 @@
 #include "command.h"
 
 #include "BMP280.h"
-#include "systems.h"
-#include "state.h"
-#include "imu.h"
 #include "cardManagement.h"
-#include "stateFlag.h"
 #include "debug.h"
+#include "imu.h"
+#include "led.h"
+#include "state.h"
+#include "stateFlag.h"
+#include "systems.h"
 
-PilotCommand::PilotCommand(Systems& systems) : bmp_(systems.bmp), state_(systems.state), imu_(systems.imu), flag_(systems.flag) {
+PilotCommand::PilotCommand(Systems& systems) : bmp_(systems.bmp), state_(systems.state), imu_(systems.imu), flag_(systems.flag), led_{systems.led} {
     setControlState(ControlState::AwaitingAuxDisable);
 }
 
@@ -68,7 +69,6 @@ bool PilotCommand::stable() const {
 }
 
 void PilotCommand::processMotorEnablingIterationHelper() {
-
     if (!canRequestEnabling()) {
         return;
     }
@@ -83,12 +83,12 @@ void PilotCommand::processMotorEnablingIterationHelper() {
     }
 
     enable_attempts_++;  // we call this routine from "command" at 40Hz
-    
+
     if (!upright()) {
         setControlState(ControlState::FailAngle);
         return;
     }
-    
+
     if (enable_attempts_ == 21) {
         if (!stable()) {
             setControlState(ControlState::FailStability);
@@ -98,7 +98,7 @@ void PilotCommand::processMotorEnablingIterationHelper() {
         }
         return;
     }
-    
+
     // check one more time to see if we were stable
     if (enable_attempts_ == 41) {
         if (!stable()) {
@@ -198,8 +198,41 @@ RcCommand PilotCommand::processCommands(RcState&& rc_state) {
     return rc_state.command;
 }
 
+bool PilotCommand::isFailingState() const {
+    return control_state_ == ControlState::FailAngle || control_state_ == ControlState::FailStability || control_state_ == ControlState::AwaitingAuxDisable ||
+           control_state_ == ControlState::ThrottleLocked;
+}
+
+uint8_t PilotCommand::failToNumber() const {
+    switch (control_state_) {
+        case ControlState::FailStability:
+            return 1;
+        case ControlState::FailAngle:
+            return 2;
+        case ControlState::AwaitingAuxDisable:
+        case ControlState::ThrottleLocked:
+            return 3;
+        default:
+            return 0;
+    }
+}
+
 void PilotCommand::setControlState(ControlState state) {
     control_state_ = state;
+    if (isFailingState()) {
+        CRGB color = CRGB::White;
+        LEDPattern::Pattern pattern = LEDPattern::SOLID;
+        for (const LED::StateCase& sc : led_.states.states) {
+            if (sc.status & Status::ENABLING) {
+                color = sc.color_right_front.crgb();
+                pattern = sc.pattern;
+                break;
+            }
+        }
+        led_.errorStart(pattern, color, CRGB::Orange, failToNumber());
+    } else {
+        led_.errorStop();
+    }
 
     airframe_.setOverride(isOverridden());
 
