@@ -18,19 +18,13 @@ CRGB LED::fade(CRGB color) {
 // fading is in 256ths : https://github.com/FastLED/FastLED/wiki/Pixel-reference
 LED::States::States()
     : states{
-          LED::StateCase(Status::MPU_FAIL, LEDPattern::SOLID, fade(CRGB::Black), fade(CRGB::Red), true),
-          LED::StateCase(Status::BMP_FAIL, LEDPattern::SOLID, fade(CRGB::Red), fade(CRGB::Black), true),
-          LED::StateCase(Status::BOOT, LEDPattern::SOLID, fade(CRGB::Green)),
-          LED::StateCase(Status::RX_FAIL, LEDPattern::FLASH, fade(CRGB::Orange)),
-          LED::StateCase(Status::FAIL_OTHER, LEDPattern::ALTERNATE, fade(CRGB::Blue)),
-          LED::StateCase(Status::FAIL_STABILITY, LEDPattern::FLASH, fade(CRGB::Black), fade(CRGB::Blue)),
-          LED::StateCase(Status::FAIL_ANGLE, LEDPattern::FLASH, fade(CRGB::Blue), fade(CRGB::Black)),
-          LED::StateCase(Status::OVERRIDE, LEDPattern::BEACON, fade(CRGB::Red)),
-          LED::StateCase(Status::TEMP_WARNING, LEDPattern::FLASH, fade(CRGB::Red)),
-          LED::StateCase(Status::BATTERY_LOW, LEDPattern::BEACON, fade(CRGB::Orange)),
-          LED::StateCase(Status::ENABLING, LEDPattern::FLASH, fade(CRGB::Blue)),
-          LED::StateCase(Status::ENABLED, LEDPattern::BEACON, fade(CRGB::Blue)),
-          LED::StateCase(Status::IDLE, LEDPattern::BEACON, fade(CRGB::Green)),
+          LED::StateCase(Status::BATTERY_LOW, LEDPattern::BEACON, fade(CRGB::Orange)),     //
+          LED::StateCase(Status::OVERRIDE, LEDPattern::SOLID, fade(CRGB::LightSeaGreen)),  //
+          LED::StateCase(Status::LOG_FULL, LEDPattern::FLASH, fade(CRGB::Orange)),         //
+          LED::StateCase(Status::NO_SIGNAL, LEDPattern::BREATHE, fade(CRGB::Orange)),      //
+          LED::StateCase(Status::ARMING, LEDPattern::FLASH, fade(CRGB::Blue)),             //
+          LED::StateCase(Status::ARMED, LEDPattern::BEACON, fade(CRGB::Blue)),             //
+          LED::StateCase(Status::IDLE, LEDPattern::BEACON, fade(CRGB::Green)),             //
       } {
 }
 

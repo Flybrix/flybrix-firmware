@@ -54,7 +54,7 @@ void PilotCommand::applyControl(const ControlVectors& control_vectors) {
 void PilotCommand::processMotorEnablingIteration() {
     // Ignore if motors are already enabled
     if (!airframe_.motorsEnabled()) {
-        processMotorEnablingIterationHelper();  // this can flip Status::ENABLED to true
+        processMotorEnablingIterationHelper();  // this can flip Status::ARMED to true
         // hold controls low for some time after enabling
         throttle_hold_off_.reset(80);  // @40Hz -- hold for 2 sec
     }
@@ -198,7 +198,7 @@ RcCommand PilotCommand::processCommands(RcState&& rc_state) {
     return rc_state.command;
 }
 
-bool PilotCommand::isFailingState() const {
+bool PilotCommand::isArmingFailureState() const {
     return control_state_ == ControlState::FailAngle || control_state_ == ControlState::FailStability || control_state_ == ControlState::AwaitingAuxDisable ||
            control_state_ == ControlState::ThrottleLocked;
 }
@@ -219,17 +219,17 @@ uint8_t PilotCommand::failToNumber() const {
 
 void PilotCommand::setControlState(ControlState state) {
     control_state_ = state;
-    if (isFailingState()) {
+    if (isArmingFailureState()) {
         CRGB color = CRGB::White;
         LEDPattern::Pattern pattern = LEDPattern::SOLID;
         for (const LED::StateCase& sc : led_.states.states) {
-            if (sc.status & Status::ENABLING) {
+            if (sc.status & Status::ARMING) {
                 color = sc.color_right_front.crgb();
                 pattern = sc.pattern;
                 break;
             }
         }
-        led_.errorStart(pattern, color, CRGB::Orange, failToNumber());
+        led_.errorStart(pattern, color, LED::fade(CRGB::Orange), failToNumber());
     } else {
         led_.errorStop();
     }
@@ -237,11 +237,8 @@ void PilotCommand::setControlState(ControlState state) {
     airframe_.setOverride(isOverridden());
 
     flag_.assign(Status::IDLE, control_state_ == ControlState::Disabled);
-    flag_.assign(Status::ENABLING, control_state_ == ControlState::Enabling);
-    flag_.assign(Status::FAIL_OTHER, control_state_ == ControlState::AwaitingAuxDisable || control_state_ == ControlState::ThrottleLocked);
-    flag_.assign(Status::FAIL_STABILITY, control_state_ == ControlState::FailStability);
-    flag_.assign(Status::FAIL_ANGLE, control_state_ == ControlState::FailAngle);
-    flag_.assign(Status::RX_FAIL, control_state_ == ControlState::FailRx);
-    flag_.assign(Status::ENABLED, control_state_ == ControlState::Enabled);
+    flag_.assign(Status::ARMING, control_state_ == ControlState::Enabling || isArmingFailureState());
+    flag_.assign(Status::NO_SIGNAL, control_state_ == ControlState::FailRx);
+    flag_.assign(Status::ARMED, control_state_ == ControlState::Enabled);
     flag_.assign(Status::OVERRIDE, isOverridden());
 }

@@ -64,7 +64,7 @@ class PilotCommand {
     bool canRequestEnabling() const;
     void setControlState(ControlState state);
 
-    bool isFailingState() const;
+    bool isArmingFailureState() const;
     uint8_t failToNumber() const;
 
     bool upright() const;
@@ -80,7 +80,7 @@ class PilotCommand {
     ControlState control_state_{ControlState::AwaitingAuxDisable};
     Ticker<uint8_t> throttle_hold_off_;  // hold controls low for some time after enabling
     int16_t invalid_count{0};
-    uint16_t enable_attempts_{0};  // increment when we're in the STATUS_ENABLING state
+    uint16_t enable_attempts_{0};  // increment when we're in the STATUS_ARMING state
     bool idle_{false};
 };
 
