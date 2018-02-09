@@ -352,6 +352,8 @@ void loop() {
 
     if (loops::stopped()) {
         Serial.println("ERROR: loops stopped?!?!");
+        sys.led.errorStart(LEDPattern::SOLID, CRGB::White, CRGB::Red, 2, false);
+        sys.led.errorStop();
         return;
     }
     
