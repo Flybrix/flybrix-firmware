@@ -11,7 +11,7 @@ inline CRGB fadeBy(CRGB color, uint8_t amount) {
     return color.fadeLightBy(amount);
 }
 
-inline CRGB fade(CRGB color) {
+CRGB LED::fade(CRGB color) {
     return fadeBy(color, 230);
 }
 
@@ -60,12 +60,8 @@ void LED::set(LEDPattern::Pattern pattern, CRGB color, bool red_indicator, bool 
     set(pattern, color, color, red_indicator, green_indicator);
 }
 
-void LED::errorStart(LEDPattern::Pattern pattern, CRGB color_back, CRGB color_front, uint8_t count, bool fade) {
+void LED::errorStart(LEDPattern::Pattern pattern, CRGB color_back, CRGB color_front, uint8_t count) {
     error_raised = true;
-    if (fade) {
-        color_back = fade(color_back);
-        color_front = fade(color_front);
-    }
     switch (count) {
         case 0: {
             use(pattern, color_back, color_back, color_back, color_back, true, false);
@@ -98,10 +94,6 @@ void LED::update() {
 }
 
 void LED::use(LEDPattern::Pattern pattern, CRGB color_right_front, CRGB color_right_back, CRGB color_left_front, CRGB color_left_back, bool red_indicator, bool green_indicator) {
-    this->color_right_front = color_right_front;
-    this->color_right_back = color_right_back;
-    this->color_left_front = color_left_front;
-    this->color_left_back = color_left_back;
     red_indicator ? indicatorRedOn() : indicatorRedOff();
     green_indicator ? indicatorGreenOn() : indicatorGreenOff();
     LED_driver.setPattern(pattern);
@@ -112,7 +104,6 @@ void LED::use(LEDPattern::Pattern pattern, CRGB color_right_front, CRGB color_ri
 }
 
 void LED::setWhite(board::led::Position lower_left, board::led::Position upper_right, bool red_indicator, bool green_indicator, uint8_t fading) {
-    color_right_front = color_right_back = color_left_front = color_left_back = CRGB::Black;
     override = true;
     oldStatus = 0;
     red_indicator ? indicatorRedOn() : indicatorRedOff();

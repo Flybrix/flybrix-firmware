@@ -288,11 +288,14 @@ bool printTasks() {
 }
 
 void setup() {
+    CRGB green = LED::fade(CRGB::Green);
+    CRGB red = LED::fade(CRGB::Red);
+
     debug_serial_comm = &sys.conf;
 
     // MPU9250 is limited to 400kHz bus speed.
     Wire.begin(I2C_MASTER, 0x00, board::I2C_PINS, board::I2C_PULLUP, I2C_RATE_400);  // For I2C pins 18 and 19
-    sys.led.errorStart(LEDPattern::SOLID, CRGB::Green, CRGB::Red, 0);
+    sys.led.errorStart(LEDPattern::SOLID, green, red, 0);
 
     //EEPROM.write(0, 255); //mark EEPROM empty for factory reset
 
@@ -303,7 +306,7 @@ void setup() {
 
     sys.state.resetState();
 
-    sys.led.errorStart(LEDPattern::SOLID, CRGB::Green, CRGB::Red, 1);
+    sys.led.errorStart(LEDPattern::SOLID, green, red, 1);
     sys.bmp.restart();
     if (sys.bmp.getID() == 0x58) {
         // state is unhappy without an initial pressure
@@ -317,7 +320,7 @@ void setup() {
             ;
     }
 
-    sys.led.errorStart(LEDPattern::SOLID, CRGB::Green, CRGB::Red, 2);
+    sys.led.errorStart(LEDPattern::SOLID, green, red, 2);
     sys.imu.restart();
     if (sys.imu.hasCorrectIDs()) {
         sys.imu.initialize();
@@ -334,7 +337,7 @@ void setup() {
         runTestMode(sys.state, sys.led, sys.pilot);
     }
 
-    sys.led.errorStart(LEDPattern::SOLID, CRGB::Green, CRGB::Red, 3);
+    sys.led.errorStart(LEDPattern::SOLID, green, red, 3);
 
     // Perform intial check for an SD card
     sdcard::startup();
@@ -352,7 +355,7 @@ void loop() {
 
     if (loops::stopped()) {
         Serial.println("ERROR: loops stopped?!?!");
-        sys.led.errorStart(LEDPattern::SOLID, CRGB::White, CRGB::Red, 2, false);
+        sys.led.errorStart(LEDPattern::SOLID, CRGB::White, CRGB::Red, 2);
         sys.led.errorStop();
         return;
     }

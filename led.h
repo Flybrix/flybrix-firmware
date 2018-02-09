@@ -28,7 +28,7 @@ class LED {
     void set(LEDPattern::Pattern pattern, CRGB color_right, CRGB color_left, bool red_indicator, bool green_indicator);
     void set(LEDPattern::Pattern pattern, CRGB color, bool red_indicator = false, bool green_indicator = false);
 
-    void errorStart(LEDPattern::Pattern pattern, CRGB color_back, CRGB color_front, uint8_t count, bool fade = true);
+    void errorStart(LEDPattern::Pattern pattern, CRGB color_back, CRGB color_front, uint8_t count);
     void errorStop();
 
     void setWhite(board::led::Position lower_left = board::led::Position::Min(), board::led::Position upper_right = board::led::Position::Max(), bool red_indicator = false,
@@ -95,6 +95,8 @@ class LED {
 
     void parseConfig();
 
+    static CRGB fade(CRGB color);
+
    private:
     void use(LEDPattern::Pattern pattern, CRGB color_right_front, CRGB color_right_back, CRGB color_left_front, CRGB color_left_back, bool red_indicator, bool green_indicator);
     void changeLights();
@@ -108,11 +110,6 @@ class LED {
     uint16_t oldStatus{0};
     bool error_raised{false};
     bool override{false};
-
-    CRGB color_right_front{CRGB::Black};
-    CRGB color_right_back{CRGB::Black};
-    CRGB color_left_front{CRGB::Black};
-    CRGB color_left_back{CRGB::Black};
 };
 
 #endif
