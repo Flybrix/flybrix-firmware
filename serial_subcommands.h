@@ -13,6 +13,7 @@
 #include "command.h"
 #include "debug.h"
 #include "loop_stopper.h"
+#include "stateFlag.h"
 
 enum SerialComm::Commands : uint8_t {
     REQ_RESPONSE,
@@ -235,6 +236,8 @@ DO_SUBCOMMAND(SET_CARD_RECORDING) {
         }
     }
     sdcard::writing::setLock(shouldLock);
+
+    flag_.assign(Status::RECORDING_SD, sdcard::getState() == sdcard::State::WriteStates);
     return success;
 }
 

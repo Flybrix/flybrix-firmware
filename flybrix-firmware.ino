@@ -46,6 +46,7 @@
 
 Systems sys;
 uint8_t low_battery_counter = 0;
+uint8_t critical_battery_counter = 0;
 
 bool updateLoopCount() {
     sys.state.loopCount++;
@@ -102,11 +103,23 @@ bool checkBatteryUse() {
         } else {
             low_battery_counter--;
         }
+
+        if (sys.pwr.V0() < 2.4f) {
+            critical_battery_counter++;
+        } else {
+            critical_battery_counter--;
+        }
     } else {
         if (sys.pwr.V0() < 3.5f) {
             low_battery_counter++;
         } else {
             low_battery_counter--;
+        }
+
+        if (sys.pwr.V0() < 3.0f) {
+            critical_battery_counter++;
+        } else {
+            critical_battery_counter--;
         }
     }
     if (low_battery_counter > 40) {
@@ -116,6 +129,15 @@ bool checkBatteryUse() {
     if (low_battery_counter < 2) {
         sys.flag.clear(Status::BATTERY_LOW);
         low_battery_counter = 2;
+    }
+
+    if (critical_battery_counter > 40) {
+        sys.flag.set(Status::BATTERY_CRITICAL);
+        critical_battery_counter = 40;
+    }
+    if (critical_battery_counter < 2) {
+        sys.flag.clear(Status::BATTERY_CRITICAL);
+        critical_battery_counter = 2;
     }
 
     return true;

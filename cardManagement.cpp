@@ -97,16 +97,16 @@ class WritingBuffer {
 } writingBuffer;
 
 size_t WritingBuffer::write(const uint8_t* data, size_t length) {
-    if (overbuffered){
-        if (!hideOverbufferedWarning){
+    if (overbuffered) {
+        if (!hideOverbufferedWarning) {
             DebugPrint("WARNING: SD buffer overflow. Log data dropped!");
-            hideOverbufferedWarning = true; //show only once
+            hideOverbufferedWarning = true;  //show only once
         }
         return length;
     }
     for (size_t i = 0; i < length; ++i) {
         block[currentBlock][currentPointer++] = data[i];
-        
+
         if (currentPointer < 512)
             continue;
         currentPointer = 0;
@@ -114,7 +114,7 @@ size_t WritingBuffer::write(const uint8_t* data, size_t length) {
             currentBlock = 0;
         if (currentBlock == startBlock) {
             overbuffered = true;
-            return length - i; //bytes not buffered
+            return length - i;  //bytes not buffered
         }
     }
     return 0;
@@ -131,7 +131,8 @@ uint8_t* WritingBuffer::popBlock() {
     if (++startBlock >= BUFFER_BLOCK_COUNT)
         startBlock = 0;
     overbuffered = false;
-    hideOverbufferedWarning = false;;
+    hideOverbufferedWarning = false;
+    ;
     return retval;
 }
 
@@ -206,7 +207,7 @@ uint32_t bytes_dropped{0};
 uint32_t last_bytes_written{0};
 bool hideFileBlockCountWarning{false};
 
-void printReport(){
+void printReport() {
     Serial.printf("SD  bytes buffered/sent/dropped:  %8d / %8d / %8d\n", bytes_written, bytes_sent, bytes_dropped);
 }
 
@@ -221,36 +222,39 @@ void open() {
     openFile("st");
 }
 
-uint32_t bytesWritten(){
+uint32_t bytesWritten() {
     return last_bytes_written;
 }
 
 void write(const uint8_t* data, size_t length) {
     last_bytes_written = 0;
-    
+
     if (!openSD())
         return;
     if (!isWriting())
         return;
-    if (block_number == FILE_BLOCK_COUNT) {
-        if (!hideFileBlockCountWarning){
+    if (fileIsFull()) {
+        if (!hideFileBlockCountWarning) {
             DebugPrint("SD file has reached FILE_BLOCK_COUNT in writing::write!");
             hideFileBlockCountWarning = true;
         }
         bytes_dropped += length;
         return;
     }
-    if (length > 0){
+    if (length > 0) {
         size_t bytes_not_buffered = writingBuffer.write(data, length);
         last_bytes_written = length - bytes_not_buffered;
-        if (bytes_not_buffered > 0){
+        if (bytes_not_buffered > 0) {
             bytes_written += last_bytes_written;
             bytes_dropped += bytes_not_buffered;
-        }
-        else {
+        } else {
             bytes_written += length;
         }
     }
+}
+
+bool fileIsFull() {
+    return block_number == FILE_BLOCK_COUNT;
 }
 
 void send() {
@@ -258,29 +262,28 @@ void send() {
         return;
     if (!isWriting())
         return;
-    if (block_number == FILE_BLOCK_COUNT)
+    if (fileIsFull())
         return;
     if (!writingBuffer.hasBlock())
         return;
-    if (sd.card()->isBusy()) { // can last up to 150msec!
+    if (sd.card()->isBusy()) {  // can last up to 150msec!
         uint32_t start = micros();
         uint32_t delay = 0;
-        const uint32_t max_delay = 20; //usec; set <250 to buffer data
-        while(sd.card()->isBusy() && delay < max_delay){
+        const uint32_t max_delay = 20;  //usec; set <250 to buffer data
+        while (sd.card()->isBusy() && delay < max_delay) {
             delay = micros() - start;
         }
         if (delay > 250) {
             loops::Stopper _stopper("wait for sd card", delay);
         }
         if (sd.card()->isBusy()) {
-            return; //use the buffer rather than delay loops
+            return;  //use the buffer rather than delay loops
         }
     }
     if (!sd.card()->writeData(writingBuffer.popBlock()))
         DebugPrint("Failed to write data!");
     block_number++;
     bytes_sent += 512;
-    
 }
 
 void close() {

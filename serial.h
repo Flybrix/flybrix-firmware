@@ -97,6 +97,9 @@ class SerialComm {
 
     bool processBluetoothCommand();
 
+    template <std::size_t N>
+    void WriteToOutput(CobsPayload<N>& payload, bool use_logger = false) const;
+
    private:
     uint16_t PacketSize(uint32_t mask) const;
 

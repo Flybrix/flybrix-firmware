@@ -107,6 +107,7 @@ void PilotCommand::processMotorEnablingIterationHelper() {
             setControlState(ControlState::ThrottleLocked);
             sdcard::writing::open();
             airframe_.enableMotors();
+            flag_.assign(Status::RECORDING_SD, sdcard::getState() == sdcard::State::WriteStates);
         }
         return;
     }
@@ -133,6 +134,7 @@ void PilotCommand::disableMotors() {
     airframe_.disableMotors();
     setControlState(ControlState::Disabled);
     sdcard::writing::close();
+    flag_.assign(Status::RECORDING_SD, sdcard::getState() == sdcard::State::WriteStates);
 }
 
 RcCommand PilotCommand::processCommands(RcState&& rc_state) {

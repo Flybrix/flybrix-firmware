@@ -13,6 +13,7 @@
 #include "config.h"
 #include "eepromcursor.h"
 #include "serialFork.h"
+#include "stateFlag.h"
 
 template <std::size_t N>
 inline void WriteProtocolHead(SerialComm::MessageType type, uint32_t mask, CobsPayload<N>& payload) {
@@ -21,10 +22,11 @@ inline void WriteProtocolHead(SerialComm::MessageType type, uint32_t mask, CobsP
 }
 
 template <std::size_t N>
-inline void WriteToOutput(CobsPayload<N>& payload, bool use_logger = false) {
+void SerialComm::WriteToOutput(CobsPayload<N>& payload, bool use_logger) const {
     auto package = payload.Encode();
     if (use_logger) {
         sdcard::writing::write(package.data, package.length);
+        flag_.assign(Status::LOG_FULL, sdcard::writing::fileIsFull());
     } else {
         writeSerial(package.data, package.length);
     }

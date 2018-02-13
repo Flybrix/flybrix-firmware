@@ -42,14 +42,16 @@ void printReport();
 // We can set a lock to SD opening/closing controls, which can only be overriden with serial commands
 void setLock(bool enable);
 bool isLocked();
-}
+
+bool fileIsFull();
+}  // namespace writing
 
 namespace reading {
 void open();
 void close();
 bool hasMore();
 char read();
-}
-}
+}  // namespace reading
+}  // namespace sdcard
 
 #endif
