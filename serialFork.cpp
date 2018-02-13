@@ -9,6 +9,7 @@
 #include "board.h"
 #include "devicename.h"
 #include "usbModeSelector.h"
+#include "debug.h"
 
 class ChannelBuffer {
   public:
@@ -215,11 +216,11 @@ void Bluetooth::setBluetoothUart(const DeviceName& name) {
 
     uint32_t waited = (micros() - start_time)/1000;
     if (waited < 2500) {
-        Serial.printf("\nFinishing delay for AT mode. Waiting %d msec.\n", 2500-waited);
+        DebugPrintf("Delaying %d msec for Rigado AT mode.",  2500-waited);
         delay(2500-waited); // time needed initialization of AT mode
     }
     else {
-        Serial.printf("\nAlready waited %d msec. AT mode should be ready.\n", waited);
+        DebugPrintf("Waited %d msec for Rigado AT mode.", waited);
     }
                                     
     Serial1.print("at$name ");
