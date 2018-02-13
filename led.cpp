@@ -18,13 +18,17 @@ CRGB LED::fade(CRGB color) {
 // fading is in 256ths : https://github.com/FastLED/FastLED/wiki/Pixel-reference
 LED::States::States()
     : states{
-          LED::StateCase(Status::BATTERY_LOW, LEDPattern::BEACON, fade(CRGB::Orange)),     //
-          LED::StateCase(Status::OVERRIDE, LEDPattern::SOLID, fade(CRGB::LightSeaGreen)),  //
-          LED::StateCase(Status::LOG_FULL, LEDPattern::FLASH, fade(CRGB::Orange)),         //
-          LED::StateCase(Status::NO_SIGNAL, LEDPattern::BREATHE, fade(CRGB::Orange)),      //
-          LED::StateCase(Status::ARMING, LEDPattern::FLASH, fade(CRGB::Blue)),             //
-          LED::StateCase(Status::ARMED, LEDPattern::BEACON, fade(CRGB::Blue)),             //
-          LED::StateCase(Status::IDLE, LEDPattern::BEACON, fade(CRGB::Green)),             //
+          LED::StateCase(Status::CRASH_DETECTED, LEDPattern::FLASH, fade(CRGB::Orange)),
+          LED::StateCase(Status::BATTERY_CRITICAL, LEDPattern::FLASH, fade(CRGB::Red)),
+          LED::StateCase(Status::BATTERY_LOW, LEDPattern::BEACON, fade(CRGB::Orange)),
+          LED::StateCase(Status::LOOP_SLOW, LEDPattern::SOLID, fade(CRGB::Red)),
+          LED::StateCase(Status::OVERRIDE, LEDPattern::SOLID, fade(CRGB::LightSeaGreen)),
+          LED::StateCase(Status::LOG_FULL, LEDPattern::FLASH, fade(CRGB::Orange)),
+          LED::StateCase(Status::NO_SIGNAL, LEDPattern::BREATHE, fade(CRGB::Orange)),
+          LED::StateCase(Status::ARMING, LEDPattern::FLASH, fade(CRGB::Blue)),
+          LED::StateCase(Status::ARMED, LEDPattern::BEACON, fade(CRGB::Blue)),
+          LED::StateCase(Status::RECORDING_SD, LEDPattern::BEACON, fade(CRGB::DarkMagenta)),
+          LED::StateCase(Status::IDLE, LEDPattern::BEACON, fade(CRGB::Green)),
       } {
 }
 

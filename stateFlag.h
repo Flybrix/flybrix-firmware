@@ -12,17 +12,17 @@
 using FlagData = uint16_t;
 
 enum Status : FlagData {
-    NO_SIGNAL = 0x0008,
-
-    IDLE = 0x0010,
-
-    ARMING = 0x0020,
-    ARMED = 0x0400,
-
-    BATTERY_LOW = 0x0800,
-    LOG_FULL = 0x2000,
-
-    OVERRIDE = 0x8000,
+    NO_SIGNAL = 1 << 3,
+    IDLE = 1 << 4,
+    ARMING = 1 << 5,
+    RECORDING_SD = 1 << 6,
+    LOOP_SLOW = 1 << 8,
+    ARMED = 1 << 10,
+    BATTERY_LOW = 1 << 11,
+    BATTERY_CRITICAL = 1 << 12,
+    LOG_FULL = 1 << 13,
+    CRASH_DETECTED = 1 << 14,
+    OVERRIDE = 1 << 15,
 };
 
 class StateFlag final {
