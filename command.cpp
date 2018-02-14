@@ -104,10 +104,10 @@ void PilotCommand::processMotorEnablingIterationHelper() {
         if (!stable()) {
             setControlState(ControlState::FailStability);
         } else {
-            setControlState(ControlState::ThrottleLocked);
             sdcard::writing::open();
             airframe_.enableMotors();
             flag_.assign(Status::RECORDING_SD, sdcard::getState() == sdcard::State::WriteStates);
+            setControlState(ControlState::ThrottleLocked);
         }
         return;
     }
