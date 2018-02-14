@@ -104,13 +104,13 @@ bool checkBatteryUse() {
             low_battery_counter--;
         }
 
-        if (sys.pwr.V0() < 2.4f) {
+        if (sys.pwr.V0() < 2.6f) {
             critical_battery_counter++;
         } else {
             critical_battery_counter--;
         }
     } else {
-        if (sys.pwr.V0() < 3.5f) {
+        if (sys.pwr.V0() < 3.2f) {
             low_battery_counter++;
         } else {
             low_battery_counter--;
@@ -191,12 +191,10 @@ bool bluetooth_processCommand() {
     return sys.conf.processBluetoothCommand();
 }
 
-#define AVERAGE_DELAY_TARGET_USEC 2500
-
-float sd_max_rate_Hz = 185.0f; // ~0.5% sd data dropped using 64 block buffer, actual rate is ~192Hz
+#define AVERAGE_DELAY_TARGET_USEC 1400
 
 TaskRunner tasks[] = {
-    {"print tasks       ", printTasks, 30/*sec*/*1000*1000, false, true}, // ( pause ) debug printing interval, enabled? (t/f), force to always log stats
+    {"print tasks       ", printTasks, 20/*sec*/*1000*1000, false, true},  // ( pause ) debug printing interval, enabled? (t/f), force to always log stats
     {"loop count        ", updateLoopCount, AVERAGE_DELAY_TARGET_USEC},   // (<   5us)
     {"pilot input       ", processPilotInput, hzToMicros(40)},            // (< 160us) cPPM signals come at ~40Hz
     {"send bluetooth    ", bluetooth_send, 33000 /*usec*/},               // (<  20us) Rigado BMDWare limited to 20B each 30msec
@@ -215,12 +213,14 @@ TaskRunner tasks[] = {
     {"get usb           ", usb_get, hzToMicros(100)},                     // (?)
     {"send usb          ", usb_send, hzToMicros(100)},                    // (?)
     {"autopilot         ", runAutopilot, hzToMicros(1), false},           // (?) future feature; turn off for now
-    {"state estimate    ", updateStateEstimate, hzToMicros(320) },        // (<2025us) ~2x gyro rate; last priority when not the only task
+    {"state estimate    ", updateStateEstimate, hzToMicros(640)},         // (1340us + 700us) split in two calls; should be ~2x gyro rate
 };
 #define TASK_COUNT 20
 #define SD_STATE_OUT tasks[8]
 #define SERIAL_STATE_OUT tasks[11]
 #define STATE_ESTIMATE tasks[19]
+
+float sd_max_rate_Hz = 200.0f; // actual rate is ~197Hz
 
 void sdLogTest(){
     TaskRunner& t = SD_STATE_OUT;
@@ -234,7 +234,7 @@ void sdLogTest(){
         TaskRunner& task = tasks[i];
         task.resetStats();
     }
-    sd_max_rate_Hz += 10.0;
+    sd_max_rate_Hz += 1.0;
 }
 
 void performanceReport(){
@@ -385,7 +385,7 @@ void loop() {
         TaskRunner& task = tasks[i];
 
         if (task.isEnabled()){
-            task.process( 2000 ); // state estimation expected runtime in usec
+            task.process( 1000 ); // state estimation expected runtime in usec
             
             if (loops::used()) { // process any stop immediately in case other tasks run during this iteration!
                 for (TaskRunner& task : tasks) {
@@ -399,9 +399,8 @@ void loop() {
             
             if ( delay_usec > AVERAGE_DELAY_TARGET_USEC ) {
                 average_delay_usec = ( average_delay_usec*15 + delay_usec ) >> 4;
-                if (average_delay_usec > (AVERAGE_DELAY_TARGET_USEC + 300)) {
-                    //indicate slow loops if we fall ~10% behind
-                    Serial.println(average_delay_usec, DEC);
+                if (average_delay_usec > (1860)) {
+                    DebugPrintf("Main loop is slower than expected (%d usec)!", average_delay_usec);
                 }
                 break;
             }

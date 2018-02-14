@@ -47,6 +47,8 @@ void Localization::ProcessMeasurementPT(float p_sl, float p, float t) {
     ProcessMeasurementElevation(calculateElevation(p_sl, p, t));
 }
 
+uint8_t stage{0};
+
 void Localization::updateFilter(uint32_t time) {
     if (!has_measurement_) {
         return;
@@ -61,8 +63,15 @@ void Localization::updateFilter(uint32_t time) {
     }
     timeNow = time;
 
-    ukf_.predict(dt);
-    ukf_.update(vu_, vv_, d_tof_, h_bar_, ahrs_.pose().pitch(), ahrs_.pose().roll());
+    if (stage == 0) {
+        ukf_.predict(dt);
+        stage++;
+    }
+    else if (stage == 1) {
+        ukf_.update(vu_, vv_, d_tof_, h_bar_, ahrs_.pose().pitch(), ahrs_.pose().roll());
+        stage = 0;
+    }
+    
 }
 
 void Localization::ProcessMeasurementIMU(uint32_t time, const Vector3<float>& gyroscope, const Vector3<float>& accelerometer) {
