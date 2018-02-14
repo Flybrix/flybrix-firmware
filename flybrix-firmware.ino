@@ -191,37 +191,39 @@ bool bluetooth_processCommand() {
     return sys.conf.processBluetoothCommand();
 }
 
-#define AVERAGE_DELAY_TARGET_USEC hzToMicros(500)
+#define AVERAGE_DELAY_TARGET_USEC 2500
+
+float sd_max_rate_Hz = 185.0f; // ~0.5% sd data dropped using 64 block buffer, actual rate is ~192Hz
 
 TaskRunner tasks[] = {
-    {"serial state out  ", serial_writeState, hzToMicros(1)},             // set dynamically; leave at index [0]
-    {"SD state out      ", sd_writeState, hzToMicros(1)},                 // set dynamically; leave at index [1]
-    {"loop count        ", updateLoopCount, AVERAGE_DELAY_TARGET_USEC},   // overall pacing
-    {"update i2c        ", updateI2C, hzToMicros(400)},                   // update i2c often to reduce sensor latency
-    {"get bluetooth     ", bluetooth_get, hzToMicros(400)},               // 
-    {"get usb           ", usb_get, hzToMicros(400)},                     // 
-    {"send SD block     ", sd_send, hzToMicros(400)},                     // make faster than fastest sd writes (200Hz goal)
-    {"state estimate    ", updateStateEstimate, hzToMicros(350)},         // this takes about 2 msec; run at 2x gyro rate
-    {"control vectors   ", updateControlVectors, hzToMicros(350)},        // match state updates
-    {"run imu           ", performInertialMeasurement, hzToMicros(175)},  // gyro rate is 184Hz
-    {"process bluetooth ", bluetooth_processCommand, hzToMicros(40)},     // we expect 20Hz rcData; oversample
-    {"pilot input       ", processPilotInput, hzToMicros(40)},            // cPPM signals come at ~40Hz
-    {"update lights     ", updateIndicatorLights, hzToMicros(30)},        // keep at 30Hz for visual effects
-    {"pressure sensor   ", processPressureSensor, hzToMicros(26.3)},      // bmp280 datasheet output data rate
-    {"autopilot         ", runAutopilot, hzToMicros(1), false},           // (future feature; turn off for now)
-    {"send usb          ", usb_send, hzToMicros(100)},                    // 
-    {"send bluetooth    ", bluetooth_send, 33000 /*usec*/},               // Rigado BMDWare limited to 20B each 30msec
-    {"check battery     ", checkBatteryUse, hzToMicros(10)},              // 
-    {"update magnet     ", updateMagnetometer, hzToMicros(10)},           // 
-    {"print tasks       ", printTasks, 30/*sec*/*1000*1000, true, true},  // debug printing interval, run? (t/f), always log stats
+    {"print tasks       ", printTasks, 30/*sec*/*1000*1000, false, true}, // ( pause ) debug printing interval, enabled? (t/f), force to always log stats
+    {"loop count        ", updateLoopCount, AVERAGE_DELAY_TARGET_USEC},   // (<   5us)
+    {"pilot input       ", processPilotInput, hzToMicros(40)},            // (< 160us) cPPM signals come at ~40Hz
+    {"send bluetooth    ", bluetooth_send, 33000 /*usec*/},               // (<  20us) Rigado BMDWare limited to 20B each 30msec
+    {"process bluetooth ", bluetooth_processCommand, hzToMicros(40)},     // (< 265us) we expect 20Hz rcData; oversample
+    {"control vectors   ", updateControlVectors, hzToMicros(320)},        // (< 260us) match state updates
+    {"send SD block     ", sd_send, hzToMicros(300)},                     // (< 220us) slower requires larger buffer
+    {"update lights     ", updateIndicatorLights, hzToMicros(30)},        // (< 160us) keep at 30Hz for visual effects
+    {"SD state out      ", sd_writeState, hzToMicros(1)},                 // (< 200us) set dynamically; set index in #define below [8]
+    {"update i2c        ", updateI2C, hzToMicros(300)},                   // (< 465us) update often
+    {"get bluetooth     ", bluetooth_get, hzToMicros(300)},               // (<  85us)
+    {"serial state out  ", serial_writeState, hzToMicros(1)},             // (<  55us) set dynamically; set index in #define below [11]
+    {"run imu           ", performInertialMeasurement, hzToMicros(160)},  // (<  30us) gyro rate is 184Hz
+    {"pressure sensor   ", processPressureSensor, hzToMicros(26.3)},      // (<  30us) bmp280 datasheet output data rate
+    {"check battery     ", checkBatteryUse, hzToMicros(10)},              // (<  30us) 
+    {"update magnet     ", updateMagnetometer, hzToMicros(10)},           // (<  30us) 
+    {"get usb           ", usb_get, hzToMicros(100)},                     // (?)
+    {"send usb          ", usb_send, hzToMicros(100)},                    // (?)
+    {"autopilot         ", runAutopilot, hzToMicros(1), false},           // (?) future feature; turn off for now
+    {"state estimate    ", updateStateEstimate, hzToMicros(320) },        // (<2025us) ~2x gyro rate; last priority when not the only task
 };
-
-constexpr size_t TASK_COUNT = 20;
-
-float sd_max_rate_Hz = 185.0f; //occasional stalls but manageable, actual rate is ~180Hz
+#define TASK_COUNT 20
+#define SD_STATE_OUT tasks[8]
+#define SERIAL_STATE_OUT tasks[11]
+#define STATE_ESTIMATE tasks[19]
 
 void sdLogTest(){
-    TaskRunner& t = tasks[1];
+    TaskRunner& t = SD_STATE_OUT;
     if (t.log_count) {
         float rate = (t.log_count * 1000000.0f) / ((float) t.delay_track.value_sum);
         Serial.printf("%12" PRIu32 ", %12" PRIu32 ",  %12" PRIu32 ", %7.2f, %7.2f, ", micros(), t.work_count, t.log_count, sd_max_rate_Hz, rate);
@@ -236,7 +238,7 @@ void sdLogTest(){
 }
 
 void performanceReport(){
-    Serial.printf("\n[%10" PRIu32 "] Performance Report (Hz and ms): \n", micros());
+    Serial.printf("\n[%10" PRIu32 "] Performance Report (Hz / us): \n", micros());
     // print tasks in order from fastest to slowest
     size_t s[TASK_COUNT];
     for (size_t i = 0; i < TASK_COUNT; ++i) {
@@ -263,14 +265,16 @@ void performanceReport(){
             Serial.printf("[%s %11d]\n", task.name, 0);
             continue;
         }
-        float rate = (task.log_count * 1000000.0f) / ((float) task.delay_track.value_sum);
-        float average_duration_msec = task.duration_track.value_sum / (1000.0f * task.log_count);
-        processor_load_percent += 0.1 * average_duration_msec * rate; // 100%/1000 msec *  msec/cycle * cycles/second
+        
+        float average_duration_usec = (float) task.duration_track.value_sum / task.log_count;
+        float average_delay_usec = (float) task.delay_track.value_sum / task.log_count;
+        float rate = 1000000.0f / average_delay_usec;
+        processor_load_percent += 0.1 * (average_duration_usec / 1000.0f) * rate; // 100%/1000 msec *  msec/cycle * cycles/second
 
-        Serial.printf("[%s %11d] rate: %7.2f       delay: %9.2f %9.2f %9.2f        duration: %9.2f %9.2f %9.2f\n", 
+        Serial.printf("[%s %11d] rate: %7.2f       delay: %12d %12.1f %12d        duration: %12d %12.1f %12d\n", 
                       task.name, task.work_count, rate, 
-                      task.delay_track.value_min / 1000.0f, task.delay_track.value_sum / (1000.0f * task.log_count), task.delay_track.value_max / 1000.0f, 
-                      task.duration_track.value_min / 1000.0f, average_duration_msec, task.duration_track.value_max / 1000.0f);
+                      task.delay_track.value_min,    average_delay_usec ,   task.delay_track.value_max, 
+                      task.duration_track.value_min, average_duration_usec, task.duration_track.value_max);
     }
     sdcard::writing::printReport();
     printSerialReport();
@@ -353,42 +357,54 @@ void setup() {
 }
 
 uint32_t average_delay_usec = 0;
+bool state_update_only = true;
 
 void loop() {
     
     uint32_t start = micros();
     
     if (loops::stopped()) {
-        Serial.println("ERROR: loops stopped?!?!");
         sys.led.errorStart(LEDPattern::SOLID, CRGB::White, CRGB::Red, 2);
         sys.led.errorStop();
         return;
     }
+
+    // state updates take about as long as everything else combined; so we will force every odd iteration to run only the update
+    if (state_update_only) {
+        SERIAL_STATE_OUT.setDesiredInterval(sys.conf.GetSendStateDelay() * 1000, 1000*1000);  
+        SD_STATE_OUT.setDesiredInterval(max( hzToMicros(sd_max_rate_Hz), sys.conf.GetSdCardStateDelay() * 1000), 1000*1000);
+        STATE_ESTIMATE.process(0); // don't run consecutively if we squeezed in an update last time
+        state_update_only = false;
+        return;
+    }
+    state_update_only = true;
     
-    tasks[0].setDesiredInterval(sys.conf.GetSendStateDelay() * 1000, 1000*1000);  
-    tasks[1].setDesiredInterval(max( hzToMicros(sd_max_rate_Hz), sys.conf.GetSdCardStateDelay() * 1000), 1000*1000);
-    
+    // on the even updates, we will run the state estimation last if there is time
     for (size_t i = 0; i < TASK_COUNT; ++i) {
-        if (loops::used()) { // process any stop immediately in case other tasks were scheduled for this iteration!
-            for (TaskRunner& task : tasks) {
-                task.reset(loops::lastStart());
-            }
-            loops::reset();
-        }
-        
+
         TaskRunner& task = tasks[i];
 
         if (task.isEnabled()){
-            task.process();
-        }
-
-        if ( !loops::used() &&  (micros() - start) > AVERAGE_DELAY_TARGET_USEC ) {
-            average_delay_usec = ( average_delay_usec*15 + (micros()-start) ) >> 4;
-            if (average_delay_usec > 2*AVERAGE_DELAY_TARGET_USEC) {
-                //indicate slow loops
-                Serial.println(average_delay_usec, DEC);
+            task.process( 2000 ); // state estimation expected runtime in usec
+            
+            if (loops::used()) { // process any stop immediately in case other tasks run during this iteration!
+                for (TaskRunner& task : tasks) {
+                    task.reset(loops::lastStart());
+                }
+                start = micros();
+                loops::reset();
             }
-            //break;
+            
+            uint32_t delay_usec = micros() - start;
+            
+            if ( delay_usec > AVERAGE_DELAY_TARGET_USEC ) {
+                average_delay_usec = ( average_delay_usec*15 + delay_usec ) >> 4;
+                if (average_delay_usec > (AVERAGE_DELAY_TARGET_USEC + 300)) {
+                    //indicate slow loops if we fall ~10% behind
+                    Serial.println(average_delay_usec, DEC);
+                }
+                break;
+            }
         }
     }
 }

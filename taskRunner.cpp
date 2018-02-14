@@ -20,11 +20,11 @@ TaskRunner::TaskRunner(const char* _name, TaskPtr task, uint32_t desired_interva
     name = strdup(_name);
 }
 
-bool TaskRunner::process() {
+bool TaskRunner::process(uint32_t expected_time_until_next_attempt_usec) {
     uint32_t delay = micros() - last_update_us;
-    
-    if (desired_interval_us > delay) {
-        return false;
+
+    if ( (delay + expected_time_until_next_attempt_usec) < desired_interval_us ) {
+        return false; // we can wait
     }
 
     last_update_us = micros();
@@ -32,7 +32,7 @@ bool TaskRunner::process() {
     if (did_something){
         work_count++;
     }
-    if (always_log_stats || !loops::used()) {       
+    if ( always_log_stats || !loops::used() ) {       
         logExecution(delay, micros() - last_update_us); //increments log_count
     }
     return did_something;

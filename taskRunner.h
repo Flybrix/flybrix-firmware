@@ -58,7 +58,7 @@ class TaskRunner {
         }
     }
 
-    bool process();
+    bool process(uint32_t expected_time_until_next_attempt_usec);
     bool isEnabled(){
         return enabled;
     }
