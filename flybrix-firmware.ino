@@ -191,50 +191,29 @@ bool bluetooth_processCommand() {
     return sys.conf.processBluetoothCommand();
 }
 
-TaskRunner tasks[] = {
-    {serial_writeState, hzToMicros(1)},             // set dynamically
-    {sd_writeState, hzToMicros(1)},                 // set dynamically
-    {sd_send, hzToMicros(500)},                     // make faster than fastest sd writes (200Hz goal)
-    {updateLoopCount, hzToMicros(1000)},            // overall pacing 1kHz
-    {updateI2C, hzToMicros(999)},                   // update i2c often to reduce sensor latency
-    {updateIndicatorLights, hzToMicros(30)},        // keep at 30Hz for visual effects
-    {processPressureSensor, hzToMicros(26.3)},      // bmp280 datasheet output data rate
-    {bluetooth_processCommand, hzToMicros(40)},     // we expect 20Hz rcData; oversample
-    {updateStateEstimate, hzToMicros(368)},         // this takes about 2 msec; run at 2x gyro rate
-    {runAutopilot, hzToMicros(1)},                  // (future)
-    {usb_send, hzToMicros(100)},                    // 
-    {usb_get, hzToMicros(500)} ,                    //
-    {bluetooth_send, 33000 /*usec*/},               // Rigado BMDWare limited to 20B each 30msec
-    {bluetooth_get, hzToMicros(500)},               //
-    {updateControlVectors, hzToMicros(368)},        // match state updates
-    {processPilotInput, hzToMicros(40)},            // cPPM signals come at ~40Hz
-    {checkBatteryUse, hzToMicros(10)},              //
-    {updateMagnetometer, hzToMicros(10)},           //
-    {performInertialMeasurement, hzToMicros(200)},  // gyro rate is 184Hz
-    {printTasks, 30/*sec*/*1000*1000, false, true}, // debug printing interval, run? (t/f), always log stats
-};
+#define AVERAGE_DELAY_TARGET_USEC hzToMicros(500)
 
-const char* task_names[] = {
-    "serial state out  ",  //
-    "SD state out      ",  //
-    "send SD block     ",  //
-    "loop count        ",  //
-    "update i2c        ",  //
-    "update lights     ",  //
-    "pressure sensor   ",  //
-    "process bluetooth ",  //
-    "state estimate    ",  //
-    "autopilot         ",  //
-    "send usb          ",  //
-    "get usb           ",  //
-    "send bluetooth    ",  //
-    "get bluetooth     ",  //
-    "control vectors   ",  //
-    "pilot input       ",  //
-    "check battery     ",  //
-    "run magnet        ",  //
-    "run imu           ",  //
-    "print tasks       ",  //
+TaskRunner tasks[] = {
+    {"serial state out  ", serial_writeState, hzToMicros(1)},             // set dynamically; leave at index [0]
+    {"SD state out      ", sd_writeState, hzToMicros(1)},                 // set dynamically; leave at index [1]
+    {"loop count        ", updateLoopCount, AVERAGE_DELAY_TARGET_USEC},   // overall pacing
+    {"update i2c        ", updateI2C, hzToMicros(400)},                   // update i2c often to reduce sensor latency
+    {"get bluetooth     ", bluetooth_get, hzToMicros(400)},               // 
+    {"get usb           ", usb_get, hzToMicros(400)},                     // 
+    {"send SD block     ", sd_send, hzToMicros(400)},                     // make faster than fastest sd writes (200Hz goal)
+    {"state estimate    ", updateStateEstimate, hzToMicros(350)},         // this takes about 2 msec; run at 2x gyro rate
+    {"control vectors   ", updateControlVectors, hzToMicros(350)},        // match state updates
+    {"run imu           ", performInertialMeasurement, hzToMicros(175)},  // gyro rate is 184Hz
+    {"process bluetooth ", bluetooth_processCommand, hzToMicros(40)},     // we expect 20Hz rcData; oversample
+    {"pilot input       ", processPilotInput, hzToMicros(40)},            // cPPM signals come at ~40Hz
+    {"update lights     ", updateIndicatorLights, hzToMicros(30)},        // keep at 30Hz for visual effects
+    {"pressure sensor   ", processPressureSensor, hzToMicros(26.3)},      // bmp280 datasheet output data rate
+    {"autopilot         ", runAutopilot, hzToMicros(1), false},           // (future feature; turn off for now)
+    {"send usb          ", usb_send, hzToMicros(100)},                    // 
+    {"send bluetooth    ", bluetooth_send, 33000 /*usec*/},               // Rigado BMDWare limited to 20B each 30msec
+    {"check battery     ", checkBatteryUse, hzToMicros(10)},              // 
+    {"update magnet     ", updateMagnetometer, hzToMicros(10)},           // 
+    {"print tasks       ", printTasks, 30/*sec*/*1000*1000, true, true},  // debug printing interval, run? (t/f), always log stats
 };
 
 constexpr size_t TASK_COUNT = 20;
@@ -281,7 +260,7 @@ void performanceReport(){
         TaskRunner& task = tasks[s[i]];
         //Serial.printf("[%2d] ", s[i]);
         if (!task.log_count) {
-            Serial.printf("[%s %11d]\n", task_names[s[i]], 0);
+            Serial.printf("[%s %11d]\n", task.name, 0);
             continue;
         }
         float rate = (task.log_count * 1000000.0f) / ((float) task.delay_track.value_sum);
@@ -289,7 +268,7 @@ void performanceReport(){
         processor_load_percent += 0.1 * average_duration_msec * rate; // 100%/1000 msec *  msec/cycle * cycles/second
 
         Serial.printf("[%s %11d] rate: %7.2f       delay: %9.2f %9.2f %9.2f        duration: %9.2f %9.2f %9.2f\n", 
-                      task_names[s[i]], task.work_count, rate, 
+                      task.name, task.work_count, rate, 
                       task.delay_track.value_min / 1000.0f, task.delay_track.value_sum / (1000.0f * task.log_count), task.delay_track.value_max / 1000.0f, 
                       task.duration_track.value_min / 1000.0f, average_duration_msec, task.duration_track.value_max / 1000.0f);
     }
@@ -373,8 +352,12 @@ void setup() {
     loops::start();
 }
 
-void loop() {
+uint32_t average_delay_usec = 0;
 
+void loop() {
+    
+    uint32_t start = micros();
+    
     if (loops::stopped()) {
         Serial.println("ERROR: loops stopped?!?!");
         sys.led.errorStart(LEDPattern::SOLID, CRGB::White, CRGB::Red, 2);
@@ -387,17 +370,25 @@ void loop() {
     
     for (size_t i = 0; i < TASK_COUNT; ++i) {
         if (loops::used()) { // process any stop immediately in case other tasks were scheduled for this iteration!
-            for (size_t j = 0; j < TASK_COUNT; ++j) {
-                TaskRunner& t = tasks[j];
-                t.reset(loops::lastStart());
+            for (TaskRunner& task : tasks) {
+                task.reset(loops::lastStart());
             }
             loops::reset();
         }
+        
         TaskRunner& task = tasks[i];
 
         if (task.isEnabled()){
             task.process();
         }
 
+        if ( !loops::used() &&  (micros() - start) > AVERAGE_DELAY_TARGET_USEC ) {
+            average_delay_usec = ( average_delay_usec*15 + (micros()-start) ) >> 4;
+            if (average_delay_usec > 2*AVERAGE_DELAY_TARGET_USEC) {
+                //indicate slow loops
+                Serial.println(average_delay_usec, DEC);
+            }
+            //break;
+        }
     }
 }

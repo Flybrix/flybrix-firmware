@@ -8,13 +8,16 @@
 #include "loop_stopper.h"
 #include "debug.h"
 
-TaskRunner::TaskRunner(TaskPtr task, uint32_t desired_interval_us) : task{task}, desired_interval_us{desired_interval_us}, last_update_us{micros()}, enabled{true}, always_log_stats{false} {
+TaskRunner::TaskRunner(const char* _name, TaskPtr task, uint32_t desired_interval_us) : task{task}, desired_interval_us{desired_interval_us}, last_update_us{micros()}, enabled{true}, always_log_stats{false} {
+    name = strdup(_name);
 }
 
-TaskRunner::TaskRunner(TaskPtr task, uint32_t desired_interval_us, bool enabled) : task{task}, desired_interval_us{desired_interval_us}, last_update_us{micros()}, enabled{enabled}, always_log_stats{false} {
+TaskRunner::TaskRunner(const char* _name, TaskPtr task, uint32_t desired_interval_us, bool enabled) : task{task}, desired_interval_us{desired_interval_us}, last_update_us{micros()}, enabled{enabled}, always_log_stats{false} {
+    name = strdup(_name);
 }
 
-TaskRunner::TaskRunner(TaskPtr task, uint32_t desired_interval_us, bool enabled, bool always_log_stats) : task{task}, desired_interval_us{desired_interval_us}, last_update_us{micros()}, enabled{enabled}, always_log_stats{always_log_stats} {
+TaskRunner::TaskRunner(const char* _name, TaskPtr task, uint32_t desired_interval_us, bool enabled, bool always_log_stats) : task{task}, desired_interval_us{desired_interval_us}, last_update_us{micros()}, enabled{enabled}, always_log_stats{always_log_stats} {
+    name = strdup(_name);
 }
 
 bool TaskRunner::process() {

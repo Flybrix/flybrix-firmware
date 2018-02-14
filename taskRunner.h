@@ -38,10 +38,14 @@ struct StatTrack {
 
 class TaskRunner {
    public:
-    TaskRunner(TaskPtr task, uint32_t desired_interval_us);
-    TaskRunner(TaskPtr task, uint32_t desired_interval_us, bool enabled);
-    TaskRunner(TaskPtr task, uint32_t desired_interval_us, bool enabled, bool always_log_stats);
+    TaskRunner(const char* _name, TaskPtr task, uint32_t desired_interval_us);
+    TaskRunner(const char* _name, TaskPtr task, uint32_t desired_interval_us, bool enabled);
+    TaskRunner(const char* _name, TaskPtr task, uint32_t desired_interval_us, bool enabled, bool always_log_stats);
 
+    ~TaskRunner() {
+        free(name);
+    }
+    
     void setDesiredInterval(uint32_t value_usec, uint32_t disable_threshold_usec) {
         desired_interval_us = value_usec;
         if (value_usec < disable_threshold_usec){
@@ -74,7 +78,8 @@ class TaskRunner {
         duration_track.reset();
         log_count = 0;
     }
-
+    
+    char * name;
     TaskPtr task;
     uint32_t desired_interval_us;  
     uint32_t last_update_us;
