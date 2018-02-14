@@ -10,19 +10,21 @@
 #include <cstdint>
 #include "debug.h"
 
+class LED;
+
 namespace loops {
 void stop();
 void start();
 
 class Stopper final {
-  public:
-    Stopper(const char * _reason) {
+   public:
+    Stopper(const char* _reason) {
         stop();
         reason = strdup(_reason);
         start_usec = micros();
         delay_to_report = 0;
     }
-    Stopper(const char * _reason, uint32_t delay) {
+    Stopper(const char* _reason, uint32_t delay) {
         stop();
         reason = strdup(_reason);
         start_usec = micros();
@@ -30,14 +32,17 @@ class Stopper final {
     }
     ~Stopper() {
         start();
-        DebugPrintf("Paused %d usec to %s.", (delay_to_report>0) ? delay_to_report : micros()-start_usec, reason);
+        DebugPrintf("Paused %d usec to %s.", (delay_to_report > 0) ? delay_to_report : micros() - start_usec, reason);
         free(reason);
     }
-  private:
-    char * reason;
+
+   private:
+    char* reason;
     uint32_t start_usec;
     uint32_t delay_to_report;
 };
+
+void setLedIndicator(LED*);
 
 bool used();
 void reset();

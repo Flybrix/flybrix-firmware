@@ -156,7 +156,7 @@ bool printTasks();
 // channel (sd/usb/bluetooth) operations include buffer (read,write) and physical (get,send) transfers
 // "higher level" channel commands include "writeState" and "processCommand"
 
-bool sd_writeState(){ 
+bool sd_writeState(){
     sys.conf.SendState(0xFFFFFFFF, true); //only fills sd buffer
     return (sdcard::writing::bytesWritten() > 0);
 }
@@ -208,8 +208,8 @@ TaskRunner tasks[] = {
     {"serial state out  ", serial_writeState, hzToMicros(1)},             // (<  55us) set dynamically; set index in #define below [11]
     {"run imu           ", performInertialMeasurement, hzToMicros(160)},  // (<  30us) gyro rate is 184Hz
     {"pressure sensor   ", processPressureSensor, hzToMicros(26.3)},      // (<  30us) bmp280 datasheet output data rate
-    {"check battery     ", checkBatteryUse, hzToMicros(10)},              // (<  30us) 
-    {"update magnet     ", updateMagnetometer, hzToMicros(10)},           // (<  30us) 
+    {"check battery     ", checkBatteryUse, hzToMicros(10)},              // (<  30us)
+    {"update magnet     ", updateMagnetometer, hzToMicros(10)},           // (<  30us)
     {"get usb           ", usb_get, hzToMicros(100)},                     // (?)
     {"send usb          ", usb_send, hzToMicros(100)},                    // (?)
     {"autopilot         ", runAutopilot, hzToMicros(1), false},           // (?) future feature; turn off for now
@@ -254,7 +254,7 @@ void performanceReport(){
             if ( task_d <= mintask_d) {
                 min = j;
             }
-        }         
+        }
         size_t temp=s[i]; s[i]=s[min]; s[min]=temp; //swap(s[i], s[min])
     }
     float processor_load_percent{0.0f};
@@ -265,15 +265,15 @@ void performanceReport(){
             Serial.printf("[%s %11d]\n", task.name, 0);
             continue;
         }
-        
+
         float average_duration_usec = (float) task.duration_track.value_sum / task.log_count;
         float average_delay_usec = (float) task.delay_track.value_sum / task.log_count;
         float rate = 1000000.0f / average_delay_usec;
         processor_load_percent += 0.1 * (average_duration_usec / 1000.0f) * rate; // 100%/1000 msec *  msec/cycle * cycles/second
 
-        Serial.printf("[%s %11d] rate: %7.2f       delay: %12d %12.1f %12d        duration: %12d %12.1f %12d\n", 
-                      task.name, task.work_count, rate, 
-                      task.delay_track.value_min,    average_delay_usec ,   task.delay_track.value_max, 
+        Serial.printf("[%s %11d] rate: %7.2f       delay: %12d %12.1f %12d        duration: %12d %12.1f %12d\n",
+                      task.name, task.work_count, rate,
+                      task.delay_track.value_min,    average_delay_usec ,   task.delay_track.value_max,
                       task.duration_track.value_min, average_duration_usec, task.duration_track.value_max);
     }
     sdcard::writing::printReport();
@@ -288,11 +288,12 @@ bool printTasks() {
     loops::Stopper _stopper("print report");
     performanceReport();
     //sdLogTest();
-    
+
     return true;
 }
 
 void setup() {
+    loops::setLedIndicator(&sys.led);
     CRGB green = LED::fade(CRGB::Green);
     CRGB red = LED::fade(CRGB::Red);
 
@@ -360,9 +361,9 @@ uint32_t average_delay_usec = 0;
 bool state_update_only = true;
 
 void loop() {
-    
+
     uint32_t start = micros();
-    
+
     if (loops::stopped()) {
         sys.led.errorStart(LEDPattern::SOLID, CRGB::White, CRGB::Red, 2);
         sys.led.errorStop();
@@ -371,14 +372,14 @@ void loop() {
 
     // state updates take about as long as everything else combined; so we will force every odd iteration to run only the update
     if (state_update_only) {
-        SERIAL_STATE_OUT.setDesiredInterval(sys.conf.GetSendStateDelay() * 1000, 1000*1000);  
+        SERIAL_STATE_OUT.setDesiredInterval(sys.conf.GetSendStateDelay() * 1000, 1000*1000);
         SD_STATE_OUT.setDesiredInterval(max( hzToMicros(sd_max_rate_Hz), sys.conf.GetSdCardStateDelay() * 1000), 1000*1000);
         STATE_ESTIMATE.process(0); // don't run consecutively if we squeezed in an update last time
         state_update_only = false;
         return;
     }
     state_update_only = true;
-    
+
     // on the even updates, we will run the state estimation last if there is time
     for (size_t i = 0; i < TASK_COUNT; ++i) {
 
@@ -386,7 +387,7 @@ void loop() {
 
         if (task.isEnabled()){
             task.process( 1000 ); // state estimation expected runtime in usec
-            
+
             if (loops::used()) { // process any stop immediately in case other tasks run during this iteration!
                 for (TaskRunner& task : tasks) {
                     task.reset(loops::lastStart());
@@ -394,9 +395,9 @@ void loop() {
                 start = micros();
                 loops::reset();
             }
-            
+
             uint32_t delay_usec = micros() - start;
-            
+
             if ( delay_usec > AVERAGE_DELAY_TARGET_USEC ) {
                 average_delay_usec = ( average_delay_usec*15 + delay_usec ) >> 4;
                 if (average_delay_usec > (1860)) {

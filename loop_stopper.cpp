@@ -7,18 +7,28 @@
 #include "loop_stopper.h"
 
 #include <Arduino.h>
+#include "led.h"
 
 namespace loops {
 namespace {
+LED* led{nullptr};
 static bool ready{true};
 static uint32_t starts_needed{1};
 static uint32_t last_start_micros{0};
 static uint32_t last_stop_micros{0};
 static uint32_t overall_delay{0};
+
+inline void updateIndicator() {
+    if (!led) {
+        return;
+    }
+    led->forceGreenIndicator(stopped());
+}
 }  // namespace
 
-void reset(){
+void reset() {
     ready = true;
+    updateIndicator();
 }
 
 bool used() {
@@ -35,6 +45,7 @@ void stop() {
         return;
     }
     last_stop_micros = micros();
+    updateIndicator();
 }
 
 void start() {
@@ -44,6 +55,7 @@ void start() {
     last_start_micros = micros();
     overall_delay += last_start_micros - last_stop_micros;
     starts_needed = 0;
+    updateIndicator();
 }
 
 bool stopped() {
@@ -53,4 +65,10 @@ bool stopped() {
 uint32_t delay() {
     return overall_delay;
 }
+
+void setLedIndicator(LED* value) {
+    led = value;
+    updateIndicator();
+}
+
 }  // namespace loops

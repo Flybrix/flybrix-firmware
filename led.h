@@ -34,6 +34,9 @@ class LED {
     void setWhite(board::led::Position lower_left = board::led::Position::Min(), board::led::Position upper_right = board::led::Position::Max(), bool red_indicator = false,
                   bool green_indicator = false, uint8_t fading = 0);
 
+    void forceRedIndicator(bool value);
+    void forceGreenIndicator(bool value);
+
     struct __attribute__((packed)) Color {
         Color() : Color(CRGB::Black) {
         }
@@ -106,10 +109,16 @@ class LED {
     void indicatorRedOff();
     void indicatorGreenOff();
 
+    void updateIndicators();
+
     StateFlag& flag_;
     uint16_t oldStatus{0};
     bool error_raised{false};
     bool override{false};
+    bool enabled_red{false};
+    bool enabled_green{false};
+    bool force_red{false};
+    bool force_green{false};
 };
 
 #endif

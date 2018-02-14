@@ -91,9 +91,33 @@ void LED::update() {
     LED_driver.update();
 }
 
+void LED::forceRedIndicator(bool value) {
+    force_red = value;
+    updateIndicators();
+}
+
+void LED::forceGreenIndicator(bool value) {
+    force_green = value;
+    updateIndicators();
+}
+
+void LED::updateIndicators() {
+    if (force_red || enabled_red) {
+        indicatorRedOn();
+    } else {
+        indicatorRedOff();
+    }
+    if (force_green || enabled_green) {
+        indicatorGreenOn();
+    } else {
+        indicatorGreenOff();
+    }
+}
+
 void LED::use(LEDPattern::Pattern pattern, CRGB color_right_front, CRGB color_right_back, CRGB color_left_front, CRGB color_left_back, bool red_indicator, bool green_indicator) {
-    red_indicator ? indicatorRedOn() : indicatorRedOff();
-    green_indicator ? indicatorGreenOn() : indicatorGreenOff();
+    enabled_red = red_indicator;
+    enabled_green = green_indicator;
+    updateIndicators();
     LED_driver.setPattern(pattern);
     LED_driver.setColor(color_right_front, {0, 0}, {127, 127});
     LED_driver.setColor(color_right_back, {0, -128}, {127, 0});
@@ -102,10 +126,11 @@ void LED::use(LEDPattern::Pattern pattern, CRGB color_right_front, CRGB color_ri
 }
 
 void LED::setWhite(board::led::Position lower_left, board::led::Position upper_right, bool red_indicator, bool green_indicator, uint8_t fading) {
+    enabled_red = red_indicator;
+    enabled_green = green_indicator;
     override = true;
     oldStatus = 0;
-    red_indicator ? indicatorRedOn() : indicatorRedOff();
-    green_indicator ? indicatorGreenOn() : indicatorGreenOff();
+    updateIndicators();
     LED_driver.setPattern(LEDPattern::SOLID);
     LED_driver.setColor(CRGB::Black);
     LED_driver.setColor(fadeBy(CRGB::White, fading), lower_left, upper_right);
