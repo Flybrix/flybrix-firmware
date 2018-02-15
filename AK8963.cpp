@@ -89,6 +89,8 @@ void AK8963::calibrate(const Vector3<float>& measurement) {
     mag_bias.offset = (min_reading_ + max_reading_) / 2.0f;
 }
 
+bool hideAllZeroesWarning{false};
+
 void AK8963::triggerCallback(std::function<void(Vector3<float>)> on_success) {
     uint8_t c = data_to_read[6];  // ST2 register
     if (!(c & 0x08)) {            // Check if magnetic sensor overflow set, if not then report data
@@ -107,8 +109,9 @@ void AK8963::triggerCallback(std::function<void(Vector3<float>)> on_success) {
             MAG_ZSIGN * registerValues[MAG_ZDIR]   // Z
         };
         
-        if ( registerValues[MAG_XDIR] == 0 && registerValues[MAG_YDIR] == 0 && registerValues[MAG_ZDIR] == 0){
+        if ( !hideAllZeroesWarning && registerValues[MAG_XDIR] == 0 && registerValues[MAG_YDIR] == 0 && registerValues[MAG_ZDIR] == 0){
             DebugPrintf("ERROR: Magnetometer reading all zeroes!"); // sometimes the magnetometer returns all zeroes and we don't know why yet...
+            hideAllZeroesWarning = true;
         }
         
         // scale by sensitivity before rotating
