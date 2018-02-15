@@ -9,6 +9,7 @@
 #include "AK8963.h"
 #include <i2c_t3.h>
 #include "i2cManager.h"
+#include "debug.h"
 
 // we have three coordinate systems here:
 // 1. REGISTER coordinates: native values as read
@@ -98,12 +99,18 @@ void AK8963::triggerCallback(std::function<void(Vector3<float>)> on_success) {
         registerValues[0] = (int16_t)(((uint16_t)data_to_read[1]) << 8) | (uint16_t)data_to_read[0];  // low byte, high byte
         registerValues[1] = (int16_t)(((uint16_t)data_to_read[3]) << 8) | (uint16_t)data_to_read[2];
         registerValues[2] = (int16_t)(((uint16_t)data_to_read[5]) << 8) | (uint16_t)data_to_read[4];
+
         // 16-bit raw values
         Vector3<int16_t> magCount{
             MAG_XSIGN * registerValues[MAG_XDIR],  // X
             MAG_YSIGN * registerValues[MAG_YDIR],  // Y
             MAG_ZSIGN * registerValues[MAG_ZDIR]   // Z
         };
+        
+        if ( registerValues[MAG_XDIR] == 0 && registerValues[MAG_YDIR] == 0 && registerValues[MAG_ZDIR] == 0){
+            DebugPrintf("ERROR: Magnetometer reading all zeroes!"); // sometimes the magnetometer returns all zeroes and we don't know why yet...
+        }
+        
         // scale by sensitivity before rotating
         magCount = Vector3<float>(magCount) * magCalibration;
         Vector3<float> measurement = Vector3<float>(magCount) * RAW_TO_uT;
@@ -111,7 +118,7 @@ void AK8963::triggerCallback(std::function<void(Vector3<float>)> on_success) {
         measurement -= mag_bias.offset;
         on_success(measurement);
     } else {
-        // ERROR: ("ERROR: Magnetometer overflow!");
+        DebugPrintf("ERROR: Magnetometer overflow!");
     }
     ready = true;
 }
