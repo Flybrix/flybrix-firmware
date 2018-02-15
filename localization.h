@@ -31,7 +31,9 @@ class Localization {
 
     void setGyroDriftEstimate(float x, float y, float z);
 
-    void updateFilter(uint32_t time);
+    void predictFilter(uint32_t time);
+
+    void updateFilter();
 
     const Quaternion<float>& getAhrsQuaternion() const;
 

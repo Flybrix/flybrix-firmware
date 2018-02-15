@@ -48,8 +48,13 @@ void State::readStatePT(uint32_t p0, uint32_t pressure, uint16_t temperature) {
     localization.ProcessMeasurementPT(STATE_P_SCALE * p0, STATE_P_SCALE * pressure, STATE_T_SCALE * temperature);
 }
 
-void State::updateFilter(uint32_t time) {
-    localization.updateFilter(time);
+void State::predictFilter(uint32_t time) {
+    localization.predictFilter(time);
+    kinematics.altitude = localization.getElevation();
+}
+
+void State::updateFilter() {
+    localization.updateFilter();
     kinematics.altitude = localization.getElevation();
 }
 

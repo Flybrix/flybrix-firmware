@@ -71,8 +71,15 @@ bool processPressureSensor() {
     return true;
 }
 
+bool predict_phase{true};
+
 bool updateStateEstimate() {
-    sys.state.updateFilter(micros());
+    if (predict_phase) {
+        sys.state.predictFilter(micros());
+    } else {
+        sys.state.updateFilter();
+    }
+    predict_phase = !predict_phase;
     return true;
 }
 

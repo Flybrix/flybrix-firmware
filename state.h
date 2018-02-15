@@ -23,7 +23,8 @@ class State {
     void updateLocalization(uint32_t currentTime, const Vector3<float>& accel, const Vector3<float>& rate_scaled);
     void readStatePT(uint32_t p0, uint32_t pressure, uint16_t temperature);
     void updateStateMag(const Vector3<float>& data);
-    void updateFilter(uint32_t time);
+    void predictFilter(uint32_t time);
+    void updateFilter();
 
     Vector3<float> getVelocity() {
         return localization.getVelocity();
