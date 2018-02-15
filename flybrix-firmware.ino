@@ -45,8 +45,8 @@
 #include "version.h"
 
 Systems sys;
-uint8_t low_battery_counter = 0;
-uint8_t critical_battery_counter = 0;
+int8_t low_battery_counter = 0;
+int8_t critical_battery_counter = 0;
 
 bool updateLoopCount() {
     sys.state.loopCount++;
