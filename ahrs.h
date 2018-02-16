@@ -54,8 +54,10 @@ class Ahrs final {
         return setMagnetometer(Vector3<float>(x, y, z));
     }
     Ahrs& setMagnetometer(const Vector3<float>& v) {
-        magnetometer_.value = v;
-        magnetometer_.ready = true;
+        if (v.x != 0.0f || v.y != 0.0f || v.z != 0.0f) {
+            magnetometer_.value = v;
+            magnetometer_.ready = true;
+        }
         return *this;
     }
     Quaternion<float>& pose() {
