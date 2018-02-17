@@ -344,7 +344,7 @@ void setup() {
     // check for magnetometer all zeroes bug
     sys.led.errorStart(LEDPattern::SOLID, green, red, 3);
     uint8_t j=0;
-    while ( j<10 || (j<100 && sys.imu.magnetReportsAllZeroes()) ) {
+    while ( j<5 || sys.imu.magnetReportsAllZeroes() ) {
         sys.imu.startMagnetFieldMeasurement();
         i2c().update();
         delay(50);

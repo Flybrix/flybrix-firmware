@@ -28,8 +28,9 @@ void Imu::initialize() {
 }
 
 void Imu::restart() {
-    magnetometer_.restart();
-    accel_and_gyro_.restart();
+    //order is important!
+    accel_and_gyro_.restart(); //first
+    magnetometer_.restart();   //second
 }
 
 void Imu::correctBiasValues() {
