@@ -106,6 +106,10 @@ bool Imu::startMagnetFieldMeasurement() {
     return magnetometer_.startMeasurement([this](Vector3<float> magnet_field) { updateMag(sensor_to_flyer_ * magnet_field); });
 }
 
+bool Imu::magnetReportsAllZeroes() {
+    return magnetometer_.allZeroes;
+}
+
 AK8963::MagBias& Imu::magnetometer_bias() {
     return magnetometer_.mag_bias;
 }

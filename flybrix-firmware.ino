@@ -311,7 +311,6 @@ void setup() {
     sys.led.errorStart(LEDPattern::SOLID, green, red, 0);
 
     //EEPROM.write(0, 255); //mark EEPROM empty for factory reset
-
     bool go_to_test_mode{isEmptyEEPROM()};
 
     // load stored settings (this will reinitialize if there is no data in the EEPROM!
@@ -325,7 +324,7 @@ void setup() {
         // state is unhappy without an initial pressure
         sys.bmp.startMeasurement();     // important; otherwise we'll never set ready!
         i2c().update();                 // write data
-        delay(2);                       // wait for data to arrive
+        delay(50);                       // wait for data to arrive
         i2c().update();                 // read data
         sys.bmp.p0 = sys.bmp.pressure;  // initialize reference pressure
     } else {
@@ -342,7 +341,16 @@ void setup() {
             ;
     }
 
-    sys.led.update();
+    // check for magnetometer all zeroes bug
+    sys.led.errorStart(LEDPattern::SOLID, green, red, 3);
+    uint8_t j=0;
+    while ( j<10 || (j<100 && sys.imu.magnetReportsAllZeroes()) ) {
+        sys.imu.startMagnetFieldMeasurement();
+        i2c().update();
+        delay(50);
+        i2c().update();
+        j++;
+    }
 
     // factory test pattern runs only once
     if (go_to_test_mode) {

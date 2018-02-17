@@ -57,6 +57,7 @@ class Imu final {
 
     bool startInertialMeasurement();
     bool startMagnetFieldMeasurement();
+    bool magnetReportsAllZeroes();
 
     bool upright() const;
     bool stable() const;

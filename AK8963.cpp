@@ -109,9 +109,15 @@ void AK8963::triggerCallback(std::function<void(Vector3<float>)> on_success) {
             MAG_ZSIGN * registerValues[MAG_ZDIR]   // Z
         };
         
-        if ( !hideAllZeroesWarning && registerValues[MAG_XDIR] == 0 && registerValues[MAG_YDIR] == 0 && registerValues[MAG_ZDIR] == 0){
-            DebugPrintf("ERROR: Magnetometer reading all zeroes!"); // sometimes the magnetometer returns all zeroes and we don't know why yet...
-            hideAllZeroesWarning = true;
+        if ( registerValues[MAG_XDIR] == 0 && registerValues[MAG_YDIR] == 0 && registerValues[MAG_ZDIR] == 0){
+            if (!hideAllZeroesWarning) {
+                DebugPrintf("ERROR: Magnetometer reading all zeroes!"); // sometimes the magnetometer returns all zeroes and we don't know why yet...
+                hideAllZeroesWarning = true;
+            }
+            allZeroes = true;
+        }
+        else {
+            allZeroes = false;
         }
         
         // scale by sensitivity before rotating
