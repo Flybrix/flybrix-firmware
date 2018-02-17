@@ -137,6 +137,8 @@ void PilotCommand::disableMotors() {
     flag_.assign(Status::RECORDING_SD, sdcard::getState() == sdcard::State::WriteStates);
 }
 
+uint8_t count{0};
+
 RcCommand PilotCommand::processCommands(RcState&& rc_state) {
     bool timeout{rc_state.status == RcStatus::Timeout};
 
@@ -164,8 +166,12 @@ RcCommand PilotCommand::processCommands(RcState&& rc_state) {
         case ControlState::ThrottleLocked: {
             if (!attempting_to_enable) {
                 setControlState(ControlState::Disabled);
-            } else if (rc_state.command.throttle == 0) {
-                setControlState(ControlState::Enabled);
+            } else if (rc_state.command.throttle == 0) { 
+                count++; // one check isn't enough when opening an sd card (zero received before loop delay?)
+                if (count>10){
+                    setControlState(ControlState::Enabled);
+                    count = 0;   
+                }
             }
         } break;
         case ControlState::FailStability:
