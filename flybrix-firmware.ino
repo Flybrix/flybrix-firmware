@@ -129,18 +129,18 @@ bool checkBatteryUse() {
             critical_battery_counter--;
         }
     }
-    if (low_battery_counter > 40) {
+    if (low_battery_counter > 100) {
         sys.flag.set(Status::BATTERY_LOW);
-        low_battery_counter = 40;
+        low_battery_counter = 100;
     }
     if (low_battery_counter < 2) {
         sys.flag.clear(Status::BATTERY_LOW);
         low_battery_counter = 2;
     }
 
-    if (critical_battery_counter > 40) {
+    if (critical_battery_counter > 100) {
         sys.flag.set(Status::BATTERY_CRITICAL);
-        critical_battery_counter = 40;
+        critical_battery_counter = 100;
     }
     if (critical_battery_counter < 2) {
         sys.flag.clear(Status::BATTERY_CRITICAL);
