@@ -15,19 +15,20 @@ CRGB LED::fade(CRGB color) {
     return fadeBy(color, 230);
 }
 
+const CRGB BATTERY_CRITICAL_LIGHT = LED::fade(CRGB::Red);
+const CRGB BATTERY_LOW_LIGHT = LED::fade(CRGB::Orange);
+const CRGB RECORDING_SD_LIGHT = LED::fade(CRGB::DarkMagenta);
+
 // fading is in 256ths : https://github.com/FastLED/FastLED/wiki/Pixel-reference
 LED::States::States()
     : states{
           LED::StateCase(Status::CRASH_DETECTED, LEDPattern::FLASH, fade(CRGB::Orange)),
-          LED::StateCase(Status::BATTERY_CRITICAL, LEDPattern::FLASH, fade(CRGB::Red)),
-          LED::StateCase(Status::BATTERY_LOW, LEDPattern::BEACON, fade(CRGB::Orange)),
           LED::StateCase(Status::LOOP_SLOW, LEDPattern::SOLID, fade(CRGB::Red)),
           LED::StateCase(Status::OVERRIDE, LEDPattern::SOLID, fade(CRGB::LightSeaGreen)),
           LED::StateCase(Status::LOG_FULL, LEDPattern::FLASH, fade(CRGB::Orange)),
           LED::StateCase(Status::NO_SIGNAL, LEDPattern::BREATHE, fade(CRGB::Orange)),
           LED::StateCase(Status::ARMING, LEDPattern::FLASH, fade(CRGB::Blue)),
           LED::StateCase(Status::ARMED, LEDPattern::BEACON, fade(CRGB::Blue)),
-          LED::StateCase(Status::RECORDING_SD, LEDPattern::BEACON, fade(CRGB::DarkMagenta)),
           LED::StateCase(Status::IDLE, LEDPattern::BEACON, fade(CRGB::Green)),
       } {
 }
@@ -139,7 +140,16 @@ void LED::setWhite(board::led::Position lower_left, board::led::Position upper_r
 void LED::changeLights() {
     for (const StateCase& s : states.states) {
         if (!s.status || flag_.is(s.status)) {
-            use(s.pattern, s.color_right_front.crgb(), s.color_right_back.crgb(), s.color_left_front.crgb(), s.color_left_back.crgb(), s.indicator_red, s.indicator_green);
+            bool any_overridable = flag_.is(Status::IDLE | Status::NO_SIGNAL | Status::ARMING | Status::ARMED);
+            if (any_overridable && flag_.is(Status::BATTERY_CRITICAL)) {
+                use(s.pattern, BATTERY_CRITICAL_LIGHT, BATTERY_CRITICAL_LIGHT, BATTERY_CRITICAL_LIGHT, BATTERY_CRITICAL_LIGHT, s.indicator_red, s.indicator_green);
+            } else if (any_overridable && flag_.is(Status::BATTERY_LOW)) {
+                use(s.pattern, BATTERY_LOW_LIGHT, BATTERY_LOW_LIGHT, BATTERY_LOW_LIGHT, BATTERY_LOW_LIGHT, s.indicator_red, s.indicator_green);
+            } else if (flag_.is(Status::IDLE | Status::NO_SIGNAL) && flag_.is(Status::RECORDING_SD)) {
+                use(s.pattern, RECORDING_SD_LIGHT, RECORDING_SD_LIGHT, RECORDING_SD_LIGHT, RECORDING_SD_LIGHT, s.indicator_red, s.indicator_green);
+            } else {
+                use(s.pattern, s.color_right_front.crgb(), s.color_right_back.crgb(), s.color_left_front.crgb(), s.color_left_back.crgb(), s.indicator_red, s.indicator_green);
+            }
             return;
         }
     }
