@@ -166,11 +166,11 @@ RcCommand PilotCommand::processCommands(RcState&& rc_state) {
         case ControlState::ThrottleLocked: {
             if (!attempting_to_enable) {
                 setControlState(ControlState::Disabled);
-            } else if (rc_state.command.throttle == 0) { 
-                count++; // one check isn't enough when opening an sd card (zero received before loop delay?)
-                if (count>10){
+            } else if (rc_state.command.throttle == 0) {
+                count++;  // one check isn't enough when opening an sd card (zero received before loop delay?)
+                if (count > 10) {
                     setControlState(ControlState::Enabled);
-                    count = 0;   
+                    count = 0;
                 }
             }
         } break;
@@ -211,17 +211,28 @@ bool PilotCommand::isArmingFailureState() const {
            control_state_ == ControlState::ThrottleLocked;
 }
 
-uint8_t PilotCommand::failToNumber() const {
+LEDPattern::Pattern PilotCommand::failToPattern() const {
     switch (control_state_) {
         case ControlState::FailStability:
-            return 1;
         case ControlState::FailAngle:
-            return 2;
+            return LEDPattern::ALTERNATE;
         case ControlState::AwaitingAuxDisable:
         case ControlState::ThrottleLocked:
-            return 3;
         default:
-            return 0;
+            return LEDPattern::BEACON;
+    }
+}
+
+uint32_t PilotCommand::failToColor() const {
+    switch (control_state_) {
+        case ControlState::FailStability:
+            return CRGB::Red;
+        case ControlState::FailAngle:
+            return CRGB::Orange;
+        case ControlState::AwaitingAuxDisable:
+        case ControlState::ThrottleLocked:
+        default:
+            return CRGB::Black;
     }
 }
 
@@ -229,15 +240,13 @@ void PilotCommand::setControlState(ControlState state) {
     control_state_ = state;
     if (isArmingFailureState()) {
         CRGB color = CRGB::White;
-        LEDPattern::Pattern pattern = LEDPattern::SOLID;
         for (const LED::StateCase& sc : led_.states.states) {
             if (sc.status & Status::ARMING) {
                 color = sc.color_right_front.crgb();
-                pattern = sc.pattern;
                 break;
             }
         }
-        led_.errorStart(pattern, color, LED::fade(CRGB::Orange), failToNumber());
+        led_.errorStart(LEDPattern::BEACON, color, LED::fade(failToColor()), 2);
     } else {
         led_.errorStop();
     }

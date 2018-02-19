@@ -10,7 +10,7 @@
 #include <Arduino.h>
 
 #include "airframe.h"
-
+#include "ledDriver.h"
 #include "utility/rcHelpers.h"
 #include "utility/ticker.h"
 
@@ -65,7 +65,8 @@ class PilotCommand {
     void setControlState(ControlState state);
 
     bool isArmingFailureState() const;
-    uint8_t failToNumber() const;
+    LEDPattern::Pattern failToPattern() const;
+    uint32_t failToColor() const;
 
     bool upright() const;
     bool stable() const;
