@@ -26,10 +26,10 @@ LED::States::States()
           LED::StateCase(Status::LOOP_SLOW, LEDPattern::SOLID, fade(CRGB::Red)),
           LED::StateCase(Status::OVERRIDE, LEDPattern::SOLID, fade(CRGB::LightSeaGreen)),
           LED::StateCase(Status::LOG_FULL, LEDPattern::FLASH, fade(CRGB::Orange)),
-          LED::StateCase(Status::NO_SIGNAL, LEDPattern::BREATHE, fade(CRGB::Orange)),
+          LED::StateCase(Status::NO_SIGNAL, LEDPattern::FLASH, fade(CRGB::Green)),
           LED::StateCase(Status::ARMING, LEDPattern::FLASH, fade(CRGB::Blue)),
           LED::StateCase(Status::ARMED, LEDPattern::BEACON, fade(CRGB::Blue)),
-          LED::StateCase(Status::IDLE, LEDPattern::BEACON, fade(CRGB::Green)),
+          LED::StateCase(Status::IDLE, LEDPattern::BREATHE, fade(CRGB::Green)),
       } {
 }
 
