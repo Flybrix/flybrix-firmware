@@ -211,18 +211,6 @@ bool PilotCommand::isArmingFailureState() const {
            control_state_ == ControlState::ThrottleLocked;
 }
 
-LEDPattern::Pattern PilotCommand::failToPattern() const {
-    switch (control_state_) {
-        case ControlState::FailStability:
-        case ControlState::FailAngle:
-            return LEDPattern::ALTERNATE;
-        case ControlState::AwaitingAuxDisable:
-        case ControlState::ThrottleLocked:
-        default:
-            return LEDPattern::BEACON;
-    }
-}
-
 uint32_t PilotCommand::failToColor() const {
     switch (control_state_) {
         case ControlState::FailStability:
@@ -231,6 +219,7 @@ uint32_t PilotCommand::failToColor() const {
             return CRGB::Orange;
         case ControlState::AwaitingAuxDisable:
         case ControlState::ThrottleLocked:
+            return CRGB::White;
         default:
             return CRGB::Black;
     }
@@ -246,7 +235,7 @@ void PilotCommand::setControlState(ControlState state) {
                 break;
             }
         }
-        led_.errorStart(LEDPattern::BEACON, color, LED::fade(failToColor()), 2);
+        led_.errorStart(LEDPattern::ALTERNATE, color, LED::fade(failToColor()), 2);
     } else {
         led_.errorStop();
     }

@@ -44,6 +44,7 @@ void LEDDriver::setPattern(LEDPattern::Pattern pattern) {
     this->pattern = pattern;
     hasChanges = true;
     cycleIndex = 255;
+    scale = 255;
     for (size_t idx = 0; idx < board::led::COUNT; ++idx) {
         shining[idx] = true;
     }
@@ -67,12 +68,12 @@ void LEDDriver::update() {
 }
 
 void LEDDriver::updateAlternate() {
-    if (LED_driver.getCycleIndex() & 15) {
+    if (cycleIndex & 15) {
         return;
     }
     board::led::Position lower_left = board::led::Position::Min();
     board::led::Position upper_right = board::led::Position::Max();
-    if (LED_driver.getCycleIndex() & 16) {
+    if (cycleIndex & 16) {
         lower_left.x = 0;
     } else {
         upper_right.x = 0;
