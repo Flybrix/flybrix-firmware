@@ -157,6 +157,7 @@ void LED::changeLights() {
 }
 
 void LED::parseConfig() {
+    LED_driver.setPattern(LEDPattern::NO_OVERRIDE);
     oldStatus = ~flag_.value();
     update();
 }
