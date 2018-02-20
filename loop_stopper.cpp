@@ -68,7 +68,6 @@ uint32_t delay() {
 
 void setLedIndicator(LED* value) {
     led = value;
-    updateIndicator();
 }
 
 }  // namespace loops

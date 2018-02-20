@@ -63,21 +63,21 @@ void LED::errorStart(LEDPattern::Pattern pattern, CRGB color_back, CRGB color_fr
     error_raised = true;
     switch (count) {
         case 0: {
-            use(pattern, color_back, color_back, color_back, color_back, true, false);
+            use(pattern, color_back, color_back, color_back, color_back, false, false);
         } break;
         case 1: {
-            use(pattern, color_front, color_back, color_back, color_back, true, false);
+            use(pattern, color_front, color_back, color_back, color_back, false, false);
         } break;
         case 2: {
-            use(pattern, color_front, color_front, color_back, color_back, true, false);
+            use(pattern, color_front, color_front, color_back, color_back, false, false);
         } break;
         case 3: {
-            use(pattern, color_front, color_front, color_back, color_front, true, false);
+            use(pattern, color_front, color_front, color_back, color_front, false, false);
         } break;
         case 4: {
-            use(pattern, color_front, color_front, color_front, color_front, true, false);
+            use(pattern, color_front, color_front, color_front, color_front, false, false);
         } break;
-        default: { use(pattern, color_front, color_front, color_front, color_front, true, false); } break;
+        default: { use(pattern, color_front, color_front, color_front, color_front, false, false); } break;
     }
     update();
 }
