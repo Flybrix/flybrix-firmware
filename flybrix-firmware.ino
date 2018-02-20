@@ -308,17 +308,22 @@ void setup() {
 
     // MPU9250 is limited to 400kHz bus speed.
     Wire.begin(I2C_MASTER, 0x00, board::I2C_PINS, board::I2C_PULLUP, I2C_RATE_400);  // For I2C pins 18 and 19
-    sys.led.errorStart(LEDPattern::SOLID, green, red, 0);
 
     //EEPROM.write(0, 255); //mark EEPROM empty for factory reset
     bool go_to_test_mode{isEmptyEEPROM()};
 
-    // load stored settings (this will reinitialize if there is no data in the EEPROM!
-    readEEPROM().applyTo(sys);
+    const uint32_t boot_sequence_delay_usec = 300000;
 
+    uint32_t start = micros();
+    sys.led.errorStart(LEDPattern::SOLID, red, green, 0); /*begin boot phase 0*/
+    
+    readEEPROM().applyTo(sys); // load stored settings (this will reinitialize if there is no data in the EEPROM!
     sys.state.resetState();
 
-    sys.led.errorStart(LEDPattern::SOLID, green, red, 1);
+    while(micros()-start < boot_sequence_delay_usec){;} // boot pattern timing
+    start = micros();
+    sys.led.errorStart(LEDPattern::SOLID, red, green, 1); /* begin boot phase 1*/
+
     sys.bmp.restart();
     if (sys.bmp.getID() == 0x58) {
         // state is unhappy without an initial pressure
@@ -332,7 +337,10 @@ void setup() {
             ;
     }
 
-    sys.led.errorStart(LEDPattern::SOLID, green, red, 2);
+    while(micros()-start < boot_sequence_delay_usec){;} // boot pattern timing
+    start = micros();
+    sys.led.errorStart(LEDPattern::SOLID, red, green, 2); /* begin boot phase 2*/
+
     sys.imu.restart();
     if (sys.imu.hasCorrectIDs()) {
         sys.imu.initialize();
@@ -341,8 +349,10 @@ void setup() {
             ;
     }
 
-    // check for magnetometer all zeroes bug
-    sys.led.errorStart(LEDPattern::SOLID, green, red, 3);
+    while(micros()-start < boot_sequence_delay_usec){;} // boot pattern timing
+    start = micros();
+    sys.led.errorStart(LEDPattern::SOLID, red, green, 3); /* begin boot phase 3*/
+
     uint8_t j=0;
     while ( j<5 || sys.imu.magnetReportsAllZeroes() ) {
         sys.imu.startMagnetFieldMeasurement();
@@ -352,22 +362,29 @@ void setup() {
         j++;
     }
 
-    // factory test pattern runs only once
-    if (go_to_test_mode) {
-        sys.led.errorStop();
-        runTestMode(sys.state, sys.led, sys.pilot);
-    }
+    while(micros()-start < boot_sequence_delay_usec){;} // boot pattern timing
+    start = micros();
+    sys.led.errorStart(LEDPattern::SOLID, red, green, 4); /* begin boot phase 4*/
 
-    sys.led.errorStart(LEDPattern::SOLID, green, red, 3);
+    /* future tests*/
 
     // Perform intial check for an SD card
-    sdcard::startup();
-
+    while(micros()-start < boot_sequence_delay_usec){;} // boot pattern timing
+    start = micros();
     sys.led.errorStop();
     sys.version.display(sys.led);
-
+    
+    // when there is no card present, we will sit here for ~2sec
+    // better to show version pattern instead of four red lights
+    sdcard::startup();
+    
     // Do Bluetooth last becauase we have to wait 2.5 seconds for AT mode
     setBluetoothUart(sys.name);
+
+    // factory test pattern runs only once
+    if (go_to_test_mode) {
+        runTestMode(sys.state, sys.led, sys.pilot);
+    }
 
     loops::start();
 }

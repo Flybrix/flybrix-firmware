@@ -74,6 +74,9 @@ void LED::errorStart(LEDPattern::Pattern pattern, CRGB color_back, CRGB color_fr
         case 3: {
             use(pattern, color_front, color_front, color_back, color_front, true, false);
         } break;
+        case 4: {
+            use(pattern, color_front, color_front, color_front, color_front, true, false);
+        } break;
         default: { use(pattern, color_front, color_front, color_front, color_front, true, false); } break;
     }
     update();
