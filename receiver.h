@@ -105,6 +105,7 @@ class Receiver {
 
 // global variables used by the interrupt callback
 #define RC_CHANNEL_COUNT 6
+extern volatile uint8_t RX_fresh;                         // set to true when reading RX data, and to false when using it
 extern volatile uint16_t RX[RC_CHANNEL_COUNT];         // filled by the interrupt with valid data
 extern volatile uint16_t RX_errors;                    // count dropped frames
 extern volatile uint16_t startPulse;                   // keeps track of the last received pulse position

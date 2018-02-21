@@ -20,6 +20,7 @@
 Receiver::ChannelProperties::ChannelProperties() : assignment{2, 1, 0, 3, 4, 5}, inversion{6}, midpoint{1515, 1515, 1500, 1520, 1500, 1500}, deadzone{20, 20, 20, 40, 20, 20} {
 }
 
+volatile uint8_t RX_freshness = 0;
 volatile uint16_t RX[RC_CHANNEL_COUNT];         // filled by the interrupt with valid data
 volatile uint16_t RX_errors = 0;                // count dropped frames
 volatile uint16_t startPulse = 0;               // keeps track of the last received pulse position
@@ -90,6 +91,7 @@ extern "C" void ftm1_isr(void) {
     } else if (pulseWidth > RX_PPM_SYNCPULSE_MIN) {  // this is the sync pulse
         if (RX_channel <= RC_CHANNEL_COUNT) {        // valid frame = push from our buffer
             for (uint8_t i = 0; i < RC_CHANNEL_COUNT; i++) {
+                RX_freshness = 20;
                 RX[i] = RX_buffer[i];
             }
         }
@@ -124,15 +126,25 @@ RcState Receiver::query() {
     RcState rc_state;
     cli();  // disable interrupts
 
-    // if receiver is working, we should never see anything less than 900!
-    for (uint8_t i = 0; i < RC_CHANNEL_COUNT; i++) {
-        if (RX[i] < 900) {
-            // tell state that receiver is not ready and return
-            sei();  // enable interrupts
-            rc_state.status = RcStatus::Timeout;
-            error_tracker_.reportFailure();
-            return rc_state;
+    bool input_is_ready = RX_freshness > 0;
+    if (input_is_ready) {
+        --RX_freshness;
+
+        // if receiver is working, we should never see anything less than 900!
+        for (uint8_t i = 0; i < RC_CHANNEL_COUNT; i++) {
+            if (RX[i] < 900) {
+                input_is_ready = false;
+                break;
+            }
         }
+    }
+
+    if (!input_is_ready) {
+        // tell state that Receiver is not ready and return
+        sei();  // enable interrupts
+        rc_state.status = RcStatus::Timeout;
+        error_tracker_.reportFailure();
+        return rc_state;
     }
 
     // read data into PPMchannel objects using receiver channels assigned from configuration
