@@ -4,7 +4,7 @@
     *  http://www.flybrix.com
 */
 
-#include "R415X.h"
+#include "receiver.h"
 #include "board.h"
 #include "debug.h"
 
@@ -17,7 +17,7 @@
 // map AUX1 to RHS click
 // map AUX2 to LHS click
 
-R415X::ChannelProperties::ChannelProperties() : assignment{2, 1, 0, 3, 4, 5}, inversion{6}, midpoint{1515, 1515, 1500, 1520, 1500, 1500}, deadzone{20, 20, 20, 40, 20, 20} {
+Receiver::ChannelProperties::ChannelProperties() : assignment{2, 1, 0, 3, 4, 5}, inversion{6}, midpoint{1515, 1515, 1500, 1520, 1500, 1500}, deadzone{20, 20, 20, 40, 20, 20} {
 }
 
 volatile uint16_t RX[RC_CHANNEL_COUNT];         // filled by the interrupt with valid data
@@ -26,7 +26,7 @@ volatile uint16_t startPulse = 0;               // keeps track of the last recei
 volatile uint16_t RX_buffer[RC_CHANNEL_COUNT];  // buffer data in anticipation of a valid frame
 volatile uint8_t RX_channel = 0;                // we are collecting data for this channel
 
-bool R415X::ChannelProperties::verify() const {
+bool Receiver::ChannelProperties::verify() const {
     bool ok{true};
     bool assigned[] = {false, false, false, false, false, false};
     for (size_t idx = 0; idx < 6; ++idx) {
@@ -54,7 +54,7 @@ bool R415X::ChannelProperties::verify() const {
     return ok;
 }
 
-R415X::R415X() {
+Receiver::Receiver() {
     pinMode(board::RX_DAT, INPUT);  // WE ARE ASSUMING RX_DAT IS PIN 3 IN FTM1 SETUP!
 
     // FLEX Timer1 input filter configuration
@@ -104,7 +104,7 @@ extern "C" void ftm1_isr(void) {
     startPulse = stopPulse;  // Save time at pulse start
 }
 
-bool R415X::ErrorTracker::check(const RcCommand& command) {
+bool Receiver::ErrorTracker::check(const RcCommand& command) {
     bool armed{command.aux1 == RcCommand::AUX::Low};
     bool nonzero_throttle{command.throttle > 0};
     bool is_legal{armed || nonzero_throttle};
@@ -116,18 +116,18 @@ bool R415X::ErrorTracker::check(const RcCommand& command) {
     return is_legal;
 }
 
-void R415X::ErrorTracker::reportFailure() {
+void Receiver::ErrorTracker::reportFailure() {
     was_legal_ = false;
 }
 
-RcState R415X::query() {
+RcState Receiver::query() {
     RcState rc_state;
     cli();  // disable interrupts
 
-    // if R415X is working, we should never see anything less than 900!
+    // if receiver is working, we should never see anything less than 900!
     for (uint8_t i = 0; i < RC_CHANNEL_COUNT; i++) {
         if (RX[i] < 900) {
-            // tell state that R415X is not ready and return
+            // tell state that receiver is not ready and return
             sei();  // enable interrupts
             rc_state.status = RcStatus::Timeout;
             error_tracker_.reportFailure();

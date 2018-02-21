@@ -35,7 +35,7 @@ struct Systems {
     State state;
     LED led;
 
-    RcMux<SerialRc, R415X> rc_mux;
+    RcMux<SerialRc, Receiver> rc_mux;
 
     BMP280 bmp;
     Imu imu;
@@ -55,7 +55,7 @@ struct Systems {
         return rc_mux.source<0>();
     }
 
-    R415X& radioReceiver() {
+    Receiver& radioReceiver() {
         return rc_mux.source<1>();
     }
 

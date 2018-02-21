@@ -17,7 +17,7 @@
 #include <EEPROM.h>
 
 #include "AK8963.h"
-#include "R415X.h"
+#include "receiver.h"
 #include "airframe.h"
 #include "control.h"
 #include "imu.h"
@@ -58,7 +58,7 @@ struct Config {
         INERTIAL_BIAS,
     };
 
-    using Data = std::tuple<Version, ConfigID, PcbTransform, Airframe::MixTable, AK8963::MagBias, R415X::ChannelProperties, Control::PIDParameters, State::Parameters, LED::States, DeviceName,
+    using Data = std::tuple<Version, ConfigID, PcbTransform, Airframe::MixTable, AK8963::MagBias, Receiver::ChannelProperties, Control::PIDParameters, State::Parameters, LED::States, DeviceName,
                             Control::VelocityPIDParameters, Imu::InertialBias>;
 
     Config();
@@ -90,7 +90,7 @@ struct Config {
 };
 
 static_assert(sizeof(Config) ==
-                  sizeof(Version) + sizeof(ConfigID) + sizeof(PcbTransform) + sizeof(Airframe::MixTable) + sizeof(AK8963::MagBias) + sizeof(R415X::ChannelProperties) + sizeof(State::Parameters) +
+                  sizeof(Version) + sizeof(ConfigID) + sizeof(PcbTransform) + sizeof(Airframe::MixTable) + sizeof(AK8963::MagBias) + sizeof(Receiver::ChannelProperties) + sizeof(State::Parameters) +
                       sizeof(Control::PIDParameters) + sizeof(LED::States) + sizeof(DeviceName) + sizeof(Control::VelocityPIDParameters) + sizeof(Imu::InertialBias),
               "Data is not packed");
 

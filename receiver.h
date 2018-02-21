@@ -6,8 +6,8 @@
     Uses a timer to receive data from a 6 channel cPPM output.
 */
 
-#ifndef R415X_h
-#define R415X_h
+#ifndef receiver_h
+#define receiver_h
 
 #include "Arduino.h"
 #include "utility/rcHelpers.h"
@@ -58,9 +58,9 @@ class PPMchannel {
     //
 };
 
-class R415X {
+class Receiver {
    public:
-    R415X();
+    Receiver();
     RcState query();
 
     static constexpr uint8_t recovery_rate{1};
@@ -83,7 +83,7 @@ class R415X {
     // * Next frame we send disarm and a zero throttle
     // Perfect frame timing would need the operator to intentionally time things down to 10ms
     // Since that will not happen while normally operating the device, we know that this
-    // happens only when R415X switches to default
+    // happens only when receiver switches to default
     class ErrorTracker final {
        public:
         bool check(const RcCommand&);
@@ -101,7 +101,7 @@ class R415X {
     PPMchannel AUX1;
     PPMchannel AUX2;
 
-};  // class R415X
+};  // class Receiver
 
 // global variables used by the interrupt callback
 #define RC_CHANNEL_COUNT 6

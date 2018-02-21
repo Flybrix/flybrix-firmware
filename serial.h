@@ -8,7 +8,7 @@
 #define serial_h
 
 #include <Arduino.h>
-#include "R415X.h"
+#include "receiver.h"
 #include "cobs.h"
 #include "utility/rcHelpers.h"
 
@@ -114,7 +114,7 @@ class SerialComm {
     PilotCommand& pilot_;
     PowerMonitor& pwr_;
     RcCommand& command_vector_;
-    RcMux<SerialRc, R415X>& rc_mux_;
+    RcMux<SerialRc, Receiver>& rc_mux_;
     SerialRc& serial_rc_;
     Autopilot& autopilot_;
     ControlVectors& control_vectors_;

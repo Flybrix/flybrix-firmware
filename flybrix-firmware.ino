@@ -1,3 +1,4 @@
+
 /*
     *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
@@ -21,7 +22,7 @@
 #include "AK8963.h"
 #include "BMP280.h"
 #include "MPU9250.h"
-#include "R415X.h"
+#include "receiver.h"
 #include "airframe.h"
 #include "board.h"
 #include "cardManagement.h"
