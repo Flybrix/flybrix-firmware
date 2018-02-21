@@ -67,14 +67,14 @@ constexpr uint8_t BYPASS_VELO_PID_ALL = BYPASS_FORWARD_MASTER | BYPASS_RIGHT_MAS
 // (deg/sec / full stick action)
 
 Control::PIDParameters::PIDParameters()
-    : thrust_master{1.0, 0.0, 0.0, 0.0, 0.005, 0.005, 1.0},
-      pitch_master{10.0, 1.0, 0.0, 10.0, 0.005, 0.005, 10.0},
-      roll_master{10.0, 1.0, 0.0, 10.0, 0.005, 0.005, 10.0},
-      yaw_master{5.0, 1.0, 0.0, 10.0, 0.005, 0.005, 180.0},
-      thrust_slave{1.0, 0.0, 0.0, 10.0, 0.001, 0.001, 0.3},
-      pitch_slave{10.0, 4.0, 0.0, 30.0, 0.001, 0.001, 30.0},
-      roll_slave{10.0, 4.0, 0.0, 30.0, 0.001, 0.001, 30.0},
-      yaw_slave{30.0, 5.0, 0.0, 20.0, 0.001, 0.001, 240.0},
+    : thrust_master{1.0, 0.0, 0.0, 0.0, 0.001, 0.001, 1.0},
+      pitch_master{4.0, 1.0, 0.0, 10.0, 0.005, 0.005, 40.0},
+      roll_master{4.0, 1.0, 0.0, 10.0, 0.005, 0.005, 40.0},
+      yaw_master{1.0, 0.0, 0.0, 0.0, 0.001, 0.001, 180.0},
+      thrust_slave{1.0, 0.0, 0.0, 0.0, 0.001, 0.001, 1.0},
+      pitch_slave{7.0, 3.0, 0.0, 30.0, 0.001, 0.001, 150.0},
+      roll_slave{7.0, 3.0, 0.0, 30.0, 0.001, 0.001, 150.0},
+      yaw_slave{40.0, 10.0, 0.0, 20.0, 0.001, 0.001, 480.0},
       thrust_gain{4095.0},
       pitch_gain{2047.0},
       roll_gain{2047.0},
