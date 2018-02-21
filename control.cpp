@@ -74,7 +74,7 @@ Control::PIDParameters::PIDParameters()
       thrust_slave{1.0, 0.0, 0.0, 0.0, 0.001, 0.001, 1.0},
       pitch_slave{7.0, 3.0, 0.0, 30.0, 0.001, 0.001, 150.0},
       roll_slave{7.0, 3.0, 0.0, 30.0, 0.001, 0.001, 150.0},
-      yaw_slave{40.0, 10.0, 0.0, 20.0, 0.001, 0.001, 480.0},
+      yaw_slave{40.0, 10.0, 0.0, 20.0, 0.001, 0.001, 300.0},
       thrust_gain{4095.0},
       pitch_gain{2047.0},
       roll_gain{2047.0},
