@@ -209,7 +209,6 @@ void Config::writePartialTo(Cursor&& cursor, uint16_t submask, uint16_t led_mask
 
 template <class Cursor>
 void Config::writeSkippableTo(Cursor&& cursor, uint16_t submask, uint16_t led_mask) const {
-    cursor.Append(submask);
     writeOrSkipFieldsTo(data, cursor, submask, led_mask);
 }
 
