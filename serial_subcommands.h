@@ -81,6 +81,7 @@ DO_SUBCOMMAND(SET_EEPROM_DATA) {
 DO_SUBCOMMAND(REINIT_EEPROM_DATA) {
     DEBUG(REINIT_EEPROM_DATA)
     const Config tmp_config;
+    loops::Stopper _stopper("REINIT_EEPROM_DATA");
     tmp_config.applyTo(systems_);
     tmp_config.writeTo(EEPROMCursor());
     return true;
@@ -269,6 +270,7 @@ DO_SUBCOMMAND(REINIT_PARTIAL_EEPROM_DATA) {
     if (!tmp_config.verify()) {
         return false;
     }
+    loops::Stopper _stopper("REINIT_PARTIAL_TEMPORARY_CONFIG");
     tmp_config.applyTo(systems_);
     tmp_config.writeSkippableTo(EEPROMCursor(), submask, led_mask);
     return true;
@@ -351,6 +353,7 @@ DO_SUBCOMMAND(SET_CALIBRATION) {
         if (!tmp_config.verify()) {
             return false;
         }
+        loops::Stopper _stopper("SET_CALIBRATION");
         tmp_config.writeTo(EEPROMCursor());
     }
 
