@@ -17,7 +17,7 @@
 // map AUX1 to RHS click
 // map AUX2 to LHS click
 
-Receiver::ChannelProperties::ChannelProperties() : assignment{2, 1, 0, 3, 4, 5}, inversion{6}, midpoint{1500, 1500, 1500, 1500, 1500, 1500}, deadzone{0, 0, 0, 0, 0, 0} {
+Receiver::ChannelProperties::ChannelProperties() : assignment{2, 1, 0, 3, 4, 5}, inversion{6}, midpoint{1500, 1500, 1500, 1500, 1500, 1500}, deadzone{0, 0, 0, 20, 0, 0} {
 }
 
 volatile uint8_t RX_freshness = 0;
