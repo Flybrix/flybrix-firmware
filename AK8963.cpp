@@ -67,22 +67,22 @@ void AK8963::calibrate(const Vector3<float>& measurement) {
         return;
     }
 
-    if (min_reading_.x < measurement.x) {
+    if (measurement.x < min_reading_.x ) {
         min_reading_.x = measurement.x;
     }
-    if (min_reading_.y < measurement.y) {
+    if (measurement.y < min_reading_.y) {
         min_reading_.y = measurement.y;
     }
-    if (min_reading_.z < measurement.z) {
+    if (measurement.z < min_reading_.z) {
         min_reading_.z = measurement.z;
     }
-    if (max_reading_.x > measurement.x) {
+    if (measurement.x > max_reading_.x) {
         max_reading_.x = measurement.x;
     }
-    if (max_reading_.y > measurement.y) {
+    if (measurement.y > max_reading_.y) {
         max_reading_.y = measurement.y;
     }
-    if (max_reading_.z > measurement.z) {
+    if (measurement.z > max_reading_.z) {
         max_reading_.z = measurement.z;
     }
 
