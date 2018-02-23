@@ -185,11 +185,18 @@ ControlVectors Control::calculateControlVectors(const Vector3<float>& velocity, 
 
     ControlVectors control;
 
+    uint32_t now = micros();
+
     if (setpoint.throttle < 10) {  // throttle is in low condition
         up_pid.integralReset();
         forward_pid.integralReset();
         right_pid.integralReset();
         yaw_pid.integralReset();
+
+        up_pid.timerReset(now);
+        forward_pid.timerReset(now);
+        right_pid.timerReset(now);
+        yaw_pid.timerReset(now);
 
         up_pid.setSetpoint(0);
         forward_pid.setSetpoint(0);
@@ -206,7 +213,6 @@ ControlVectors Control::calculateControlVectors(const Vector3<float>& velocity, 
         right_pid.setSetpoint(setpoint.roll * (1.0f / 2047.0f) * right_pid.getScalingFactor());
         yaw_pid.setSetpoint(setpoint.yaw * (1.0f / 2047.0f) * yaw_pid.getScalingFactor());
 
-        uint32_t now = micros();
         control.force_z = up_pid.compute(now);
         control.torque_x = forward_pid.compute(now);
         control.torque_y = right_pid.compute(now);

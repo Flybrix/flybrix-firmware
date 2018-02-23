@@ -56,6 +56,12 @@ class PIDCascade final {
         }
     }
 
+    void timerReset(uint32_t now) {
+        for (Regulator& reg : regulators_) {
+            reg.pid.setTimer(now);
+        }
+    }
+
     float compute(uint32_t now) {
         float value{setpoint_};
         for (Regulator& reg : regulators_) {
