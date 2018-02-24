@@ -84,7 +84,7 @@ void Airframe::setMotorsToMixTable(const ControlVectors& controls) {
     constrainPower(ty_power, remaining_power, allocated_power, mix_table.ty);
     for (size_t i = 0; i < 8; ++i) {
         allocated_power[i] += ty_power[i];
-        remaining_power[i] -= allocated_power[i];
+        remaining_power[i] -= ty_power[i];
     }
 
     // allocate pitch
@@ -94,7 +94,7 @@ void Airframe::setMotorsToMixTable(const ControlVectors& controls) {
     constrainPower(tx_power, remaining_power, allocated_power, mix_table.tx);
     for (size_t i = 0; i < 8; ++i) {
         allocated_power[i] += tx_power[i];
-        remaining_power[i] -= allocated_power[i];
+        remaining_power[i] -= tx_power[i];
     }
 
     // allocate yaw
@@ -104,14 +104,14 @@ void Airframe::setMotorsToMixTable(const ControlVectors& controls) {
     constrainPower(tz_power, remaining_power, allocated_power, mix_table.tz);
     for (size_t i = 0; i < 8; ++i) {
         allocated_power[i] += tz_power[i];
-        remaining_power[i] -= allocated_power[i];
+        remaining_power[i] -= tz_power[i];
     }   
 
     // if we have room, allocate the residual thrust
     constrainPower(fz_power, remaining_power, allocated_power, mix_table.fz);
     for (size_t i = 0; i < 8; ++i) {
         allocated_power[i] += fz_power[i];
-        remaining_power[i] -= allocated_power[i];
+        remaining_power[i] -= fz_power[i];
     }    
 
     // set the levels
