@@ -111,7 +111,7 @@ void AK8963::triggerCallback(std::function<void(Vector3<float>)> on_success) {
         
         if ( registerValues[MAG_XDIR] == 0 && registerValues[MAG_YDIR] == 0 && registerValues[MAG_ZDIR] == 0){
             if (!hideAllZeroesWarning) {
-                DebugPrintf("ERROR: Magnetometer reading all zeroes!"); // sometimes the magnetometer returns all zeroes and we don't know why yet...
+                DebugPrintf("ERROR: Magnetometer reading all zeroes!"); // likely fixed in v1.6
                 hideAllZeroesWarning = true;
             }
             allZeroes = true;
