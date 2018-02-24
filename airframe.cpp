@@ -7,6 +7,7 @@
 #include "airframe.h"
 #include <Arduino.h>
 #include "controlVectors.h"
+#include "debug.h"
 
 void constrainPower(int32_t *desired_power, int32_t *available_power, int32_t *allocated_power, int8_t* mix_table_values){
     int32_t max_desired_power = 0;
@@ -48,6 +49,11 @@ void constrainPower(int32_t *desired_power, int32_t *available_power, int32_t *a
     }
     
 }
+
+uint32_t motor_update_count{0};
+uint32_t motor_clipping[8]{0};
+int32_t min_level[8]{0};
+int32_t max_level[8]{0};
 
 void Airframe::setMotorsToMixTable(const ControlVectors& controls) {
     const int32_t tx_reserve = 200;
@@ -112,11 +118,38 @@ void Airframe::setMotorsToMixTable(const ControlVectors& controls) {
     for (size_t i = 0; i < 8; ++i) {
         allocated_power[i] += fz_power[i];
         remaining_power[i] -= fz_power[i];
-    }    
+    }
 
-    // set the levels
     for (size_t i = 0; i < 8; ++i) {
-        motors_.set(i, (uint16_t) constrain(allocated_power[i], 0, 4095));
+        if (allocated_power[i] == 0) {
+            continue;
+        }
+        else {
+            motor_update_count++;
+            break;
+        }
+    }
+        
+    for (size_t i = 0; i < 8; ++i) {
+        if (allocated_power[i] < 0) {
+            if (allocated_power[i] < min_level[i]) {
+                min_level[i] = allocated_power[i];
+            }
+            allocated_power[i] = 0;
+            motor_clipping[i]++;
+        }
+        if (allocated_power[i] > 4095) {
+            if (allocated_power[i] > max_level[i]) {
+                max_level[i] = allocated_power[i];
+            }
+            allocated_power[i] = 4095;
+            motor_clipping[i]++;
+        }            
+        if (motor_clipping[i] && (motor_clipping[i] % 1500 == 0)){
+            DebugPrintf("Motor channel %d is saturating (%2.0f%%) [%6d,%6d]", i, (float) 100.0f * motor_clipping[i] / motor_update_count, min_level[i], max_level[i]);
+        }
+        
+        motors_.set(i, (uint16_t) allocated_power[i]);
     }
 }
 
