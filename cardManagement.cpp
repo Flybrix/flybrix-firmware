@@ -99,7 +99,7 @@ class WritingBuffer {
 size_t WritingBuffer::write(const uint8_t* data, size_t length) {
     if (overbuffered) {
         if (!hideOverbufferedWarning) {
-            DebugPrint("WARNING: SD buffer overflow. Log data dropped!");
+            DebugPrint("SD buffer overflow. Log data dropped!");
             hideOverbufferedWarning = true;  //show only once
         }
         return length;
