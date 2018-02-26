@@ -79,18 +79,19 @@ inline void mahony(Quaternion<float>& q, Vector3<float>& ifb, float ki, float kp
 }
 }
 
-void Ahrs::update(uint32_t timestamp) {
+void Ahrs::update(ClockTime timestamp) {
     if (!accelerometer_.ready || !gyroscope_.ready) {
         return;
     }
 
-    if (timestamp <= last_update_timestamp_) {
-        last_update_timestamp_ = timestamp;
+    uint32_t delta = timestamp - last_update_timestamp_;
+    last_update_timestamp_ = timestamp;
+
+    if (ClockTime::isProbabyLessThanOrEqualZero(delta)) {
         return;
     }
 
-    float dt = (timestamp - last_update_timestamp_) / 1000000.0f;
-    last_update_timestamp_ = timestamp;
+    float dt = delta / 1000000.0f;
 
     if (dt > max_delta_time_) {
         dt = max_delta_time_;

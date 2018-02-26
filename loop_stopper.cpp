@@ -8,14 +8,15 @@
 
 #include <Arduino.h>
 #include "led.h"
+#include "utility/clock.h"
 
 namespace loops {
 namespace {
 LED* led{nullptr};
 static bool ready{true};
 static uint32_t starts_needed{1};
-static uint32_t last_start_micros{0};
-static uint32_t last_stop_micros{0};
+static ClockTime last_start_micros{ClockTime::zero()};
+static ClockTime last_stop_micros{ClockTime::zero()};
 static uint32_t overall_delay{0};
 
 inline void updateIndicator() {
@@ -35,7 +36,7 @@ bool used() {
     return !ready;
 }
 
-uint32_t lastStart() {
+ClockTime lastStart() {
     return last_start_micros;
 }
 
@@ -44,7 +45,7 @@ void stop() {
     if (starts_needed++) {
         return;
     }
-    last_stop_micros = micros();
+    last_stop_micros = ClockTime::now();
     updateIndicator();
 }
 
@@ -52,7 +53,7 @@ void start() {
     if (starts_needed-- > 1) {
         return;
     }
-    last_start_micros = micros();
+    last_start_micros = ClockTime::now();
     overall_delay += last_start_micros - last_stop_micros;
     starts_needed = 0;
     updateIndicator();

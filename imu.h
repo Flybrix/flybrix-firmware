@@ -9,6 +9,7 @@
 
 #include "AK8963.h"
 #include "MPU9250.h"
+#include "utility/clock.h"
 #include "utility/rotation.h"
 #include "utility/vector3.h"
 #include "rotationEstimator.h"
@@ -83,7 +84,7 @@ class Imu final {
    private:
     void correctBiasValues();
     void updateMag(const Vector3<float>& mag);
-    void updateAccelGyro(uint32_t time, const Vector3<float>& accel, const Vector3<float>& gyro);
+    void updateAccelGyro(ClockTime time, const Vector3<float>& accel, const Vector3<float>& gyro);
 
     Vector3<float> accel_filter{0.0, 0.0, 0.0}, accel_filter_sq{0.0, 0.0, 0.0};  // for stability variance calculation
     Vector3<float> gyro_filter{0.0, 0.0, 0.0};                                   // for gyro drift correction

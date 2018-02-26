@@ -9,6 +9,7 @@
 
 #include "ahrs.h"
 #include "ukf.h"
+#include "utility/clock.h"
 #include "utility/vector3.h"
 
 class Localization {
@@ -21,17 +22,17 @@ class Localization {
 
     void ProcessMeasurementPT(float p_sl, float p, float t);
 
-    void ProcessMeasurementIMU(uint32_t time, const Vector3<float>& gyroscope, const Vector3<float>& accelerometer);
+    void ProcessMeasurementIMU(ClockTime time, const Vector3<float>& gyroscope, const Vector3<float>& accelerometer);
 
     void ProcessMeasurementMagnetometer(const Vector3<float>& magnetometer);
 
-    void setTime(uint32_t time);
+    void setTime(ClockTime time);
 
     void setGravityEstimate(float gravity);
 
     void setGyroDriftEstimate(float x, float y, float z);
 
-    void predictFilter(uint32_t time);
+    void predictFilter(ClockTime time);
 
     void updateFilter();
 
@@ -55,7 +56,7 @@ class Localization {
 
     const float* ahrsParameters;
     float elevation_variance_;
-    uint32_t timeNow;
+    ClockTime timeNow;
 };
 
 #endif /* end of include guard: SE_LOCALIZATION_H_ */

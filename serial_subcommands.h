@@ -14,6 +14,7 @@
 #include "debug.h"
 #include "loop_stopper.h"
 #include "stateFlag.h"
+#include "utility/clock.h"
 
 enum SerialComm::Commands : uint8_t {
     REQ_RESPONSE,
@@ -368,7 +369,7 @@ DO_SUBCOMMAND(SET_AUTOPILOT) {
     }
 
     if (enabled) {
-        autopilot_.start(micros());
+        autopilot_.start(ClockTime::now());
     } else {
         autopilot_.stop();
     }

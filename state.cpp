@@ -26,12 +26,12 @@ State::State() : localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, 
 }
 
 void State::resetState() {
-    localization.setTime(0.0f);
+    localization.setTime(ClockTime::zero());
     kinematics = Kinematics();
     localization = Localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, Ahrs::Type::Madgwick, parameters.state_estimation, STATE_BARO_VARIANCE);
 }
 
-void State::updateLocalization(uint32_t currentTime, const Vector3<float>& accel, const Vector3<float>& rate_scaled) {
+void State::updateLocalization(ClockTime currentTime, const Vector3<float>& accel, const Vector3<float>& rate_scaled) {
     kinematics.rate.pitch = rate_scaled.x;
     kinematics.rate.roll = rate_scaled.y;
     kinematics.rate.yaw = rate_scaled.z;
@@ -48,7 +48,7 @@ void State::readStatePT(uint32_t p0, uint32_t pressure, uint16_t temperature) {
     localization.ProcessMeasurementPT(STATE_P_SCALE * p0, STATE_P_SCALE * pressure, STATE_T_SCALE * temperature);
 }
 
-void State::predictFilter(uint32_t time) {
+void State::predictFilter(ClockTime time) {
     localization.predictFilter(time);
     kinematics.altitude = localization.getElevation();
 }

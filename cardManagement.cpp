@@ -12,6 +12,7 @@
 #include "board.h"
 #include "debug.h"
 #include "loop_stopper.h"
+#include "utility/clock.h"
 #include "version.h"
 
 namespace sdcard {
@@ -267,11 +268,11 @@ void send() {
     if (!writingBuffer.hasBlock())
         return;
     if (sd.card()->isBusy()) {  // can last up to 150msec!
-        uint32_t start = micros();
+        ClockTime start = ClockTime::now();
         uint32_t delay = 0;
         const uint32_t max_delay = 20;  //usec; set <250 to buffer data
         while (sd.card()->isBusy() && delay < max_delay) {
-            delay = micros() - start;
+            delay = ClockTime::now() - start;
         }
         if (delay > 250) {
             loops::Stopper _stopper("wait for sd card", delay);
