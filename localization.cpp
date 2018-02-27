@@ -34,7 +34,7 @@ Localization::Localization(float q0, float q1, float q2, float q3, float deltaTi
     : max_delta_time_{deltaTime * 4}, ahrsParameters(ahrsParameters), elevation_variance_(elevation_variance) {
     ahrs_.pose() = Quaternion<float>(q0, q1, q2, q3);
     ahrs_.setType(ahrsType).setParameters(ahrsParameters[0], ahrsParameters[1]).setMaxDeltaTime(max_delta_time_);
-    setTime(0);
+    setTime(ClockTime::zero());
     setGravityEstimate(9.81f);
 }
 
@@ -47,19 +47,19 @@ void Localization::ProcessMeasurementPT(float p_sl, float p, float t) {
     ProcessMeasurementElevation(calculateElevation(p_sl, p, t));
 }
 
-void Localization::predictFilter(uint32_t time) {
+void Localization::predictFilter(ClockTime time) {
     if (!has_measurement_) {
         return;
     }
-    if (time <= timeNow) {
-        timeNow = time;
+    uint32_t delta = time - timeNow;
+    timeNow = time;
+    if (ClockTime::isProbabyLessThanOrEqualZero(delta)) {
         return;
     }
-    float dt{(time - timeNow) / 1000000.0f};
+    float dt{delta / 1000000.0f};
     if (dt > max_delta_time_) {
         dt = max_delta_time_;
     }
-    timeNow = time;
     ukf_.predict(dt);
 }
 
@@ -70,7 +70,7 @@ void Localization::updateFilter() {
     ukf_.update(vu_, vv_, d_tof_, h_bar_, ahrs_.pose().pitch(), ahrs_.pose().roll());
 }
 
-void Localization::ProcessMeasurementIMU(uint32_t time, const Vector3<float>& gyroscope, const Vector3<float>& accelerometer) {
+void Localization::ProcessMeasurementIMU(ClockTime time, const Vector3<float>& gyroscope, const Vector3<float>& accelerometer) {
     ahrs_.setParameters(ahrsParameters[0], ahrsParameters[1]);
 
     ahrs_.setGyroscope(gyroscope - gyro_drift_);
@@ -83,7 +83,7 @@ void Localization::ProcessMeasurementMagnetometer(const Vector3<float>& magnetom
     ahrs_.setMagnetometer(magnetometer);
 }
 
-void Localization::setTime(uint32_t time) {
+void Localization::setTime(ClockTime time) {
     timeNow = time;
     ahrs_.setTimestamp(time);
 }

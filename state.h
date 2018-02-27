@@ -10,6 +10,7 @@
 #include <cstdint>
 #include "kinematics.h"
 #include "localization.h"
+#include "utility/clock.h"
 #include "utility/vector3.h"
 
 class State {
@@ -20,10 +21,10 @@ class State {
     uint32_t loopCount = 0;
 
     void resetState();
-    void updateLocalization(uint32_t currentTime, const Vector3<float>& accel, const Vector3<float>& rate_scaled);
+    void updateLocalization(ClockTime currentTime, const Vector3<float>& accel, const Vector3<float>& rate_scaled);
     void readStatePT(uint32_t p0, uint32_t pressure, uint16_t temperature);
     void updateStateMag(const Vector3<float>& data);
-    void predictFilter(uint32_t time);
+    void predictFilter(ClockTime time);
     void updateFilter();
 
     Vector3<float> getVelocity() {

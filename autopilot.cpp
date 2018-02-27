@@ -12,7 +12,7 @@
 Autopilot::Autopilot(SerialComm& serial) : serial_(serial) {
 }
 
-void Autopilot::start(uint32_t now) {
+void Autopilot::start(ClockTime now) {
     sdcard::reading::close();
     sdcard::reading::open();
     running_ = true;
@@ -20,7 +20,7 @@ void Autopilot::start(uint32_t now) {
     wait_until_ = 0;
 }
 
-bool Autopilot::run(uint32_t now) {
+bool Autopilot::run(ClockTime now) {
     bool did_something{false};
     if (!running_) {
         return did_something;

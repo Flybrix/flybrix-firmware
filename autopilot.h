@@ -9,14 +9,15 @@
 
 #include <Arduino.h>
 #include "cobs.h"
+#include "utility/clock.h"
 
 class SerialComm;
 
 class Autopilot final {
    public:
     explicit Autopilot(SerialComm& serial);
-    void start(uint32_t now);
-    bool run(uint32_t now);
+    void start(ClockTime now);
+    bool run(ClockTime now);
     void stop();
 
    private:
@@ -24,7 +25,7 @@ class Autopilot final {
     void handleCobs();
 
     bool running_{false};
-    uint32_t start_time_{0};
+    ClockTime start_time_{ClockTime::zero()};
     uint32_t wait_until_{0};
     SerialComm& serial_;
     CobsReaderBuffer data_input;

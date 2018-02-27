@@ -43,6 +43,7 @@
 #include "taskRunner.h"
 #include "testMode.h"
 #include "usbModeSelector.h"
+#include "utility/clock.h"
 #include "version.h"
 
 Systems sys;
@@ -76,7 +77,7 @@ bool predict_phase{true};
 
 bool updateStateEstimate() {
     if (predict_phase) {
-        sys.state.predictFilter(micros());
+        sys.state.predictFilter(ClockTime::now());
     } else {
         sys.state.updateFilter();
     }
@@ -85,7 +86,7 @@ bool updateStateEstimate() {
 }
 
 bool runAutopilot() {
-    return sys.autopilot.run(micros());
+    return sys.autopilot.run(ClockTime::now());
 }
 
 bool updateControlVectors() {
@@ -234,7 +235,7 @@ void sdLogTest(){
     TaskRunner& t = SD_STATE_OUT;
     if (t.log_count) {
         float rate = (t.log_count * 1000000.0f) / ((float) t.delay_track.value_sum);
-        Serial.printf("%12" PRIu32 ", %12" PRIu32 ",  %12" PRIu32 ", %7.2f, %7.2f, ", micros(), t.work_count, t.log_count, sd_max_rate_Hz, rate);
+        Serial.printf("%12" PRIu32 ", %12" PRIu32 ",  %12" PRIu32 ", %7.2f, %7.2f, ", ClockTime::now().readClockTick(), t.work_count, t.log_count, sd_max_rate_Hz, rate);
         sdcard::writing::printReport();
         Serial.flush();
     }
@@ -246,7 +247,7 @@ void sdLogTest(){
 }
 
 void performanceReport(){
-    Serial.printf("\n[%10" PRIu32 "] Performance Report (Hz / us): \n", micros());
+    Serial.printf("\n[%10" PRIu32 "] Performance Report (Hz / us): \n", ClockTime::now().readClockTick());
     // print tasks in order from fastest to slowest
     size_t s[TASK_COUNT];
     for (size_t i = 0; i < TASK_COUNT; ++i) {
@@ -315,14 +316,14 @@ void setup() {
 
     const uint32_t boot_sequence_delay_usec = 300000;
 
-    uint32_t start = micros();
+    ClockTime start = ClockTime::now();
     sys.led.errorStart(LEDPattern::SOLID, red, green, 0); /*begin boot phase 0*/
-    
+
     readEEPROM().applyTo(sys); // load stored settings (this will reinitialize if there is no data in the EEPROM!
     sys.state.resetState();
 
-    while(micros()-start < boot_sequence_delay_usec){;} // boot pattern timing
-    start = micros();
+    while(ClockTime::now()-start < boot_sequence_delay_usec){;} // boot pattern timing
+    start = ClockTime::now();
     sys.led.errorStart(LEDPattern::SOLID, red, green, 1); /* begin boot phase 1*/
 
     sys.bmp.restart();
@@ -338,8 +339,8 @@ void setup() {
             ;
     }
 
-    while(micros()-start < boot_sequence_delay_usec){;} // boot pattern timing
-    start = micros();
+    while(ClockTime::now()-start < boot_sequence_delay_usec){;} // boot pattern timing
+    start = ClockTime::now();
     sys.led.errorStart(LEDPattern::SOLID, red, green, 2); /* begin boot phase 2*/
 
     sys.imu.restart();
@@ -350,8 +351,8 @@ void setup() {
             ;
     }
 
-    while(micros()-start < boot_sequence_delay_usec){;} // boot pattern timing
-    start = micros();
+    while(ClockTime::now()-start < boot_sequence_delay_usec){;} // boot pattern timing
+    start = ClockTime::now();
     sys.led.errorStart(LEDPattern::SOLID, red, green, 3); /* begin boot phase 3*/
 
     uint8_t j=0;
@@ -363,22 +364,22 @@ void setup() {
         j++;
     }
 
-    while(micros()-start < boot_sequence_delay_usec){;} // boot pattern timing
-    start = micros();
+    while(ClockTime::now()-start < boot_sequence_delay_usec){;} // boot pattern timing
+    start = ClockTime::now();
     sys.led.errorStart(LEDPattern::SOLID, red, green, 4); /* begin boot phase 4*/
 
     /* future tests*/
 
     // Perform intial check for an SD card
-    while(micros()-start < boot_sequence_delay_usec){;} // boot pattern timing
-    start = micros();
+    while(ClockTime::now()-start < boot_sequence_delay_usec){;} // boot pattern timing
+    start = ClockTime::now();
     sys.led.errorStop();
     sys.version.display(sys.led);
-    
+
     // when there is no card present, we will sit here for ~2sec
     // better to show version pattern instead of four red lights
     sdcard::startup();
-    
+
     // Do Bluetooth last becauase we have to wait 2.5 seconds for AT mode
     setBluetoothUart(sys.name);
 
@@ -395,7 +396,7 @@ bool state_update_only = true;
 
 void loop() {
 
-    uint32_t start = micros();
+    ClockTime start = ClockTime::now();
 
     if (loops::stopped()) {
         sys.led.errorStart(LEDPattern::SOLID, CRGB::White, CRGB::Red, 2);
@@ -425,11 +426,11 @@ void loop() {
                 for (TaskRunner& task : tasks) {
                     task.reset(loops::lastStart());
                 }
-                start = micros();
+                start = ClockTime::now();
                 loops::reset();
             }
 
-            uint32_t delay_usec = micros() - start;
+            uint32_t delay_usec = ClockTime::now() - start;
 
             if ( delay_usec > AVERAGE_DELAY_TARGET_USEC ) {
                 average_delay_usec = ( average_delay_usec*15 + delay_usec ) >> 4;

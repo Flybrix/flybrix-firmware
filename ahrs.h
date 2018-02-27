@@ -8,8 +8,9 @@
 #define SE_AHRS_H_
 
 #include <cstdint>
-#include "utility/vector3.h"
+#include "utility/clock.h"
 #include "utility/quaternion.h"
+#include "utility/vector3.h"
 
 class Ahrs final {
    public:
@@ -30,7 +31,7 @@ class Ahrs final {
         max_delta_time_ = mdt;
         return *this;
     }
-    Ahrs& setTimestamp(uint32_t time) {
+    Ahrs& setTimestamp(ClockTime time) {
         last_update_timestamp_ = time;
         return *this;
     }
@@ -71,7 +72,7 @@ class Ahrs final {
         return pose_;
     }
 
-    void update(uint32_t timestamp);
+    void update(ClockTime timestamp);
 
    private:
     struct Measurement {
@@ -90,7 +91,7 @@ class Ahrs final {
     float max_delta_time_{0};
     float parameter_1_{0};
     float parameter_2_{0};
-    uint32_t last_update_timestamp_{0};
+    ClockTime last_update_timestamp_{ClockTime::zero()};
 };
 
 #endif /* end of include guard: SE_AHRS_H_ */

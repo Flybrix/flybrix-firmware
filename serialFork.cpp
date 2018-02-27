@@ -10,6 +10,7 @@
 #include "devicename.h"
 #include "usbModeSelector.h"
 #include "debug.h"
+#include "utility/clock.h"
 
 class ChannelBuffer {
   public:
@@ -108,20 +109,20 @@ class Channel{
         }
         return nullptr;
     }
-    
+
     void write(uint8_t* data, size_t length) {
         bytes_written += length;
         data_output->push(data, length);
     }
-    
+
     void printStats(){
         Serial.printf("bytes buffered/sent/received: %8d / %8d / %8d", bytes_written, bytes_sent, bytes_read);
     }
-    
+
   private:
     ChannelBuffer *data_output;
     CobsReaderBuffer data_input;
-    
+
     uint32_t bytes_written{0};
     uint32_t bytes_read{0};
     uint32_t bytes_sent{0};
@@ -129,7 +130,7 @@ class Channel{
 
 class USBComm : public Channel {
   public:
-  
+
     USBComm() : Channel(20,64) {
         Serial.begin(9600);  // USB is always 12 Mbit/sec
     };
@@ -166,16 +167,16 @@ class Bluetooth : public Channel {
         //Serial1.attachRts(6);
         //Serial1.attachCts(20);
         Serial1.clear();
-        
+
         pinMode(board::bluetooth::RESET, OUTPUT);
         digitalWrite(board::bluetooth::RESET, HIGH);
         pinMode(board::bluetooth::MODE, OUTPUT);
         digitalWriteFast(board::bluetooth::MODE, LOW);   // set AT mode
-        
+
         digitalWriteFast(board::bluetooth::RESET, LOW);  // reset BMD
         delay(100);
         digitalWriteFast(board::bluetooth::RESET, HIGH);  // reset BMD complete, now in AT mode
-        start_time = micros(); //we need to wait about 2500msec total
+        start_time = ClockTime::now(); //we need to wait about 2500msec total
     };
 
     uint8_t _serial_available(){
@@ -193,7 +194,7 @@ class Bluetooth : public Channel {
     void setBluetoothUart(const DeviceName& name);
 
   private:
-    uint32_t start_time{0}; //used in setup
+    ClockTime start_time{ClockTime::zero()}; //used in setup
 };
 
 Bluetooth bluetooth;
@@ -214,7 +215,7 @@ void flushATmodeResponse() {
 
 void Bluetooth::setBluetoothUart(const DeviceName& name) {
 
-    uint32_t waited = (micros() - start_time)/1000;
+    uint32_t waited = (ClockTime::now() - start_time)/1000;
     if (waited < 2500) {
         DebugPrintf("Delaying %d msec for Rigado AT mode.",  2500-waited);
         delay(2500-waited); // time needed initialization of AT mode
@@ -222,31 +223,31 @@ void Bluetooth::setBluetoothUart(const DeviceName& name) {
     else {
         DebugPrintf("Waited %d msec for Rigado AT mode.", waited);
     }
-                                    
+
     Serial1.print("at$name ");
     Serial1.print(name.value);
     Serial1.print("\n");
     flushATmodeResponse();
-    
+
     Serial1.print("at$btxpwr 04\n"); //enable +4dBm beacon
     flushATmodeResponse();
 
     Serial1.print("at$ctxpwr 04\n"); //enable +4dBm connectable
     flushATmodeResponse();
-    
+
     Serial1.print("at$uen 01\n"); //enable pass-through UART
-    flushATmodeResponse();    
-    
+    flushATmodeResponse();
+
     Serial1.print("at$ubr 57600\n"); //set pass-through UART baud rate
     flushATmodeResponse();
-    
+
     Serial1.print("at$ufc 00\n"); //disable flow control (req'd over 57k)
     flushATmodeResponse();
 
     /*
     Serial1.print("at$ubr 115200\n"); //set pass-through UART baud rate
     flushATmodeResponse();
-    
+
     Serial1.print("at$ufc 01\n"); //enable flow control (req'd over 57k)
     flushATmodeResponse();
 
@@ -257,7 +258,7 @@ void Bluetooth::setBluetoothUart(const DeviceName& name) {
     Serial1.attachRts(6); //change to board::bluetooth:RTS eventually
     Serial1.attachCts(20);
     */
-    
+
     digitalWriteFast(board::bluetooth::MODE, HIGH);
     digitalWriteFast(board::bluetooth::RESET, LOW);  // reset BMD
     delay(100);

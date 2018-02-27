@@ -13,6 +13,7 @@
 #include "power.h"
 #include "stateFlag.h"
 #include "imu.h"
+#include "utility/clock.h"
 
 enum SerialComm::States : uint8_t {
     MICROS,
@@ -59,7 +60,7 @@ static_assert(SerialComm::States::END_OF_STATES == 27, "Added/removed states not
     }
 
 READ_SUBSTATE(MICROS) {
-    uint32_t timestamp_us{micros()};
+    ClockTime timestamp_us{ClockTime::now()};
     payload.Append(timestamp_us);
 }
 

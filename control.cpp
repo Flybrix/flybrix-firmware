@@ -8,6 +8,7 @@
 #include "debug.h"
 #include "kinematics.h"
 #include "quickmath.h"
+#include "utility/clock.h"
 #include "utility/rcHelpers.h"
 
 namespace {
@@ -185,7 +186,7 @@ ControlVectors Control::calculateControlVectors(const Vector3<float>& velocity, 
 
     ControlVectors control;
 
-    uint32_t now = micros();
+    ClockTime now = ClockTime::now();
 
     if (setpoint.throttle < 10) {  // throttle is in low condition
         up_pid.integralReset();

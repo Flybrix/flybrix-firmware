@@ -10,6 +10,7 @@
 #include <array>
 
 #include "PID.h"
+#include "utility/clock.h"
 
 template <size_t N>
 class PIDCascade final {
@@ -56,13 +57,13 @@ class PIDCascade final {
         }
     }
 
-    void timerReset(uint32_t now) {
+    void timerReset(ClockTime now) {
         for (Regulator& reg : regulators_) {
             reg.pid.setTimer(now);
         }
     }
 
-    float compute(uint32_t now) {
+    float compute(ClockTime now) {
         float value{setpoint_};
         for (Regulator& reg : regulators_) {
             if (reg.use) {

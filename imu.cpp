@@ -8,6 +8,7 @@
 
 #include "quickmath.h"
 #include "state.h"
+#include "utility/clock.h"
 
 Imu::Imu(State& state) : state_(state) {
 }
@@ -54,7 +55,7 @@ void Imu::parseConfig() {
     readBiasValues();
 }
 
-void Imu::updateAccelGyro(uint32_t time, const Vector3<float>& accel, const Vector3<float>& gyro) {
+void Imu::updateAccelGyro(ClockTime time, const Vector3<float>& accel, const Vector3<float>& gyro) {
     // update IIRs (@500Hz)
     accel_ = accel;
     gyro_ = gyro;
@@ -96,7 +97,7 @@ bool Imu::startInertialMeasurement() {
                 correctBiasValues();
             }
         }
-        updateAccelGyro(micros(), sensor_to_flyer_ * linear_acceleration, sensor_to_flyer_ * angular_velocity);
+        updateAccelGyro(ClockTime::now(), sensor_to_flyer_ * linear_acceleration, sensor_to_flyer_ * angular_velocity);
     });
 }
 

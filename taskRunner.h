@@ -8,6 +8,7 @@
 #define task_runner_h
 
 #include <Arduino.h>
+#include "utility/clock.h"
 
 using TaskPtr = bool (*)();
 
@@ -29,7 +30,7 @@ struct StatTrack {
         value_max = 0;
         value_sum = 0;
     }
-    
+
     uint32_t value_last{0};
     uint32_t value_min{0xFFFFFFFF};
     uint32_t value_max{0};
@@ -45,12 +46,12 @@ class TaskRunner {
     ~TaskRunner() {
         free(name);
     }
-    
+
     void setDesiredInterval(uint32_t value_usec, uint32_t disable_threshold_usec) {
         desired_interval_us = value_usec;
         if (value_usec < disable_threshold_usec){
             if (!enabled)
-                last_update_us = micros();
+                last_update_us = ClockTime::now();
             enabled = true;
         }
         else {
@@ -63,7 +64,7 @@ class TaskRunner {
         return enabled;
     }
 
-    void reset(uint32_t reset_time_us) {
+    void reset(ClockTime reset_time_us) {
         last_update_us = reset_time_us;
     }
 
@@ -78,16 +79,16 @@ class TaskRunner {
         duration_track.reset();
         log_count = 0;
     }
-    
+
     char * name;
     TaskPtr task;
-    uint32_t desired_interval_us;  
-    uint32_t last_update_us;
+    uint32_t desired_interval_us;
+    ClockTime last_update_us;
     StatTrack delay_track{0};
     StatTrack duration_track{0};
     uint32_t log_count{0};
     uint32_t work_count{0};
-  
+
   private:
     bool enabled;
     bool always_log_stats;

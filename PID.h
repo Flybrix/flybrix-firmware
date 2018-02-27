@@ -8,6 +8,7 @@
 #define PID_h
 
 #include <cstdint>
+#include "utility/clock.h"
 
 class IIRfilter {
    public:
@@ -61,7 +62,7 @@ class PID {
         degrees = wrapped;
     }
 
-    uint32_t lastTime() const {
+    ClockTime lastTime() const {
         return last_time;
     }
 
@@ -101,11 +102,11 @@ class PID {
         desired_setpoint_ = v;
     }
 
-    void setTimer(uint32_t now) {
+    void setTimer(ClockTime now) {
         last_time = now;
     }
 
-    float Compute(uint32_t now) {
+    float Compute(ClockTime now) {
         float delta_time = (now - last_time) / 1000000.0;
 
         setpoint_ = setpoint_filter.update(desired_setpoint_, delta_time);
@@ -143,7 +144,7 @@ class PID {
     };
 
     void IntegralReset() {
-        error_integral = 0.0f;   
+        error_integral = 0.0f;
     };
 
    private:
@@ -158,7 +159,7 @@ class PID {
     float input_{0.0f}, setpoint_{0.0f};
     float desired_setpoint_{0.0f};
 
-    uint32_t last_time{0};
+    ClockTime last_time{ClockTime::zero()};
     float p_term{0.0f};
     float i_term{0.0f};
     float d_term{0.0f};
