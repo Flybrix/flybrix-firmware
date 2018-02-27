@@ -87,7 +87,7 @@ void Ahrs::update(ClockTime timestamp) {
     uint32_t delta = timestamp - last_update_timestamp_;
     last_update_timestamp_ = timestamp;
 
-    if (ClockTime::isProbabyLessThanOrEqualZero(delta)) {
+    if (ClockTime::isNotReasonable(delta)) {
         return;
     }
 

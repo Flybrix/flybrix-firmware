@@ -21,12 +21,8 @@ class __attribute__((packed)) ClockTime final {
         return ClockTime(0);
     }
 
-    inline static bool isProbabyLessThanOrEqualZero(uint32_t delta) {
-        return delta == 0 || isProbabyLessThanZero(delta);
-    }
-
-    inline static bool isProbabyLessThanZero(uint32_t delta) {
-        return delta > (1 << 30);
+    inline static bool isNotReasonable(uint32_t delta) {
+        return delta == 0 || (delta > (1 << 30));
     }
 
     uint32_t readClockTick() {

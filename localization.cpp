@@ -53,7 +53,7 @@ void Localization::predictFilter(ClockTime time) {
     }
     uint32_t delta = time - timeNow;
     timeNow = time;
-    if (ClockTime::isProbabyLessThanOrEqualZero(delta)) {
+    if (ClockTime::isNotReasonable(delta)) {
         return;
     }
     float dt{delta / 1000000.0f};
