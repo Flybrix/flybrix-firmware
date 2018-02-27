@@ -1,12 +1,7 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
-
-    <version.h/cpp>
-
-    Definitions for the firmware version.
-
+    *  http://www.flybrix.com
 */
 
 #ifndef version_h
@@ -15,7 +10,7 @@
 #include "debug.h"
 
 #define FIRMWARE_VERSION_A 1
-#define FIRMWARE_VERSION_B 5
+#define FIRMWARE_VERSION_B 6
 #define FIRMWARE_VERSION_C 0
 
 class LED;

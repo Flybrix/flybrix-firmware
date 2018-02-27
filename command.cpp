@@ -1,98 +1,250 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
+    *  http://www.flybrix.com
 */
 
 #include "command.h"
 
-#include "state.h"
-
-#include "R415X.h"
-
+#include "BMP280.h"
 #include "cardManagement.h"
+#include "debug.h"
+#include "imu.h"
+#include "led.h"
+#include "state.h"
+#include "stateFlag.h"
+#include "systems.h"
 
-PilotCommand::PilotCommand(State* __state, R415X* __receiver) : state(__state), receiver(__receiver) {
+PilotCommand::PilotCommand(Systems& systems) : bmp_(systems.bmp), state_(systems.state), imu_(systems.imu), flag_(systems.flag), led_{systems.led} {
+    setControlState(ControlState::AwaitingAuxDisable);
 }
 
-void PilotCommand::processCommands(void) {
-    bool attempting_to_enable = false;
-    bool attempting_to_disable = false;
+Airframe::MixTable& PilotCommand::mix_table() {
+    return airframe_.mix_table;
+}
 
-    if (state->is(STATUS_RX_FAIL)) {
-        state->command_throttle *= 0.99;
+void PilotCommand::override(bool override) {
+    if (override) {
+        setControlState(ControlState::Overridden);
+    } else if (isOverridden()) {
+        setControlState(ControlState::AwaitingAuxDisable);
+    }
+}
+
+bool PilotCommand::isOverridden() const {
+    return control_state_ == ControlState::Overridden;
+}
+
+void PilotCommand::setMotor(size_t index, uint16_t value) {
+    if (isOverridden()) {
+        airframe_.setMotor(index, value);
+    }
+}
+
+void PilotCommand::resetMotors() {
+    if (isOverridden()) {
+        airframe_.resetMotors();
+    }
+}
+
+void PilotCommand::applyControl(const ControlVectors& control_vectors) {
+    airframe_.applyChanges(control_vectors);
+}
+
+void PilotCommand::processMotorEnablingIteration() {
+    // Ignore if motors are already enabled
+    if (!airframe_.motorsEnabled()) {
+        processMotorEnablingIterationHelper();  // this can flip Status::ARMED to true
+        // hold controls low for some time after enabling
+        throttle_hold_off_.reset(80);  // @40Hz -- hold for 2 sec
+    }
+}
+
+bool PilotCommand::upright() const {
+    return imu_.upright();
+}
+
+bool PilotCommand::stable() const {
+    return imu_.stable();
+}
+
+void PilotCommand::processMotorEnablingIterationHelper() {
+    if (!canRequestEnabling()) {
+        return;
+    }
+    if (control_state_ != ControlState::Enabling) {
+        setControlState(ControlState::Enabling);
+        enable_attempts_ = 0;
     }
 
-    if (!(state->command_source_mask & COMMAND_READY_BTLE)) {
-        if (bluetoothTolerance) {
-            // we allow bluetooth a generous 1s before we give up
-            --bluetoothTolerance;
+    if (enable_attempts_ == 0) {  // first call
+        enable_attempts_ = 1;
+        return;
+    }
+
+    enable_attempts_++;  // we call this routine from "command" at 40Hz
+
+    if (!upright()) {
+        setControlState(ControlState::FailAngle);
+        return;
+    }
+
+    if (enable_attempts_ == 21) {
+        if (!stable()) {
+            setControlState(ControlState::FailStability);
         } else {
-            // since we haven't seen bluetooth commands for more than 1 second, try the R415X
-            receiver->getCommandData(state);
+            imu_.readBiasValues();  // update filter values if they are not fresh
+            bmp_.recalibrateP0();
+        }
+        return;
+    }
+
+    // check one more time to see if we were stable
+    if (enable_attempts_ == 41) {
+        if (!stable()) {
+            setControlState(ControlState::FailStability);
+        } else {
+            sdcard::writing::open();
+            airframe_.enableMotors();
+            flag_.assign(Status::RECORDING_SD, sdcard::getState() == sdcard::State::WriteStates);
+            setControlState(ControlState::ThrottleLocked);
+        }
+        return;
+    }
+}
+
+bool PilotCommand::canRequestEnabling() const {
+    switch (control_state_) {
+        case ControlState::ThrottleLocked:
+        case ControlState::Enabled:
+        case ControlState::FailStability:
+        case ControlState::FailAngle:
+        case ControlState::FailRx:
+        case ControlState::Overridden:
+            return false;
+        case ControlState::AwaitingAuxDisable:
+        case ControlState::Disabled:
+        case ControlState::Enabling:
+            return true;
+    }
+    return true;
+}
+
+void PilotCommand::disableMotors() {
+    airframe_.disableMotors();
+    setControlState(ControlState::Disabled);
+    sdcard::writing::close();
+    flag_.assign(Status::RECORDING_SD, sdcard::getState() == sdcard::State::WriteStates);
+}
+
+uint8_t count{0};
+
+RcCommand PilotCommand::processCommands(RcState&& rc_state) {
+    bool timeout{rc_state.status == RcStatus::Timeout};
+
+    if (timeout) {
+        if (!isOverridden()) {
+            setControlState(ControlState::FailRx);
         }
     } else {
-        // as soon as we start receiving bluetooth, reset the watchdog
-        bluetoothTolerance = 40;
+        if (control_state_ == ControlState::FailRx) {
+            setControlState(ControlState::AwaitingAuxDisable);
+        }
     }
 
-    if (!(state->command_source_mask & (COMMAND_READY_R415X | COMMAND_READY_BTLE))) {
-        // we have no command data!
-        state->command_invalid_count++;
-        if (state->command_invalid_count > 80) {
-            // we haven't received data in two seconds
-            state->command_invalid_count = 80;
-            state->set(STATUS_RX_FAIL);
+    bool attempting_to_enable{rc_state.command.aux1 == RcCommand::AUX::Low};
+
+    switch (control_state_) {
+        case ControlState::Overridden: {
+        } break;
+        case ControlState::Disabled: {
+            if (attempting_to_enable) {
+                setControlState(ControlState::Enabling);
+                enable_attempts_ = 0;
+            }
+        } break;
+        case ControlState::ThrottleLocked: {
+            if (!attempting_to_enable) {
+                setControlState(ControlState::Disabled);
+            } else if (rc_state.command.throttle == 0) {
+                count++;  // one check isn't enough when opening an sd card (zero received before loop delay?)
+                if (count > 10) {
+                    setControlState(ControlState::Enabled);
+                    count = 0;
+                }
+            }
+        } break;
+        case ControlState::FailStability:
+        case ControlState::FailAngle:
+        case ControlState::AwaitingAuxDisable:
+        case ControlState::Enabling:
+        case ControlState::Enabled: {
+            if (!attempting_to_enable) {
+                setControlState(ControlState::Disabled);
+            }
+        } break;
+        case ControlState::FailRx: {
+            rc_state.command.throttle *= 0.99;
+        } break;
+    }
+
+    if (control_state_ == ControlState::Enabling) {
+        processMotorEnablingIteration();
+    } else if (control_state_ == ControlState::Disabled) {
+        disableMotors();
+    }
+
+    if (!timeout) {
+        if (throttle_hold_off_.tick() || rc_state.command.throttle == 0 || control_state_ == ControlState::ThrottleLocked) {
+            rc_state.command.throttle = 0;
+            rc_state.command.pitch = 0;
+            rc_state.command.roll = 0;
+            rc_state.command.yaw = 0;
         }
-    } else if (state->command_invalid_count > 0) {
-        state->command_invalid_count--;
-        if (state->command_invalid_count == 0) {
-            state->clear(STATUS_RX_FAIL);
+    }
+
+    return rc_state.command;
+}
+
+bool PilotCommand::isArmingFailureState() const {
+    return control_state_ == ControlState::FailAngle || control_state_ == ControlState::FailStability || control_state_ == ControlState::AwaitingAuxDisable ||
+           control_state_ == ControlState::ThrottleLocked;
+}
+
+uint32_t PilotCommand::failToColor() const {
+    switch (control_state_) {
+        case ControlState::FailStability:
+            return CRGB::Red;
+        case ControlState::FailAngle:
+            return CRGB::Orange;
+        case ControlState::AwaitingAuxDisable:
+        case ControlState::ThrottleLocked:
+            return CRGB::White;
+        default:
+            return CRGB::Black;
+    }
+}
+
+void PilotCommand::setControlState(ControlState state) {
+    control_state_ = state;
+    if (isArmingFailureState()) {
+        CRGB color = CRGB::White;
+        for (const LED::StateCase& sc : led_.states.states) {
+            if (sc.status & Status::ARMING) {
+                color = sc.color_right_front.crgb();
+                break;
+            }
         }
+        led_.errorStart(LEDPattern::ALTERNATE, color, LED::fade(failToColor()), 2);
     } else {
-        // use valid command data
-        attempting_to_enable = state->command_AUX_mask & (1 << 0);   // AUX1 is low
-        attempting_to_disable = state->command_AUX_mask & (1 << 2);  // AUX1 is high
-
-        // in the future, this would be the place to look for other combination inputs or for AUX levels that mean something
-
-        // mark the BTLE data as used so we don't use it again
-        state->command_source_mask &= ~(COMMAND_READY_BTLE);
+        led_.errorStop();
     }
 
-    if (blockEnabling && attempting_to_enable && !state->is(STATUS_OVERRIDE)) {  // user attempted to enable, but we are blocking it
-        state->clear(STATUS_IDLE);
-        state->set(STATUS_FAIL_OTHER);
-    }
-    blockEnabling = false;  // we only block enabling if attempting_to_enable may have been accidentally set
+    airframe_.setOverride(isOverridden());
 
-    if (!state->is(STATUS_OVERRIDE)) {
-        if (attempting_to_enable && !state->is(STATUS_ENABLED | STATUS_FAIL_STABILITY | STATUS_FAIL_ANGLE | STATUS_FAIL_OTHER)) {
-            state->processMotorEnablingIteration();  // this can flip STATUS_ENABLED to true
-            recentlyEnabled = true;
-            throttleHoldOff = 80;  // @40Hz -- hold for 2 sec
-            if (state->is(STATUS_ENABLED))
-                sdcard::openFile();
-        }
-        if (attempting_to_disable && state->is(STATUS_ENABLED | STATUS_FAIL_STABILITY | STATUS_FAIL_ANGLE | STATUS_FAIL_OTHER)) {
-            state->disableMotors();
-            sdcard::closeFile();
-        }
-    } else {
-        blockEnabling = true;  // block accidental enabling when we come out of pilot override
-    }
-
-    bool throttle_is_low = (state->command_throttle == 0);
-
-    if (recentlyEnabled || throttle_is_low) {
-        state->command_throttle = 0;
-        state->command_pitch = 0;
-        state->command_roll = 0;
-        state->command_yaw = 0;
-
-        throttleHoldOff--;
-        if (recentlyEnabled && (throttleHoldOff == 0)) {
-            recentlyEnabled = false;
-        }
-    }
+    flag_.assign(Status::IDLE, control_state_ == ControlState::Disabled);
+    flag_.assign(Status::ARMING, control_state_ == ControlState::Enabling || isArmingFailureState());
+    flag_.assign(Status::NO_SIGNAL, control_state_ == ControlState::FailRx);
+    flag_.assign(Status::ARMED, control_state_ == ControlState::Enabled);
+    flag_.assign(Status::OVERRIDE, isOverridden());
 }

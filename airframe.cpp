@@ -1,24 +1,191 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
+    *  http://www.flybrix.com
 */
 
 #include "airframe.h"
 #include <Arduino.h>
-#include "state.h"
+#include "controlVectors.h"
+#include "debug.h"
 
-Airframe::Airframe(State* state) : state(state) {
+void constrainPower(int32_t *desired_power, int32_t *available_power, int32_t *allocated_power, int8_t* mix_table_values){
+    int32_t max_desired_power = 0;
+    int32_t min_desired_power = 0;
+    size_t max_i = 0;
+    size_t min_i = 0;
+    for (size_t i = 0; i < 8; ++i) {
+        if (desired_power[i] > max_desired_power ) {
+            max_desired_power = desired_power[i];
+            max_i = i;
+        }
+        if (desired_power[i] < min_desired_power ) {
+            min_desired_power = desired_power[i];
+            min_i = i;
+        }
+    }
+    
+    int32_t additive_power_deficit = 0;    //we want to add more power than remains available
+    int32_t subtractive_power_deficit = 0; //we want to subtract more power than we have allocated thus far
+    
+    if ( (max_desired_power > 0) && (max_desired_power > available_power[max_i])) {
+        additive_power_deficit = max_desired_power - available_power[max_i];
+    }
+    if ( (min_desired_power < 0) && (-min_desired_power > allocated_power[min_i])) {
+        subtractive_power_deficit = -min_desired_power - allocated_power[min_i];
+    }
+     
+    if ( additive_power_deficit > subtractive_power_deficit) {
+        int32_t scaled_deficit = additive_power_deficit / ((int32_t) mix_table_values[max_i]);
+        for (size_t i = 0; i < 8; ++i) {
+            desired_power[i] -= scaled_deficit * (int32_t) mix_table_values[i];
+        }   
+    }
+    else {
+        int32_t scaled_deficit = subtractive_power_deficit / ((int32_t) mix_table_values[min_i]);
+        for (size_t i = 0; i < 8; ++i) {
+            desired_power[i] += scaled_deficit * (int32_t) mix_table_values[i];
+        }  
+    }
+    
 }
 
-uint16_t Airframe::mix(int32_t mFz, int32_t mTx, int32_t mTy, int32_t mTz) {
-    int32_t mmax = max(max(mFz, mTx), max(mTy, mTz));
-    return constrain((mFz * state->Fz + mTx * state->Tx + mTy * state->Ty + mTz * state->Tz) / mmax, 0, 4095);
+uint32_t motor_update_count{0};
+uint32_t motor_clipping[8]{0};
+int32_t min_level[8]{0};
+int32_t max_level[8]{0};
+
+void Airframe::setMotorsToMixTable(const ControlVectors& controls) {
+    const int32_t tx_reserve = 200;
+    const int32_t ty_reserve = 200;
+    const int32_t tz_reserve = 200;
+    int32_t remaining_power[8];
+    int32_t allocated_power[8];
+    int32_t fz_power[8];
+    int32_t tx_power[8];
+    int32_t ty_power[8];
+    int32_t tz_power[8];
+    for (size_t i = 0; i < 8; ++i) {
+        int32_t mmax = max(max(abs(mix_table.fz[i]), abs(mix_table.tx[i])), max(abs(mix_table.ty[i]), abs(mix_table.tz[i])));
+        fz_power[i] = mix_table.fz[i] * controls.force_z  / mmax;
+        tx_power[i] = mix_table.tx[i] * controls.torque_x / mmax;
+        ty_power[i] = mix_table.ty[i] * controls.torque_y / mmax;
+        tz_power[i] = mix_table.tz[i] * controls.torque_z / mmax;
+        remaining_power[i] = 4095 - tx_reserve - ty_reserve - tz_reserve;
+        allocated_power[i] = 0;
+    }
+    
+    // allocate thrust
+    for (size_t i = 0; i < 8; ++i) {
+        allocated_power[i] += min( remaining_power[i], fz_power[i] );
+        remaining_power[i] -= allocated_power[i];
+        
+        fz_power[i] -= allocated_power[i]; // keep track of residual thrust for later use
+    }
+    
+    // allocate roll
+    for (size_t i = 0; i < 8; ++i) {
+        remaining_power[i] += ty_reserve;
+    }
+    constrainPower(ty_power, remaining_power, allocated_power, mix_table.ty);
+    for (size_t i = 0; i < 8; ++i) {
+        allocated_power[i] += ty_power[i];
+        remaining_power[i] -= ty_power[i];
+    }
+
+    // allocate pitch
+    for (size_t i = 0; i < 8; ++i) {
+        remaining_power[i] += tx_reserve;
+    }
+    constrainPower(tx_power, remaining_power, allocated_power, mix_table.tx);
+    for (size_t i = 0; i < 8; ++i) {
+        allocated_power[i] += tx_power[i];
+        remaining_power[i] -= tx_power[i];
+    }
+
+    // allocate yaw
+    for (size_t i = 0; i < 8; ++i) {
+        remaining_power[i] += tz_reserve;
+    }
+    constrainPower(tz_power, remaining_power, allocated_power, mix_table.tz);
+    for (size_t i = 0; i < 8; ++i) {
+        allocated_power[i] += tz_power[i];
+        remaining_power[i] -= tz_power[i];
+    }   
+
+    // if we have room, allocate the residual thrust
+    constrainPower(fz_power, remaining_power, allocated_power, mix_table.fz);
+    for (size_t i = 0; i < 8; ++i) {
+        allocated_power[i] += fz_power[i];
+        remaining_power[i] -= fz_power[i];
+    }
+
+    for (size_t i = 0; i < 8; ++i) {
+        if (allocated_power[i] == 0) {
+            continue;
+        }
+        else {
+            motor_update_count++;
+            break;
+        }
+    }
+        
+    for (size_t i = 0; i < 8; ++i) {
+        if (allocated_power[i] < 0) {
+            if (allocated_power[i] < min_level[i]) {
+                min_level[i] = allocated_power[i];
+            }
+            allocated_power[i] = 0;
+            motor_clipping[i]++;
+        }
+        if (allocated_power[i] > 4095) {
+            if (allocated_power[i] > max_level[i]) {
+                max_level[i] = allocated_power[i];
+            }
+            allocated_power[i] = 4095;
+            motor_clipping[i]++;
+        }            
+        if (motor_clipping[i] && (motor_clipping[i] % 1500 == 0)){
+            DebugPrintf("Motor channel %d is saturating (%2.0f%%) [%6d,%6d]", i, (float) 100.0f * motor_clipping[i] / motor_update_count, min_level[i], max_level[i]);
+        }
+        
+        motors_.set(i, (uint16_t) allocated_power[i]);
+    }
 }
 
-void Airframe::updateMotorsMix() {
-    for (size_t i = 0; i < 8; ++i)
-        state->MotorOut[i] = mix(mix_table.fz[i], mix_table.tx[i], mix_table.ty[i], mix_table.tz[i]);
+void Airframe::setMotor(size_t index, uint16_t value) {
+    motors_.set(index, value);
+}
+
+void Airframe::resetMotors() {
+    motors_.reset();
+}
+
+void Airframe::enableMotors() {
+    enabled_ = true;
+}
+
+void Airframe::disableMotors() {
+    enabled_ = false;
+}
+
+void Airframe::setOverride(bool override) {
+    override_ = override;
+}
+
+void Airframe::applyChanges(const ControlVectors& control) {
+    if (!override_) {
+        setMotorsToMixTable(control);
+    }
+    motors_.updateAllChannels(enabled_ || override_);
+}
+
+bool Airframe::motorsEnabled() const {
+    return enabled_;
+}
+
+bool Airframe::motorsOverridden() const {
+    return override_;
 }
 
 // default configuration is the flat8 octocopter:

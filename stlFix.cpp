@@ -1,16 +1,16 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
-
-    <stlFix.h/cpp>
-
-    Implements missing elements for using certain STL libraries in Teensyduino.
-
+    *  http://www.flybrix.com
 */
 
 #include "stlFix.h"
 #include "debug.h"
+
+void std::__throw_bad_function_call() {
+    DebugPrintf("SYSTEM ERROR: Unable to call function");
+    exit(1);
+}
 
 void std::__throw_bad_alloc() {
     DebugPrintf("SYSTEM ERROR: Unable to allocate memory");

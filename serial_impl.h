@@ -1,3 +1,9 @@
+/*
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
+    *
+    *  http://www.flybrix.com
+*/
+
 #ifndef SERIAL_IMPL_H
 #define SERIAL_IMPL_H
 
@@ -7,6 +13,7 @@
 #include "config.h"
 #include "eepromcursor.h"
 #include "serialFork.h"
+#include "stateFlag.h"
 
 template <std::size_t N>
 inline void WriteProtocolHead(SerialComm::MessageType type, uint32_t mask, CobsPayload<N>& payload) {
@@ -15,13 +22,21 @@ inline void WriteProtocolHead(SerialComm::MessageType type, uint32_t mask, CobsP
 }
 
 template <std::size_t N>
-inline void WriteToOutput(CobsPayload<N>& payload, bool use_logger = false) {
+void SerialComm::WriteToOutput(CobsPayload<N>& payload, bool use_logger) const {
     auto package = payload.Encode();
     if (use_logger) {
-        sdcard::write(package.data, package.length);
+        sdcard::writing::write(package.data, package.length);
+        flag_.assign(Status::LOG_FULL, sdcard::writing::fileIsFull());
     } else {
         writeSerial(package.data, package.length);
     }
+}
+
+template <std::size_t N>
+inline void WriteDebugToOutput(CobsPayload<N>& payload) {
+    auto package = payload.Encode();
+    // decide where to route Debug info here
+    writeSerial(package.data, package.length);
 }
 
 template <std::size_t N>

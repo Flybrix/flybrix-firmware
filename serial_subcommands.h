@@ -1,7 +1,20 @@
+/*
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
+    *
+    *  http://www.flybrix.com
+*/
+
 #ifndef SERIAL_SUBCOMMANDS_H
 #define SERIAL_SUBCOMMANDS_H
 
 #include "serial_impl.h"
+
+#include "autopilot.h"
+#include "command.h"
+#include "debug.h"
+#include "loop_stopper.h"
+#include "stateFlag.h"
+#include "utility/clock.h"
 
 enum SerialComm::Commands : uint8_t {
     REQ_RESPONSE,
@@ -29,6 +42,9 @@ enum SerialComm::Commands : uint8_t {
     REQ_PARTIAL_EEPROM_DATA,
     REQ_CARD_RECORDING_STATE,
     SET_PARTIAL_TEMPORARY_CONFIG,
+    SET_COMMAND_SOURCES,
+    SET_CALIBRATION,
+    SET_AUTOPILOT,
     END_OF_COMMANDS,
 };
 
@@ -37,11 +53,17 @@ enum SerialComm::Commands : uint8_t {
     template <>             \
     inline bool SerialComm::doSubcommand<SerialComm::Commands::name>(CobsReaderBuffer & input)
 
+//#define DEBUG(name) DebugPrint(#name);
+#define DEBUG(name) ;
+
 DO_SUBCOMMAND(REQ_RESPONSE) {
+    //DEBUG(REQ_RESPONSE)
     return false;
 }
 
 DO_SUBCOMMAND(SET_EEPROM_DATA) {
+    DEBUG(SET_EEPROM_DATA)
+
     Config tmp_config;
     if (!tmp_config.readFrom(input)) {
         return false;
@@ -49,82 +71,96 @@ DO_SUBCOMMAND(SET_EEPROM_DATA) {
     if (!tmp_config.verify()) {
         return false;
     }
-    tmp_config.applyTo(*systems);
+
+    loops::Stopper _stopper("SET_EEPROM_DATA");
+    tmp_config.applyTo(systems_);
     tmp_config.writeTo(EEPROMCursor());
+
     return true;
 }
 
 DO_SUBCOMMAND(REINIT_EEPROM_DATA) {
+    DEBUG(REINIT_EEPROM_DATA)
     const Config tmp_config;
-    tmp_config.applyTo(*systems);
+    loops::Stopper _stopper("REINIT_EEPROM_DATA");
+    tmp_config.applyTo(systems_);
     tmp_config.writeTo(EEPROMCursor());
     return true;
 }
 
 DO_SUBCOMMAND(REQ_EEPROM_DATA) {
+    DEBUG(REQ_EEPROM_DATA)
     SendConfiguration();
     return true;
 }
 
 DO_SUBCOMMAND(REQ_ENABLE_ITERATION) {
+    DEBUG(REQ_ENABLE_ITERATION)
     uint8_t flag;
     if (!input.ParseInto(flag)) {
         return false;
     }
     if (flag == 1) {
-        state->processMotorEnablingIteration();
+        pilot_.processMotorEnablingIteration();
     } else {
-        state->disableMotors();
+        pilot_.disableMotors();
     }
     return true;
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_0) {
-    return input.ParseInto(state->MotorOut[0]);
+    DEBUG(MOTOR_OVERRIDE_SPEED_0)
+    return pilot_.readMotor(0, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_1) {
-    return input.ParseInto(state->MotorOut[1]);
+    DEBUG(MOTOR_OVERRIDE_SPEED_1)
+    return pilot_.readMotor(1, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_2) {
-    return input.ParseInto(state->MotorOut[2]);
+    DEBUG(MOTOR_OVERRIDE_SPEED_2)
+    return pilot_.readMotor(2, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_3) {
-    return input.ParseInto(state->MotorOut[3]);
+    DEBUG(MOTOR_OVERRIDE_SPEED_3)
+    return pilot_.readMotor(3, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_4) {
-    return input.ParseInto(state->MotorOut[4]);
+    DEBUG(MOTOR_OVERRIDE_SPEED_3)
+    return pilot_.readMotor(4, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_5) {
-    return input.ParseInto(state->MotorOut[5]);
+    DEBUG(MOTOR_OVERRIDE_SPEED_5)
+    return pilot_.readMotor(5, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_6) {
-    return input.ParseInto(state->MotorOut[6]);
+    DEBUG(MOTOR_OVERRIDE_SPEED_6)
+    return pilot_.readMotor(6, input);
 }
 
 DO_SUBCOMMAND(MOTOR_OVERRIDE_SPEED_7) {
-    return input.ParseInto(state->MotorOut[7]);
+    DEBUG(MOTOR_OVERRIDE_SPEED_7)
+    return pilot_.readMotor(7, input);
 }
 
 DO_SUBCOMMAND(SET_COMMAND_OVERRIDE) {
+    DEBUG(SET_COMMAND_OVERRIDE)
     uint8_t flag;
     if (!input.ParseInto(flag)) {
         return false;
     }
-    if (flag == 1) {
-        state->set(STATUS_OVERRIDE);
-    } else {
-        state->clear(STATUS_OVERRIDE);
-    }
+    bool override = flag != 0;
+    pilot_.override(override);
     return true;
 }
 
 DO_SUBCOMMAND(SET_STATE_MASK) {
+    DEBUG(SET_STATE_MASK)
     uint32_t new_state_mask;
     if (!input.ParseInto(new_state_mask)) {
         return false;
@@ -134,6 +170,7 @@ DO_SUBCOMMAND(SET_STATE_MASK) {
 }
 
 DO_SUBCOMMAND(SET_STATE_DELAY) {
+    DEBUG(SET_STATE_DELAY)
     uint16_t new_state_delay;
     if (!input.ParseInto(new_state_delay)) {
         return false;
@@ -143,6 +180,7 @@ DO_SUBCOMMAND(SET_STATE_DELAY) {
 }
 
 DO_SUBCOMMAND(SET_SD_WRITE_DELAY) {
+    DEBUG(SET_SD_WRITE_DELAY)
     uint16_t new_state_delay;
     if (!input.ParseInto(new_state_delay)) {
         return false;
@@ -152,15 +190,17 @@ DO_SUBCOMMAND(SET_SD_WRITE_DELAY) {
 }
 
 DO_SUBCOMMAND(SET_LED) {
+    DEBUG(SET_LED)
     uint8_t mode, r1, g1, b1, r2, g2, b2, ind_r, ind_g;
     if (!input.ParseInto(mode, r1, g1, b1, r2, g2, b2, ind_r, ind_g)) {
         return false;
     }
-    led->set(LED::Pattern(mode), r1, g1, b1, r2, g2, b2, ind_r, ind_g);
+    led_.set(LEDPattern::Pattern(mode), r1, g1, b1, r2, g2, b2, ind_r, ind_g);
     return true;
 }
 
 DO_SUBCOMMAND(SET_SERIAL_RC) {
+    //DEBUG(SET_SERIAL_RC)
     uint8_t enabled;
     int16_t throttle, pitch, roll, yaw;
     uint8_t auxmask;
@@ -168,64 +208,77 @@ DO_SUBCOMMAND(SET_SERIAL_RC) {
         return false;
     }
     if (enabled) {
-        state->command_source_mask |= COMMAND_READY_BTLE;
-        state->command_AUX_mask = auxmask;
-        state->command_throttle = throttle;
-        state->command_pitch = pitch;
-        state->command_roll = roll;
-        state->command_yaw = yaw;
+        serial_rc_.update(auxmask, throttle, pitch, roll, yaw);
     } else {
-        state->command_source_mask &= ~COMMAND_READY_BTLE;
+        serial_rc_.clear();
     }
     return true;
 }
 
 DO_SUBCOMMAND(SET_CARD_RECORDING) {
+    DEBUG(SET_CARD_RECORDING)
     uint8_t recording_flags;
     if (!input.ParseInto(recording_flags)) {
         return false;
     }
     bool shouldRecordToCard = recording_flags & 1;
     bool shouldLock = recording_flags & 2;
-    sdcard::setLock(false);
+
+    sdcard::writing::setLock(false);
+    bool success{false};
     if (shouldRecordToCard) {
-        sdcard::openFile();
+        if (sdcard::getState() == sdcard::State::Closed) {
+            sdcard::writing::open();
+            success = true;
+        }
     } else {
-        sdcard::closeFile();
+        if (sdcard::getState() == sdcard::State::WriteStates) {
+            sdcard::writing::close();
+            success = true;
+        }
     }
-    sdcard::setLock(shouldLock);
-    return true;
+    sdcard::writing::setLock(shouldLock);
+
+    flag_.assign(Status::RECORDING_SD, sdcard::getState() == sdcard::State::WriteStates);
+    return success;
 }
 
 DO_SUBCOMMAND(SET_PARTIAL_EEPROM_DATA) {
-    Config tmp_config(*systems);
-    if (!tmp_config.readPartialFrom(input)) {
+    DEBUG(SET_PARTIAL_EEPROM_DATA)
+
+    Config tmp_config(systems_);
+    uint16_t submask, led_mask;
+    if (!tmp_config.readPartialFrom(input, submask, led_mask)) {
         return false;
     }
     if (!tmp_config.verify()) {
         return false;
     }
-    tmp_config.applyTo(*systems);
-    tmp_config.writeTo(EEPROMCursor());
+    loops::Stopper _stopper("SET_PARTIAL_EEPROM_DATA");
+    tmp_config.applyTo(systems_);
+    tmp_config.writeSkippableTo(EEPROMCursor(), submask, led_mask);
     return true;
 }
 
 DO_SUBCOMMAND(REINIT_PARTIAL_EEPROM_DATA) {
+    DEBUG(REINIT_PARTIAL_EEPROM_DATA)
     uint16_t submask, led_mask;
     if (!Config::readMasks(input, submask, led_mask)) {
         return false;
     }
-    Config tmp_config(*systems);
+    Config tmp_config(systems_);
     tmp_config.resetPartial(submask, led_mask);
     if (!tmp_config.verify()) {
         return false;
     }
-    tmp_config.applyTo(*systems);
-    tmp_config.writeTo(EEPROMCursor());
+    loops::Stopper _stopper("REINIT_PARTIAL_TEMPORARY_CONFIG");
+    tmp_config.applyTo(systems_);
+    tmp_config.writeSkippableTo(EEPROMCursor(), submask, led_mask);
     return true;
 }
 
 DO_SUBCOMMAND(REQ_PARTIAL_EEPROM_DATA) {
+    DEBUG(REQ_PARTIAL_EEPROM_DATA)
     uint16_t submask, led_mask;
     if (!Config::readMasks(input, submask, led_mask)) {
         return false;
@@ -235,14 +288,15 @@ DO_SUBCOMMAND(REQ_PARTIAL_EEPROM_DATA) {
 }
 
 DO_SUBCOMMAND(REQ_CARD_RECORDING_STATE) {
+    DEBUG(REQ_CARD_RECORDING_STATE)
     CobsPayload<20> payload;
     WriteProtocolHead(SerialComm::MessageType::Command, FLAG(SET_SD_WRITE_DELAY) | FLAG(SET_CARD_RECORDING), payload);
     payload.Append(sd_card_state_delay);
     uint8_t flags = 0;
-    if (sdcard::isOpen()) {
+    if (sdcard::getState() == sdcard::State::WriteStates) {
         flags |= 1;
     }
-    if (sdcard::isLocked()) {
+    if (sdcard::writing::isLocked()) {
         flags |= 2;
     }
     payload.Append(flags);
@@ -251,14 +305,75 @@ DO_SUBCOMMAND(REQ_CARD_RECORDING_STATE) {
 }
 
 DO_SUBCOMMAND(SET_PARTIAL_TEMPORARY_CONFIG) {
-    Config tmp_config(*systems);
-    if (!tmp_config.readPartialFrom(input)) {
+    DEBUG(SET_PARTIAL_TEMPORARY_CONFIG)
+
+    Config tmp_config(systems_);
+    uint16_t submask, led_mask;
+    if (!tmp_config.readPartialFrom(input, submask, led_mask)) {
         return false;
     }
     if (!tmp_config.verify()) {
         return false;
     }
-    tmp_config.applyTo(*systems);
+    loops::Stopper _stopper("SET_PARTIAL_TEMPORARY_CONFIG");
+    tmp_config.applyTo(systems_);
+    return true;
+}
+
+DO_SUBCOMMAND(SET_COMMAND_SOURCES) {
+    DEBUG(SET_COMMAND_SOURCES)
+    uint8_t sources;
+    if (!input.ParseInto(sources)) {
+        return false;
+    }
+    rc_mux_.setFilter(sources);
+    return true;
+}
+
+DO_SUBCOMMAND(SET_CALIBRATION) {
+    DEBUG(SET_CALIBRATION)
+    uint8_t enabled;
+    uint8_t mode;
+    if (!input.ParseInto(enabled, mode)) {
+        return false;
+    }
+    if (mode > 5) {
+        return false;
+    }
+    if (mode == 0) {
+        imu_.setMagnetometerCalibrating(enabled);
+        imu_.setAccelerometerCalibrating(false, RotationEstimator::Pose::Flat);
+    } else {
+        imu_.setMagnetometerCalibrating(false);
+        imu_.setAccelerometerCalibrating(enabled, RotationEstimator::Pose(mode - 1));
+    }
+
+    if (!enabled) {
+        // Store config in permanent storage when calibration stops
+        Config tmp_config(systems_);
+        if (!tmp_config.verify()) {
+            return false;
+        }
+        loops::Stopper _stopper("SET_CALIBRATION");
+        tmp_config.writeTo(EEPROMCursor());
+    }
+
+    return true;
+}
+
+DO_SUBCOMMAND(SET_AUTOPILOT) {
+    DEBUG(SET_AUTOPILOT)
+    uint8_t enabled;
+    if (!input.ParseInto(enabled)) {
+        return false;
+    }
+
+    if (enabled) {
+        autopilot_.start(ClockTime::now());
+    } else {
+        autopilot_.stop();
+    }
+
     return true;
 }
 

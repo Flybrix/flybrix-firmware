@@ -1,59 +1,63 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
-
-    <systems.h/cpp>
-
-    Set of systems that form the controller.
+    *  http://www.flybrix.com
 */
+
 #ifndef SYSTEMS_H
 #define SYSTEMS_H
 
-#include "AK8963.h"
 #include "BMP280.h"
-#include "MPU9250.h"
-#include "R415X.h"
-#include "airframe.h"
+#include "imu.h"
 #include "command.h"
 #include "config.h"
 #include "control.h"
-#include "i2cManager.h"
 #include "led.h"
-#include "motors.h"
 #include "power.h"
 #include "serial.h"
 #include "state.h"
 #include "version.h"
 #include "devicename.h"
-#include "config.h"
+#include "stateFlag.h"
+#include "controlVectors.h"
+#include "autopilot.h"
+#include "utility/rcHelpers.h"
 
 struct Systems {
     Systems();
     // subsystem objects initialize pins when created
     // Storing inside a struct forces the right initialization order
-    R415X receiver;
+    StateFlag flag;
 
-    I2CManager i2c;
+    ControlVectors control_vectors;
+    RcCommand command_vector;
+
     State state;
     LED led;
 
+    RcMux<SerialRc, Receiver> rc_mux;
+
     BMP280 bmp;
-    MPU9250 mpu;
-    AK8963 mag;
+    Imu imu;
     PowerMonitor pwr;
-    Motors motors;
-    Airframe airframe;
     PilotCommand pilot;
     Control control;
     SerialComm conf;
+    Autopilot autopilot;
 
     ConfigID id;
 
     DeviceName name;
 
     Version version;
-    PcbTransform pcb_transform;
+
+    SerialRc& serialRc() {
+        return rc_mux.source<0>();
+    }
+
+    Receiver& radioReceiver() {
+        return rc_mux.source<1>();
+    }
 
     void parseConfig();
 };

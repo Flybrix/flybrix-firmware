@@ -1,3 +1,9 @@
+/*
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
+    *
+    *  http://www.flybrix.com
+*/
+
 #ifndef COBS_H
 #define COBS_H
 
@@ -54,6 +60,18 @@ class CobsReader final {
                 done = true;
             }
         }
+    }
+
+    template <class T>
+    bool PeekInto(T& data) {
+        if (!CanContain<T>())
+            return false;
+        uint8_t* v_begin{(uint8_t*)&data};
+        uint8_t* v_end{v_begin + sizeof(T)};
+        const uint8_t* buffer_pointer{buffer + output_start};
+        while (v_begin < v_end)
+            *v_begin++ = *buffer_pointer++;
+        return true;
     }
 
     template <class T>

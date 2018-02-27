@@ -1,70 +1,61 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
-
-    <AK8963.h/cpp>
-
-    Driver code for the AK8963 magnetometer (inside the MPU9250).
-
+    *  http://www.flybrix.com
 */
 
 #ifndef AK8963_h
 #define AK8963_h
 
-#include "Arduino.h"
-#include "i2cManager.h"
-
-class State;
+#include <functional>
+#include <Arduino.h>
+#include "utility/vector3.h"
 
 // we have three coordinate systems here:
 // 1. REGISTER coordinates: native values as read
 // 2. IC/PCB coordinates: matches FLYER system if the pcb is in standard orientation
 // 3. FLYER coordinates: if the pcb is mounted in a non-standard way the FLYER system is a rotation of the IC/PCB system
 
-class AK8963 : public CallbackProcessor {
-   public:  // all in FLYER system
-    AK8963(State *state, I2CManager *i2c);
-
+class AK8963 {
+   public:
     void restart();  // calculate bias and prepare for flight
 
-    bool ready;
+    bool ready{false};
 
-    bool startMeasurement();  // writes values to state (when data is ready)
-    void triggerCallback();   // handles return for getAccelGryo()
+    // Callback: magnet field strength in milligauss -- (x,y,z)
+    bool startMeasurement(std::function<void(Vector3<float>)> on_success);
+
+    void setCalibrating(bool calibrating);
 
     uint8_t getID();
 
     struct __attribute__((packed)) MagBias {
-        MagBias();
         bool verify() const {
             return true;
         }
-        float x;  // Bx (milligauss)
-        float y;  // By (milligauss)
-        float z;  // Bz (milligauss)
+        Vector3<float> offset;  // B (milligauss)
     } mag_bias;
 
     static_assert(sizeof(MagBias) == 3 * 4, "Data is not packed");
 
+    bool allZeroes{false}; // if we're seeing (0,0,0) report that we're trapped in the "all zeroes bug condition"
+    
    private:
-    State *state;
-    I2CManager *i2c;
+    void triggerCallback(std::function<void(Vector3<float>)> on_success);
 
     uint8_t getStatusByte();
 
-    void rotate(float R[3][3], float x[3]);
+    void calibrate(const Vector3<float>& measurement);
 
     void reset();
     void configure();
     void disable();
 
-    const float mRes = 10. * 4912. / 32760.0;  // +/- 0.15 uT (or 1.5mG) per LSB; range is -32760...32760
-
-    // 16-bit raw values, bias correction, factory calibration
-    int16_t magCount[3] = {0, 0, 0};
     // bias is stored in MagBias
-    float magCalibration[3] = {0.0, 0.0, 0.0};
+    Vector3<float> magCalibration{0.0, 0.0, 0.0};
+    bool calibrating_{false};
+    Vector3<float> min_reading_;
+    Vector3<float> max_reading_;
 
     // buffers for processCallback
     uint8_t data_to_read[7];

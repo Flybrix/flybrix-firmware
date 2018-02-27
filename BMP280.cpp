@@ -1,32 +1,27 @@
 /*
-        *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
-        *
-        *  License and other details available at: http://www.flybrix.com/firmware
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
+    *
+    *  http://www.flybrix.com
 */
-
-//#define BMP280_SERIAL_DEBUG
 
 #include "BMP280.h"
 #include <math.h>
 #include <i2c_t3.h>
-#include "state.h"
 #include <stdint.h>
+#include "i2cManager.h"
 
-BMP280::BMP280(State *__state, I2CManager *__i2c) {
-    state = __state;
-    i2c = __i2c;
-    ready = false;
+BMP280::BMP280() : ready{false} {
 }
 
 void BMP280::restart() {
     uint8_t settings;
 
     // full reset
-    i2c->writeByte(BMP280_ADDR, 0xE0, 0xB6);
+    i2c().writeByte(BMP280_ADDR, 0xE0, 0xB6);
 
     delay(10);  // wait at least 2 ms for "power-on-reset"
     // load factory calibration
-    i2c->readBytes(BMP280_ADDR, BMP280_FACTORY_CALIBRATION, sizeof(struct BMP_calibration), CALIBRATION.raw);
+    i2c().readBytes(BMP280_ADDR, BMP280_FACTORY_CALIBRATION, sizeof(struct BMP_calibration), CALIBRATION.raw);
     // check to see if calibration values are sensible
     if (!validateCalibation()) {
         // ERROR: ("...WARNING -- CALIBRATION MAY NOT BE RELIABLE!...");
@@ -41,7 +36,7 @@ void BMP280::restart() {
     settings |= OSRS_T_X2;
     settings |= OSRS_P_X16;
     settings |= MODE_NORMAL;
-    i2c->writeByte(BMP280_ADDR, BMP280_REG_CTRL_MEAS, settings);
+    i2c().writeByte(BMP280_ADDR, BMP280_REG_CTRL_MEAS, settings);
 
     //  t_sb[7,6,5] bits in control register 0xF5 -- 000 (0.5ms sleep)
     // filter[4,3,2] bits in control register 0xF5 -- 111 (16)
@@ -50,18 +45,18 @@ void BMP280::restart() {
     settings = 0x0;
     settings |= FILTER_X16;
     settings |= T_SB_0p5ms;
-    i2c->writeByte(BMP280_ADDR, BMP280_REG_CONFIG, settings);
+    i2c().writeByte(BMP280_ADDR, BMP280_REG_CONFIG, settings);
 
     // resulting measurement rate is 26.32 Hz
     delay(250);  // first few values are bad
 }
 
 uint8_t BMP280::getID() {
-    return i2c->readByte(BMP280_ADDR, 0xD0);  // Read WHO_AM_I register for BMP280 --> 0x58
+    return i2c().readByte(BMP280_ADDR, 0xD0);  // Read WHO_AM_I register for BMP280 --> 0x58
 }
 
 uint8_t BMP280::getStatusByte() {
-    return i2c->readByte(BMP280_ADDR, 0xF3);
+    return i2c().readByte(BMP280_ADDR, 0xF3);
     // bit 3 set to ‘1’ whenever a conversion is running and back to ‘0’ when the results have been transferred to the data registers.
     // bit 0 set to ‘1’ when the NVM data are being copied to image registers and back to ‘0’ when the copying is done.
 }
@@ -75,7 +70,7 @@ boolean BMP280::validateCalibation() {
 bool BMP280::startMeasurement(void) {
     ready = false;
     data_to_send[0] = BMP280_REG_RESULT;
-    i2c->addTransfer(BMP280_ADDR, 1, data_to_send, 6, data_to_read, this);
+    i2c().addTransfer(BMP280_ADDR, 1, data_to_send, 6, data_to_read, [this]() { triggerCallback(); });
     return true;
 }
 
@@ -83,8 +78,8 @@ void BMP280::triggerCallback() {
     int32_t rawP, rawT;
     rawP = (((int32_t)data_to_read[0]) << 12) + (((int32_t)data_to_read[1]) << 4) + (((int32_t)data_to_read[2]) >> 4);
     rawT = (((int32_t)data_to_read[3]) << 12) + (((int32_t)data_to_read[4]) << 4) + (((int32_t)data_to_read[5]) >> 4);
-    state->temperature = compensate_T_int32(rawT);  // calculate temp first to update t_fine
-    state->pressure = compensate_P_int64(rawP);
+    temperature = compensate_T_int32(rawT);  // calculate temp first to update t_fine
+    pressure = compensate_P_int64(rawP);
     ready = true;
 }
 

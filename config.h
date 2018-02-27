@@ -1,16 +1,13 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
-
-    <config.h/cpp>
+    *  http://www.flybrix.com
 
     EEPROM based configuration data storage structure
 
     Nonvolatile parameters are being stored inside an CONFIG structure
     that can be accesed as data union, for easier manipulation as a javascript
     ArrayBuffer object over serial.
-
 */
 
 #ifndef config_h
@@ -20,9 +17,10 @@
 #include <EEPROM.h>
 
 #include "AK8963.h"
-#include "R415X.h"
+#include "receiver.h"
 #include "airframe.h"
 #include "control.h"
+#include "imu.h"
 #include "led.h"
 #include "state.h"
 #include "version.h"
@@ -44,18 +42,6 @@ struct __attribute__((packed)) ConfigID {
 
 static_assert(sizeof(ConfigID) == 4, "Data is not packed");
 
-struct __attribute__((packed)) PcbTransform {
-    PcbTransform();
-    bool verify() const {
-        return true;
-    }
-    float orientation[3];  // pitch/roll/yaw in standard flyer coordinate system
-                           // --> applied in that order!
-    float translation[3];  // translation in standard flyer coordinate system
-};
-
-static_assert(sizeof(PcbTransform) == 3 * 2 * 4, "Data is not packed");
-
 struct Config {
     enum Field : uint16_t {
         VERSION,
@@ -68,9 +54,12 @@ struct Config {
         STATE_PARAMETERS,
         LED_STATES,
         DEVICE_NAME,
+        VELOCITY_PID_PARAMETERS,
+        INERTIAL_BIAS,
     };
 
-    using Data = std::tuple<Version, ConfigID, PcbTransform, Airframe::MixTable, AK8963::MagBias, R415X::ChannelProperties, Control::PIDParameters, State::Parameters, LED::States, DeviceName>;
+    using Data = std::tuple<Version, ConfigID, PcbTransform, Airframe::MixTable, AK8963::MagBias, Receiver::ChannelProperties, Control::PIDParameters, State::Parameters, LED::States, DeviceName,
+                            Control::VelocityPIDParameters, Imu::InertialBias>;
 
     Config();
     explicit Config(Systems& sys);
@@ -86,10 +75,13 @@ struct Config {
     void writePartialTo(Cursor&& cursor, uint16_t submask, uint16_t led_mask) const;
 
     template <class Cursor>
+    void writeSkippableTo(Cursor&& cursor, uint16_t submask, uint16_t led_mask) const;
+
+    template <class Cursor>
     bool readFrom(Cursor&& cursor);
 
     template <class Cursor>
-    bool readPartialFrom(Cursor&& cursor);
+    bool readPartialFrom(Cursor&& cursor, uint16_t& submask, uint16_t& led_mask);
 
     template <class Cursor>
     static bool readMasks(Cursor&& cursor, uint16_t& submask, uint16_t& led_mask);
@@ -98,11 +90,11 @@ struct Config {
 };
 
 static_assert(sizeof(Config) ==
-                  sizeof(Version) + sizeof(ConfigID) + sizeof(PcbTransform) + sizeof(Airframe::MixTable) + sizeof(AK8963::MagBias) + sizeof(R415X::ChannelProperties) + sizeof(State::Parameters) +
-                      sizeof(Control::PIDParameters) + sizeof(LED::States) + sizeof(DeviceName),
+                  sizeof(Version) + sizeof(ConfigID) + sizeof(PcbTransform) + sizeof(Airframe::MixTable) + sizeof(AK8963::MagBias) + sizeof(Receiver::ChannelProperties) + sizeof(State::Parameters) +
+                      sizeof(Control::PIDParameters) + sizeof(LED::States) + sizeof(DeviceName) + sizeof(Control::VelocityPIDParameters) + sizeof(Imu::InertialBias),
               "Data is not packed");
 
-static_assert(sizeof(Config) == 644, "Data does not have expected size");
+static_assert(sizeof(Config) == 837, "Data does not have expected size");
 
 Config readEEPROM();
 bool isEmptyEEPROM();

@@ -1,11 +1,7 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
-
-    <serialFork.h/cpp>
-
-    Interface for forking serial communication channels.
+    *  http://www.flybrix.com
 */
 
 #ifndef SERIAL_FORK_H
@@ -16,8 +12,19 @@
 
 class DeviceName;
 
-CobsReaderBuffer* readSerial();
 void writeSerial(uint8_t* data, size_t length);
-void flushSerial();
 void setBluetoothUart(const DeviceName& name);
+
+bool usb_sendData();
+bool usb_getData();
+bool bluetooth_sendData();
+bool bluetooth_getData();
+
+CobsReaderBuffer* bluetooth_readData();
+
+void printSerialReport();
 #endif
+
+
+
+

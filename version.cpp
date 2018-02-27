@@ -1,12 +1,7 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
-
-    <version.h/cpp>
-
-    Definitions for the firmware version.
-
+    *  http://www.flybrix.com
 */
 
 #include "version.h"
@@ -30,7 +25,7 @@ uint32_t encode(uint32_t color) {
 }
 
 void Version::display(LED& led) const {
-    led.set(LED::SOLID, encode(minor), 0, encode(major), encode(patch), false, false);
+    led.set(LEDPattern::SOLID, encode(minor), 0, encode(major), encode(patch), false, false);
     led.update();
-    led.set(LED::NO_OVERRIDE, 0, false, false);
+    led.set(LEDPattern::NO_OVERRIDE, 0, false, false);
 }

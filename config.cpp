@@ -1,19 +1,13 @@
 /*
-    *  Flybrix Flight Controller -- Copyright 2015 Flying Selfie Inc.
+    *  Flybrix Flight Controller -- Copyright 2018 Flying Selfie Inc. d/b/a Flybrix
     *
-    *  License and other details available at: http://www.flybrix.com/firmware
+    *  http://www.flybrix.com
 */
 
 #include "config.h"
 
 #include "systems.h"
 #include "eepromcursor.h"
-
-PcbTransform::PcbTransform()          // Default settings
-    : orientation{0.0f, 0.0f, 0.0f},  // pitch, roll, yaw; applied in that order
-      translation{0.0f, 0.0f, 0.0f}   // x, y, z in mm
-{
-}
 
 // Default Config ID
 ConfigID::ConfigID() : ConfigID{0} {
@@ -36,14 +30,16 @@ inline decltype(std::get<field>(Config::Data())) & systemMapping(Systems& sys);
 
 MAP_SYSTEM(VERSION, Version, version);
 MAP_SYSTEM(ID, ConfigID, id);
-MAP_SYSTEM(PCB, PcbTransform, pcb_transform);
-MAP_SYSTEM(MIX_TABLE, Airframe::MixTable, airframe.mix_table)
-MAP_SYSTEM(MAG_BIAS, AK8963::MagBias, mag.mag_bias)
-MAP_SYSTEM(CHANNEL, R415X::ChannelProperties, receiver.channel)
-MAP_SYSTEM(PID_PARAMETERS, Control::PIDParameters, control.pid_parameters)
-MAP_SYSTEM(STATE_PARAMETERS, State::Parameters, state.parameters)
-MAP_SYSTEM(LED_STATES, LED::States, led.states)
-MAP_SYSTEM(DEVICE_NAME, DeviceName, name)
+MAP_SYSTEM(PCB, PcbTransform, imu.pcb_transform);
+MAP_SYSTEM(MIX_TABLE, Airframe::MixTable, pilot.mix_table());
+MAP_SYSTEM(MAG_BIAS, AK8963::MagBias, imu.magnetometer_bias());
+MAP_SYSTEM(CHANNEL, Receiver::ChannelProperties, radioReceiver().channel);
+MAP_SYSTEM(PID_PARAMETERS, Control::PIDParameters, control.pid_parameters);
+MAP_SYSTEM(STATE_PARAMETERS, State::Parameters, state.parameters);
+MAP_SYSTEM(LED_STATES, LED::States, led.states);
+MAP_SYSTEM(DEVICE_NAME, DeviceName, name);
+MAP_SYSTEM(VELOCITY_PID_PARAMETERS, Control::VelocityPIDParameters, control.velocity_pid_parameters);
+MAP_SYSTEM(INERTIAL_BIAS, Imu::InertialBias, imu.bias);
 
 #undef MAP_SYSTEM
 
