@@ -38,13 +38,13 @@ void constrainPower(int32_t *desired_power, int32_t *available_power, int32_t *a
     if ( additive_power_deficit > subtractive_power_deficit) {
         int32_t scaled_deficit = additive_power_deficit / ((int32_t) mix_table_values[max_i]);
         for (size_t i = 0; i < 8; ++i) {
-            //desired_power[i] -= scaled_deficit * (int32_t) mix_table_values[i];
+            desired_power[i] -= scaled_deficit * (int32_t) mix_table_values[i];
         }   
     }
     else {
         int32_t scaled_deficit = subtractive_power_deficit / ((int32_t) mix_table_values[min_i]);
         for (size_t i = 0; i < 8; ++i) {
-            //desired_power[i] += scaled_deficit * (int32_t) mix_table_values[i];
+            desired_power[i] += scaled_deficit * (int32_t) mix_table_values[i];
         }  
     }
     
