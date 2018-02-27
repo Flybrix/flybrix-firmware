@@ -20,12 +20,12 @@
 Receiver::ChannelProperties::ChannelProperties() : assignment{2, 1, 0, 3, 4, 5}, inversion{6}, midpoint{1500, 1500, 1500, 1500, 1500, 1500}, deadzone{0, 0, 0, 20, 0, 0} {
 }
 
-volatile uint8_t RX_freshness = 0;
+volatile uint8_t  RX_freshness = 0;
 volatile uint16_t RX[RC_CHANNEL_COUNT];         // filled by the interrupt with valid data
 volatile uint16_t RX_errors = 0;                // count dropped frames
 volatile uint16_t startPulse = 0;               // keeps track of the last received pulse position
 volatile uint16_t RX_buffer[RC_CHANNEL_COUNT];  // buffer data in anticipation of a valid frame
-volatile uint8_t RX_channel = 0;                // we are collecting data for this channel
+volatile uint8_t  RX_channel = 0;               // we are collecting data for this channel
 
 bool Receiver::ChannelProperties::verify() const {
     bool ok{true};
@@ -106,27 +106,12 @@ extern "C" void ftm1_isr(void) {
     startPulse = stopPulse;  // Save time at pulse start
 }
 
-bool Receiver::ErrorTracker::check(const RcCommand& command) {
-    bool armed{command.aux1 == RcCommand::AUX::Low};
-    bool nonzero_throttle{command.throttle > 0};
-    bool is_legal{armed || nonzero_throttle};
-    if (was_legal_ && !was_flying_) {
-        is_legal = true;
-    }
-    was_legal_ = is_legal;
-    was_flying_ = armed && nonzero_throttle;
-    return is_legal;
-}
-
-void Receiver::ErrorTracker::reportFailure() {
-    was_legal_ = false;
-}
-
 RcState Receiver::query() {
     RcState rc_state;
     cli();  // disable interrupts
 
-    bool input_is_ready = RX_freshness > 0;
+    bool input_is_ready = (RX_freshness > 0);
+    
     if (input_is_ready) {
         --RX_freshness;
 
@@ -143,7 +128,6 @@ RcState Receiver::query() {
         // tell state that Receiver is not ready and return
         sei();  // enable interrupts
         rc_state.status = RcStatus::Timeout;
-        error_tracker_.reportFailure();
         return rc_state;
     }
 
@@ -190,10 +174,6 @@ RcState Receiver::query() {
     rc_state.command.pitch = constrain((1 - 2 * ((channel.inversion >> 1) & 1)) * (pitch.val - pitch.mid) * 4095 / (pitch.max - pitch.min), -2047, 2047);
     rc_state.command.roll = constrain((1 - 2 * ((channel.inversion >> 2) & 1)) * (roll.val - roll.mid) * 4095 / (roll.max - roll.min), -2047, 2047);
     rc_state.command.yaw = constrain((1 - 2 * ((channel.inversion >> 3) & 1)) * (yaw.val - yaw.mid) * 4095 / (yaw.max - yaw.min), -2047, 2047);
-
-    if (!error_tracker_.check(rc_state.command)) {
-        rc_state.status = RcStatus::Timeout;
-    }
 
     return rc_state;
 }
