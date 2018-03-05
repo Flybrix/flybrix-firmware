@@ -15,6 +15,7 @@
 #include "loop_stopper.h"
 #include "stateFlag.h"
 #include "utility/clock.h"
+#include "usbModeSelector.h"
 
 enum SerialComm::Commands : uint8_t {
     REQ_RESPONSE,
@@ -45,6 +46,7 @@ enum SerialComm::Commands : uint8_t {
     SET_COMMAND_SOURCES,
     SET_CALIBRATION,
     SET_AUTOPILOT,
+    SET_USB_MODE,
     END_OF_COMMANDS,
 };
 
@@ -373,6 +375,19 @@ DO_SUBCOMMAND(SET_AUTOPILOT) {
     } else {
         autopilot_.stop();
     }
+
+    return true;
+}
+
+DO_SUBCOMMAND(SET_USB_MODE) {
+    DEBUG(SET_USB_MODE)
+    Serial.println("GOT SET USB MODE COMMAND!");
+    usb_mode::Mode mode;
+    if (!input.ParseInto(mode)) {
+        return false;
+    }
+
+    usb_mode::set(mode);
 
     return true;
 }
