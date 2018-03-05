@@ -286,9 +286,6 @@ bool usb_getData(){
 }
 
 CobsReaderBuffer* usb_readData(){
-    if (usb_mode::get() != usb_mode::BLUETOOTH_MIRROR) {
-        return nullptr;
-    }
     return usb_comm.read();
 }
 
