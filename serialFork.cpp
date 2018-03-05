@@ -285,6 +285,13 @@ bool usb_getData(){
     return usb_comm.get();
 }
 
+CobsReaderBuffer* usb_readData(){
+    if (usb_mode::get() != usb_mode::BLUETOOTH_MIRROR) {
+        return nullptr;
+    }
+    return usb_comm.read();
+}
+
 bool bluetooth_sendData(){
     return bluetooth.send();
 }

@@ -81,6 +81,16 @@ bool SerialComm::processBluetoothCommand(){
     return did_something;
 }
 
+bool SerialComm::processUsbCommand(){
+    bool did_something{false};
+    CobsReaderBuffer* data_input = usb_readData();
+    if (data_input != nullptr) {
+        ProcessData(*data_input, true);
+        did_something = true;
+    }
+    return did_something;
+}
+
 void SerialComm::ProcessData(CobsReaderBuffer& data_input, bool allow_response) {
     MessageType code;
     uint32_t mask;
