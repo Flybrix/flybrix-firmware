@@ -188,6 +188,10 @@ bool usb_get() {
     return usb_getData();
 }
 
+bool usb_processCommand() {
+    return sys.conf.processUsbCommand();
+}
+
 bool bluetooth_send() {
     return bluetooth_sendData();
 }
@@ -221,6 +225,7 @@ TaskRunner tasks[] = {
     {"update magnet     ", updateMagnetometer, hzToMicros(10)},           // (<  30us)
     {"get usb           ", usb_get, hzToMicros(100)},                     // (?)
     {"send usb          ", usb_send, hzToMicros(100)},                    // (?)
+    {"process usb       ", usb_processCommand, hzToMicros(300)},          // (?)
     {"autopilot         ", runAutopilot, hzToMicros(1), false},           // (?) future feature; turn off for now
     {"state estimate    ", updateStateEstimate, hzToMicros(640)},         // (1340us + 700us) split in two calls; should be ~2x gyro rate
 };

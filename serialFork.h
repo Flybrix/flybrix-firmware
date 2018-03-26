@@ -20,6 +20,7 @@ bool usb_getData();
 bool bluetooth_sendData();
 bool bluetooth_getData();
 
+CobsReaderBuffer* usb_readData();
 CobsReaderBuffer* bluetooth_readData();
 
 void printSerialReport();

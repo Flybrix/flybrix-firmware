@@ -96,6 +96,7 @@ class SerialComm {
     void ProcessData(CobsReaderBuffer& data_input, bool allow_response);
 
     bool processBluetoothCommand();
+    bool processUsbCommand();
 
     template <std::size_t N>
     void WriteToOutput(CobsPayload<N>& payload, bool use_logger = false) const;

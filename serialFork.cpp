@@ -76,16 +76,19 @@ class Channel{
         data_output = new ChannelBuffer(bufferCount, bufferChunk);
     };
 
-    virtual uint8_t _serial_available();
-    virtual uint8_t _serial_read();
-    virtual uint8_t _serial_write(const uint8_t *data, size_t length);
-    virtual void _serial_flush();
+    virtual ~Channel() {};
+
+    virtual uint8_t _serial_available() = 0;
+    virtual uint8_t _serial_read() = 0;
+    virtual uint8_t _serial_write(const uint8_t *data, size_t length) = 0;
+    virtual void _serial_flush() = 0;
 
     bool get() {
         bool did_work{false};
-        while (_serial_available()) { // we can't seem to keep up with incoming data...
+        while (_serial_available() && !await_read) { // we can't seem to keep up with incoming data...
             bytes_read++;
             data_input.AppendToBuffer(_serial_read());
+            await_read = data_input.IsDone();
             did_work = true;
         }
         return did_work;
@@ -104,6 +107,7 @@ class Channel{
     }
 
     CobsReaderBuffer* read() {
+        await_read = false;
         if (data_input.IsDone()){
             return &data_input;
         }
@@ -126,6 +130,8 @@ class Channel{
     uint32_t bytes_written{0};
     uint32_t bytes_read{0};
     uint32_t bytes_sent{0};
+
+    bool await_read{false};
 };
 
 class USBComm : public Channel {
@@ -283,6 +289,10 @@ bool usb_sendData(){
 
 bool usb_getData(){
     return usb_comm.get();
+}
+
+CobsReaderBuffer* usb_readData(){
+    return usb_comm.read();
 }
 
 bool bluetooth_sendData(){
