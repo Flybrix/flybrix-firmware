@@ -107,6 +107,9 @@ class Channel{
     }
 
     CobsReaderBuffer* read() {
+        if (!await_read) {
+            return nullptr;
+        }
         await_read = false;
         if (data_input.IsDone()){
             return &data_input;
