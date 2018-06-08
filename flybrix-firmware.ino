@@ -229,7 +229,8 @@ TaskRunner tasks[] = {
     {"autopilot         ", runAutopilot, hzToMicros(1), false},           // (?) future feature; turn off for now
     {"state estimate    ", updateStateEstimate, hzToMicros(640)},         // (1340us + 700us) split in two calls; should be ~2x gyro rate
 };
-#define TASK_COUNT 20
+constexpr size_t TASK_COUNT = std::end(tasks) - std::begin(tasks);
+static_assert(TASK_COUNT == 21, "Task count changed. Please check if below defined tasks still match");
 #define SD_STATE_OUT tasks[8]
 #define SERIAL_STATE_OUT tasks[11]
 #define STATE_ESTIMATE tasks[20]
