@@ -232,7 +232,7 @@ TaskRunner tasks[] = {
 #define TASK_COUNT 20
 #define SD_STATE_OUT tasks[8]
 #define SERIAL_STATE_OUT tasks[11]
-#define STATE_ESTIMATE tasks[19]
+#define STATE_ESTIMATE tasks[20]
 
 float sd_max_rate_Hz = 200.0f; // actual rate is ~197Hz
 
