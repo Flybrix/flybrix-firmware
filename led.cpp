@@ -6,6 +6,7 @@
 
 #include "led.h"
 #include "stateFlag.h"
+#include "debug.h"
 
 inline CRGB fadeBy(CRGB color, uint8_t amount) {
     return color.fadeLightBy(amount);
@@ -166,17 +167,25 @@ void LED::parseConfig() {
 }
 
 void LED::indicatorRedOn() {
-    digitalWriteFast(board::RED_LED, HIGH);
+    if (!DebugGetIndicatorOverride()) {
+        digitalWriteFast(board::RED_LED, HIGH);
+    }
 }
 
 void LED::indicatorGreenOn() {
-    digitalWriteFast(board::GREEN_LED, HIGH);
+    if (!DebugGetIndicatorOverride()) {
+        digitalWriteFast(board::GREEN_LED, HIGH);
+    }
 }
 
 void LED::indicatorRedOff() {
-    digitalWriteFast(board::RED_LED, LOW);
+    if (!DebugGetIndicatorOverride()) {
+        digitalWriteFast(board::RED_LED, LOW);
+    }
 }
 
 void LED::indicatorGreenOff() {
-    digitalWriteFast(board::GREEN_LED, LOW);
+    if (!DebugGetIndicatorOverride()) {
+        digitalWriteFast(board::GREEN_LED, LOW);
+    }
 }

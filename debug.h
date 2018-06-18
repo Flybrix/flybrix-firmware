@@ -40,6 +40,14 @@ void DebugPrintf(T... args) {
     DebugPrint(print_buffer);
 }
 
+void DebugIndicatorRedOn();
+void DebugIndicatorGreenOn();
+void DebugIndicatorRedOff();
+void DebugIndicatorGreenOff();
+
+void DebugSetIndicatorOverride(bool mode);
+bool DebugGetIndicatorOverride();
+
 #endif
 
 #endif
