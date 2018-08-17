@@ -56,7 +56,7 @@ bool I2CManager::update() {
         uint8_t error = Wire.endTransmission();
         if (error == 0 && transfers.front().receive_count > 0) {
             waiting_for_data = true;
-            Wire.requestFrom(transfers.front().address, transfers.front().receive_count);
+            Wire.sendRequest(transfers.front().address, transfers.front().receive_count);
             return true;
         } else {
             // how do we want to handle errors? ignore for now
@@ -81,8 +81,6 @@ uint8_t I2CManager::readBytes(uint8_t address, uint8_t subAddress, uint8_t count
     error = Wire.endTransmission();
     if (error == 0) {
         Wire.requestFrom(address, count);
-        while (Wire.available() != count)
-            ;  // wait until bytes are ready
 
         for (int i = 0; i < count; i++)
             dest[i] = Wire.read();
