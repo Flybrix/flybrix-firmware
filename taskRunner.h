@@ -19,8 +19,8 @@ constexpr uint32_t hzToMicros(float hz) {
 struct StatTrack {
     void log(uint32_t value) {
         value_last = value;
-        value_min = std::min(value_min, value);
-        value_max = std::max(value_max, value);
+        value_min = min(value_min, value);
+        value_max = max(value_max, value);
         value_sum += value;
     }
 
