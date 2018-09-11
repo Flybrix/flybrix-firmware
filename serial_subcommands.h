@@ -193,11 +193,19 @@ DO_SUBCOMMAND(SET_SD_WRITE_DELAY) {
 
 DO_SUBCOMMAND(SET_LED) {
     DEBUG(SET_LED)
-    uint8_t mode, r1, g1, b1, r2, g2, b2, ind_r, ind_g;
-    if (!input.ParseInto(mode, r1, g1, b1, r2, g2, b2, ind_r, ind_g)) {
+    uint8_t mode, ind_r, ind_g;
+    LED::Color right_front, left_front, right_back, left_back;
+    if (!input.ParseInto(mode, right_front, left_front, right_back, left_back, ind_r, ind_g)) {
         return false;
     }
-    led_.set(LEDPattern::Pattern(mode), r1, g1, b1, r2, g2, b2, ind_r, ind_g);
+    led_.set(
+        LEDPattern::Pattern(mode),
+        right_front.crgb(),
+        left_front.crgb(),
+        right_back.crgb(),
+        left_back.crgb(),
+        ind_r,
+        ind_g);
     return true;
 }
 

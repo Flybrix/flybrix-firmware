@@ -10,7 +10,7 @@
 #include "debug.h"
 
 #define FIRMWARE_VERSION_A 1
-#define FIRMWARE_VERSION_B 6
+#define FIRMWARE_VERSION_B 7
 #define FIRMWARE_VERSION_C 0
 
 class LED;
