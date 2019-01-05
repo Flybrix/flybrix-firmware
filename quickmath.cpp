@@ -37,8 +37,8 @@ namespace {
 constexpr float PI = 4 * std::atan(1.0);
 constexpr float TWO_PI = 2 * PI;
 constexpr float PI_HALF = PI / 2;
-constexpr float _4__PI = 1.2732395447;
-constexpr float _4__PIPI = 0.4052847346;
+constexpr float FOUR_OVER_PI = 4 / PI;
+constexpr float FOUR_OVER_PI_SQUARED = 4 / PI / PI;
 }  // namespace
 
 float quick::sin(float x) {
@@ -50,7 +50,7 @@ float quick::sin(float x) {
         x -= TWO_PI;
     }
 
-    float helper = x * (_4__PI - _4__PIPI * std::fabs(x));
+    float helper = x * (FOUR_OVER_PI - FOUR_OVER_PI_SQUARED * std::fabs(x));
     return helper * (0.225 * (std::fabs(helper) - 1) + 1);
 }
 

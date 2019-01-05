@@ -106,6 +106,27 @@ extern "C" void ftm1_isr(void) {
     startPulse = stopPulse;  // Save time at pulse start
 }
 
+void Receiver::updateChannels() {
+    updateChannel(0, throttle);
+    updateChannel(1, pitch);
+    updateChannel(2, roll);
+    updateChannel(3, yaw);
+    updateChannel(4, AUX1);
+    updateChannel(5, AUX2);
+}
+
+void Receiver::updateChannel(std::size_t idx, PPMchannel& target) {
+    uint8_t assignment = channel.assignment[idx];
+    // read data into PPMchannel objects using receiver channels assigned from configuration
+    target.val = RX[assignment];
+    // update midpoints from config
+    target.mid = channel.midpoint[assignment];
+    // update deadzones from config
+    target.deadzone = channel.deadzone[assignment];
+    // update channel inversion from config
+    target.inverted = channel.inversion & (1 << idx);
+}
+
 RcState Receiver::query() {
     RcState rc_state;
     cli();  // disable interrupts
@@ -131,29 +152,7 @@ RcState Receiver::query() {
         return rc_state;
     }
 
-    // read data into PPMchannel objects using receiver channels assigned from configuration
-    throttle.val = RX[channel.assignment[0]];
-    pitch.val = RX[channel.assignment[1]];
-    roll.val = RX[channel.assignment[2]];
-    yaw.val = RX[channel.assignment[3]];
-    AUX1.val = RX[channel.assignment[4]];
-    AUX2.val = RX[channel.assignment[5]];
-
-    // update midpoints from config
-    throttle.mid = channel.midpoint[channel.assignment[0]];
-    pitch.mid = channel.midpoint[channel.assignment[1]];
-    roll.mid = channel.midpoint[channel.assignment[2]];
-    yaw.mid = channel.midpoint[channel.assignment[3]];
-    AUX1.mid = channel.midpoint[channel.assignment[4]];
-    AUX2.mid = channel.midpoint[channel.assignment[5]];
-
-    // update deadzones from config
-    throttle.deadzone = channel.deadzone[channel.assignment[0]];
-    pitch.deadzone = channel.deadzone[channel.assignment[1]];
-    roll.deadzone = channel.deadzone[channel.assignment[2]];
-    yaw.deadzone = channel.deadzone[channel.assignment[3]];
-    AUX1.deadzone = channel.deadzone[channel.assignment[4]];
-    AUX2.deadzone = channel.deadzone[channel.assignment[5]];
+    updateChannels();
 
     sei();  // enable interrupts
 
@@ -164,16 +163,14 @@ RcState Receiver::query() {
 
     // in some cases it is impossible to get a ppm channel to be close enought to the midpoint (~1500 usec) because the controller trim is too coarse to correct a small error
     // we get around this by creating a small dead zone around the midpoint of signed channel, specified in usec units
-    pitch.val = pitch.applyDeadzone();
-    roll.val = roll.applyDeadzone();
-    yaw.val = yaw.applyDeadzone();
+    pitch.trimDeadzone();
+    roll.trimDeadzone();
+    yaw.trimDeadzone();
 
-    uint16_t throttle_threshold = ((throttle.max - throttle.min) / 10) + throttle.min;  // keep bottom 10% of throttle stick to mean 'off'
-
-    rc_state.command.throttle = constrain((throttle.val - throttle_threshold) * 4095 / (throttle.max - throttle_threshold), 0, 4095);
-    rc_state.command.pitch = constrain((1 - 2 * ((channel.inversion >> 1) & 1)) * (pitch.val - pitch.mid) * 4095 / (pitch.max - pitch.min), -2047, 2047);
-    rc_state.command.roll = constrain((1 - 2 * ((channel.inversion >> 2) & 1)) * (roll.val - roll.mid) * 4095 / (roll.max - roll.min), -2047, 2047);
-    rc_state.command.yaw = constrain((1 - 2 * ((channel.inversion >> 3) & 1)) * (yaw.val - yaw.mid) * 4095 / (yaw.max - yaw.min), -2047, 2047);
+    rc_state.command.throttle = throttle.decodeAbsoluteWithThreshold();
+    rc_state.command.pitch = pitch.decodeOffset();
+    rc_state.command.roll = roll.decodeOffset();
+    rc_state.command.yaw = yaw.decodeOffset();
 
     return rc_state;
 }

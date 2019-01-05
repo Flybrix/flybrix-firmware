@@ -12,6 +12,8 @@
 #include "Arduino.h"
 #include "utility/rcHelpers.h"
 
+class Receiver;
+
 class PPMchannel {
    public:
     PPMchannel(){};
@@ -20,10 +22,44 @@ class PPMchannel {
 
     uint16_t mid = 1500;
     uint16_t deadzone = 0;
-    static const uint16_t min = 1100;
-    static const uint16_t max = 1900;
 
-    uint16_t applyDeadzone() {
+    bool inverted = false;
+
+    static constexpr uint16_t min = 1100;
+    static constexpr uint16_t max = 1900;
+    static constexpr uint16_t range = max - min;
+    static constexpr uint16_t threshold = range / 10; // 10% threshold
+
+    inline uint16_t absolute() const {
+        return val - min;
+    }
+
+    inline uint16_t absoluteWithThreshold() const {
+        return val - (min + threshold);
+    }
+
+    inline uint16_t offset() const {
+        return val - mid;
+    }
+
+    template<typename T>
+    inline T applyInversion(T value) const {
+        return inverted ? -value : value;
+    }
+
+    inline uint16_t decodeAbsolute() const {
+        return constrain(absolute() * 4095 / range, 0, 4095);
+    }
+
+    inline uint16_t decodeAbsoluteWithThreshold() const {
+        return constrain(absoluteWithThreshold() * 4095 / (range - threshold), 0, 4095);
+    }
+
+    inline uint16_t decodeOffset() const {
+        return constrain(applyInversion(offset()) * 4095 / range, -2047, 2047);
+    }
+
+    uint16_t applyDeadzone() const {
         if (val > mid + deadzone) {
             return val - deadzone;
         }
@@ -33,13 +69,17 @@ class PPMchannel {
         return mid;
     }
 
-    bool isLow() {
+    void trimDeadzone() {
+        val = applyDeadzone();
+    }
+
+    bool isLow() const {
         return ((val - min) < (max - min) / 10);
     };
-    bool isHigh() {
+    bool isHigh() const {
         return ((max - val) < (max - min) / 10);
     };
-    bool isMid() {
+    bool isMid() const {
         return (abs(val - mid) < (max - min) / 10);
     };
 
@@ -93,6 +133,9 @@ class Receiver {
         bool was_legal_{false};
         bool was_flying_{false};
     } error_tracker_;
+
+    void updateChannels();
+    void updateChannel(std::size_t idx, PPMchannel& target);
 
     PPMchannel throttle;
     PPMchannel pitch;
