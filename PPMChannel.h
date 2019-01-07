@@ -10,8 +10,26 @@
 #include "Arduino.h"
 
 class PPMchannel {
+private:
+    static constexpr uint16_t min = 1100;
+    static constexpr uint16_t max = 1900;
+    static constexpr uint16_t range = max - min;
+    static constexpr uint16_t threshold = range / 10; // 10% threshold
+    static constexpr uint16_t max_unipolar_output = 4095;
+    static constexpr uint16_t max_bipolar_output = 2047;
+
+    template<typename T>
+    inline static T clampUnipolar(const T value) {
+        return constrain(value, 0, max_unipolar_output);
+    }
+
+    template<typename T>
+    inline static T clampBipolar(const T value) {
+        return constrain(value, -max_bipolar_output, max_bipolar_output);
+    }
+
 public:
-    PPMchannel(){};
+    PPMchannel() {};
 
     uint16_t val = 1500;
 
@@ -20,20 +38,25 @@ public:
 
     bool inverted = false;
 
-    static constexpr uint16_t min = 1100;
-    static constexpr uint16_t max = 1900;
-    static constexpr uint16_t range = max - min;
-    static constexpr uint16_t threshold = range / 10; // 10% threshold
+    static bool isValidMidpoint(uint16_t midpoint) {
+        return midpoint >= PPMchannel::min && midpoint <= PPMchannel::max;
+    }
 
-    inline uint16_t absolute() const {
+    static bool isValidDeadzoneForMidpoint(uint16_t deadzone, uint16_t midpoint) {
+        return deadzone < range && deadzone < midpoint;
+    }
+
+    static bool validateDeadzoneAndMidpoint(uint16_t deadzone, uint16_t midpoint, bool log = true);
+
+    inline uint16_t rawAbsolute() const {
         return val - min;
     }
 
-    inline uint16_t absoluteWithThreshold() const {
+    inline uint16_t rawAbsoluteWithThreshold() const {
         return val - (min + threshold);
     }
 
-    inline uint16_t offset() const {
+    inline uint16_t rawMidOffset() const {
         return val - mid;
     }
 
@@ -43,15 +66,15 @@ public:
     }
 
     inline uint16_t decodeAbsolute() const {
-        return constrain(absolute() * 4095 / range, 0, 4095);
+        return clampUnipolar(rawAbsolute() * max_unipolar_output / range);
     }
 
     inline uint16_t decodeAbsoluteWithThreshold() const {
-        return constrain(absoluteWithThreshold() * 4095 / (range - threshold), 0, 4095);
+        return clampUnipolar(rawAbsoluteWithThreshold() * max_unipolar_output / (range - threshold));
     }
 
     inline uint16_t decodeOffset() const {
-        return constrain(applyInversion(offset()) * 4095 / range, -2047, 2047);
+        return clampBipolar(applyInversion(rawMidOffset()) * max_unipolar_output / range);
     }
 
     uint16_t applyDeadzone() const {
@@ -71,9 +94,11 @@ public:
     bool isLow() const {
         return ((val - min) < (max - min) / 10);
     };
+
     bool isHigh() const {
         return ((max - val) < (max - min) / 10);
     };
+
     bool isMid() const {
         return (abs(val - mid) < (max - min) / 10);
     };

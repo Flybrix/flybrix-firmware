@@ -47,14 +47,7 @@ bool Receiver::ChannelProperties::verify() const {
         }
     }
     for (size_t idx = 0; idx < 6; ++idx) {
-        if (midpoint[idx] < PPMchannel::min || midpoint[idx] > PPMchannel::max) {
-            ok = false;
-            DebugPrint("Channel midpoints must be within the channel range");
-        }
-        if (midpoint[idx] < deadzone[idx]) {
-            ok = false;
-            DebugPrint("Channel deadzone cannot be larger than the midpoint value");
-        }
+        ok = PPMchannel::validateDeadzoneAndMidpoint(deadzone[idx], midpoint[idx]) && ok;
     }
     return ok;
 }
