@@ -53,9 +53,9 @@ template <uint8_t I = 0>
 }
 }  // namespace
 
-SerialComm::SerialComm(Systems& systems, const volatile uint16_t* ppm)
+SerialComm::SerialComm(Systems& systems)
     : state_(systems.state),
-      ppm{ppm},
+      ppm{systems.radioReceiver().ppm},
       control_(systems.control),
       systems_(systems),
       led_(systems.led),

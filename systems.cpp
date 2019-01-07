@@ -13,7 +13,7 @@ Systems::Systems()
       pilot{*this},
       control{Control::PIDParameters(), Control::VelocityPIDParameters()},
       // listen for configuration inputs
-      conf{*this, RX},
+      conf{*this},
       autopilot{conf},
       id{0} {
     Config().applyTo(*this);

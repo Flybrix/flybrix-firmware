@@ -20,12 +20,16 @@
 Receiver::ChannelProperties::ChannelProperties() : assignment{2, 1, 0, 3, 4, 5}, inversion{6}, midpoint{1500, 1500, 1500, 1500, 1500, 1500}, deadzone{0, 0, 0, 20, 0, 0} {
 }
 
+// global variables used by the interrupt callback
 volatile uint8_t  RX_freshness = 0;
 volatile uint16_t RX[RC_CHANNEL_COUNT];         // filled by the interrupt with valid data
 volatile uint16_t RX_errors = 0;                // count dropped frames
 volatile uint16_t startPulse = 0;               // keeps track of the last received pulse position
 volatile uint16_t RX_buffer[RC_CHANNEL_COUNT];  // buffer data in anticipation of a valid frame
 volatile uint8_t  RX_channel = 0;               // we are collecting data for this channel
+
+constexpr auto RX_PPM_SYNCPULSE_MIN = 7500;   // 2.5ms
+constexpr auto RX_PPM_SYNCPULSE_MAX = 48000;  // 16 ms (seems to be about 13.4ms on the scope)
 
 bool Receiver::ChannelProperties::verify() const {
     bool ok{true};
@@ -118,7 +122,7 @@ void Receiver::updateChannels() {
 void Receiver::updateChannel(std::size_t idx, PPMchannel& target) {
     uint8_t assignment = channel.assignment[idx];
     // read data into PPMchannel objects using receiver channels assigned from configuration
-    target.val = RX[assignment];
+    target.val = ppm[assignment];
     // update midpoints from config
     target.mid = channel.midpoint[assignment];
     // update deadzones from config
@@ -128,8 +132,11 @@ void Receiver::updateChannel(std::size_t idx, PPMchannel& target) {
 }
 
 RcState Receiver::query() {
-    RcState rc_state;
     cli();  // disable interrupts
+
+    for (uint8_t i = 0; i < RC_CHANNEL_COUNT; i++) {
+        ppm[i] = RX[i];
+    }
 
     bool input_is_ready = (RX_freshness > 0);
     
@@ -145,16 +152,17 @@ RcState Receiver::query() {
         }
     }
 
+    sei();  // enable interrupts
+
+    RcState rc_state;
+
     if (!input_is_ready) {
         // tell state that Receiver is not ready and return
-        sei();  // enable interrupts
         rc_state.status = RcStatus::Timeout;
         return rc_state;
     }
 
     updateChannels();
-
-    sei();  // enable interrupts
 
     // Translate PPMChannel data into the four command level and aux mask
     rc_state.status = RcStatus::Ok;

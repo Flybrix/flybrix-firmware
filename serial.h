@@ -72,7 +72,7 @@ class SerialComm {
     enum Commands : uint8_t;
     enum States : uint8_t;
 
-    SerialComm(Systems& systems, const volatile uint16_t* ppm);
+    SerialComm(Systems& systems);
 
     bool Read();
 
@@ -105,7 +105,7 @@ class SerialComm {
     uint16_t PacketSize(uint32_t mask) const;
 
     const State& state_;
-    const volatile uint16_t* ppm;
+    const uint16_t* ppm;
     const Control& control_;
     Systems& systems_;
     LED& led_;
