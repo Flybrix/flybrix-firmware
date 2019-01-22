@@ -47,7 +47,7 @@ bool Receiver::ChannelProperties::verify() const {
         }
     }
     for (size_t idx = 0; idx < 6; ++idx) {
-        ok = PPMchannel::validateDeadzoneAndMidpoint(deadzone[idx], midpoint[idx]) && ok;
+        ok = PPMChannel::validateDeadzoneAndMidpoint(deadzone[idx], midpoint[idx]) && ok;
     }
     return ok;
 }
@@ -112,9 +112,9 @@ void Receiver::updateChannels() {
     updateChannel(5, AUX2);
 }
 
-void Receiver::updateChannel(std::size_t idx, PPMchannel& target) {
+void Receiver::updateChannel(std::size_t idx, PPMChannel& target) {
     uint8_t assignment = channel.assignment[idx];
-    // read data into PPMchannel objects using receiver channels assigned from configuration
+    // read data into PPMChannel objects using receiver channels assigned from configuration
     target.val = ppm[assignment];
     // update midpoints from config
     target.mid = channel.midpoint[assignment];

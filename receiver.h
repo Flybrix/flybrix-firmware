@@ -54,14 +54,14 @@ class Receiver {
     } error_tracker_;
 
     void updateChannels();
-    void updateChannel(std::size_t idx, PPMchannel& target);
+    void updateChannel(std::size_t idx, PPMChannel& target);
 
-    PPMchannel throttle;
-    PPMchannel pitch;
-    PPMchannel roll;
-    PPMchannel yaw;
-    PPMchannel AUX1;
-    PPMchannel AUX2;
+    PPMChannel throttle;
+    PPMChannel pitch;
+    PPMChannel roll;
+    PPMChannel yaw;
+    PPMChannel AUX1;
+    PPMChannel AUX2;
 
 };  // class Receiver
 
