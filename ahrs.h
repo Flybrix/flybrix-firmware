@@ -8,7 +8,7 @@
 #define SE_AHRS_H_
 
 #include <cstdint>
-#include "utility/clock.h"
+#include "ClockTime.h"
 #include "utility/quaternion.h"
 #include "utility/vector3.h"
 

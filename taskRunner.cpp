@@ -7,7 +7,7 @@
 #include "taskRunner.h"
 #include "loop_stopper.h"
 #include "debug.h"
-#include "utility/clock.h"
+#include "ClockTime.h"
 
 TaskRunner::TaskRunner(const char* _name, TaskPtr task, uint32_t desired_interval_us) : task{task}, desired_interval_us{desired_interval_us}, last_update_us(ClockTime::now()), enabled{true}, always_log_stats{false} {
     name = strdup(_name);

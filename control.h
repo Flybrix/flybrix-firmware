@@ -8,6 +8,7 @@
 #define control_h
 
 #include "PIDCascade.h"
+#include "PIDSettings.h"
 #include "controlVectors.h"
 #include "utility/vector3.h"
 

@@ -9,7 +9,7 @@
 
 #include "AK8963.h"
 #include "MPU9250.h"
-#include "utility/clock.h"
+#include "ClockTime.h"
 #include "utility/rotation.h"
 #include "utility/vector3.h"
 #include "rotationEstimator.h"

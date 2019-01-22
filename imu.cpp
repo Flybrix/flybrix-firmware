@@ -8,7 +8,7 @@
 
 #include "quickmath.h"
 #include "state.h"
-#include "utility/clock.h"
+#include "ClockTime.h"
 
 Imu::Imu(State& state) : state_(state) {
 }

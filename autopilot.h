@@ -9,7 +9,7 @@
 
 #include <Arduino.h>
 #include "cobs.h"
-#include "utility/clock.h"
+#include "ClockTime.h"
 
 class SerialComm;
 

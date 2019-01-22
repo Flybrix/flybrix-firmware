@@ -7,7 +7,9 @@
 #include "usbModeSelector.h"
 
 namespace usb_mode {
+namespace {
 Mode current_mode{PERFORMANCE_REPORT};
+}
 
 void set(Mode mode) {
     current_mode = mode;

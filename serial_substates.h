@@ -13,7 +13,7 @@
 #include "power.h"
 #include "stateFlag.h"
 #include "imu.h"
-#include "utility/clock.h"
+#include "ClockTime.h"
 
 enum SerialComm::States : uint8_t {
     MICROS,

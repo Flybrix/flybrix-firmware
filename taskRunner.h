@@ -8,7 +8,7 @@
 #define task_runner_h
 
 #include <Arduino.h>
-#include "utility/clock.h"
+#include "ClockTime.h"
 
 using TaskPtr = bool (*)();
 

@@ -10,7 +10,7 @@
 #include "devicename.h"
 #include "usbModeSelector.h"
 #include "debug.h"
-#include "utility/clock.h"
+#include "ClockTime.h"
 
 class ChannelBuffer {
   public:

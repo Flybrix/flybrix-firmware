@@ -14,7 +14,7 @@
 #include "debug.h"
 #include "loop_stopper.h"
 #include "stateFlag.h"
-#include "utility/clock.h"
+#include "ClockTime.h"
 #include "usbModeSelector.h"
 
 enum SerialComm::Commands : uint8_t {

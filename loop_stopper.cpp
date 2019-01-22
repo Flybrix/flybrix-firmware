@@ -8,7 +8,7 @@
 
 #include <Arduino.h>
 #include "led.h"
-#include "utility/clock.h"
+#include "ClockTime.h"
 
 namespace loops {
 namespace {

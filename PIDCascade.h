@@ -10,7 +10,8 @@
 #include <array>
 
 #include "PID.h"
-#include "utility/clock.h"
+#include "PIDSettings.h"
+#include "ClockTime.h"
 
 template <size_t N>
 class PIDCascade final {

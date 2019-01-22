@@ -8,7 +8,7 @@
 #include "debug.h"
 #include "kinematics.h"
 #include "quickmath.h"
-#include "utility/clock.h"
+#include "ClockTime.h"
 #include "RcMux.h"
 
 namespace {
@@ -145,9 +145,9 @@ void Control::parseConfig() {
     yaw_pid.use<1>(((pid_parameters.pid_bypass & 0x80) == 0));
 
     // all slaves are rate controllers; set up the master pids as wrapped angle controllers
-    forward_pid.pid<2>().isWrapped();
-    right_pid.pid<2>().isWrapped();
-    yaw_pid.pid<0>().isWrapped();
+    forward_pid.pid<2>().setWrapped();
+    right_pid.pid<2>().setWrapped();
+    yaw_pid.pid<0>().setWrapped();
 
     up_pid.integralReset();
     forward_pid.integralReset();
