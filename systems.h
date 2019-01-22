@@ -21,7 +21,7 @@
 #include "stateFlag.h"
 #include "controlVectors.h"
 #include "autopilot.h"
-#include "utility/rcHelpers.h"
+#include "RcMux.h"
 
 struct Systems {
     Systems();

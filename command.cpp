@@ -140,7 +140,7 @@ void PilotCommand::disableMotors() {
 uint8_t count{0};
 
 RcCommand PilotCommand::processCommands(RcState&& rc_state) {
-    bool timeout{rc_state.status == RcStatus::Timeout};
+    bool timeout{rc_state.state == RcState::State::Timeout};
 
     if (timeout) {
         if (!isOverridden()) {
@@ -152,7 +152,7 @@ RcCommand PilotCommand::processCommands(RcState&& rc_state) {
         }
     }
 
-    bool attempting_to_enable{rc_state.command.aux1 == RcCommand::AUX::Low};
+    bool attempting_to_enable{rc_state.command.aux1() == RcCommand::AUX::Low};
 
     switch (control_state_) {
         case ControlState::Overridden: {
@@ -166,7 +166,7 @@ RcCommand PilotCommand::processCommands(RcState&& rc_state) {
         case ControlState::ThrottleLocked: {
             if (!attempting_to_enable) {
                 setControlState(ControlState::Disabled);
-            } else if (rc_state.command.throttle == 0) {
+            } else if (rc_state.command.throttle() == 0) {
                 count++;  // one check isn't enough when opening an sd card (zero received before loop delay?)
                 if (count > 10) {
                     setControlState(ControlState::Enabled);
@@ -184,7 +184,7 @@ RcCommand PilotCommand::processCommands(RcState&& rc_state) {
             }
         } break;
         case ControlState::FailRx: {
-            rc_state.command.throttle *= 0.99;
+            rc_state.command.setThrottle(rc_state.command.throttle() * 0.99);
         } break;
     }
 
@@ -195,11 +195,8 @@ RcCommand PilotCommand::processCommands(RcState&& rc_state) {
     }
 
     if (!timeout) {
-        if (throttle_hold_off_.tick() || rc_state.command.throttle == 0 || control_state_ == ControlState::ThrottleLocked) {
-            rc_state.command.throttle = 0;
-            rc_state.command.pitch = 0;
-            rc_state.command.roll = 0;
-            rc_state.command.yaw = 0;
+        if (throttle_hold_off_.tick() || rc_state.command.throttle() == 0 || control_state_ == ControlState::ThrottleLocked) {
+            rc_state.command.resetAxes();
         }
     }
 

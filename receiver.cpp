@@ -17,16 +17,18 @@
 // map AUX1 to RHS click
 // map AUX2 to LHS click
 
-Receiver::ChannelProperties::ChannelProperties() : assignment{2, 1, 0, 3, 4, 5}, inversion{6}, midpoint{1500, 1500, 1500, 1500, 1500, 1500}, deadzone{0, 0, 0, 20, 0, 0} {
+Receiver::ChannelProperties::ChannelProperties() : assignment{2, 1, 0, 3, 4, 5}, inversion{6},
+                                                   midpoint{1500, 1500, 1500, 1500, 1500, 1500},
+                                                   deadzone{0, 0, 0, 20, 0, 0} {
 }
 
 // global variables used by the interrupt callback
-volatile uint8_t  RX_freshness = 0;
+volatile uint8_t RX_freshness = 0;
 volatile uint16_t RX[RC_CHANNEL_COUNT];         // filled by the interrupt with valid data
 volatile uint16_t RX_errors = 0;                // count dropped frames
 volatile uint16_t startPulse = 0;               // keeps track of the last received pulse position
 volatile uint16_t RX_buffer[RC_CHANNEL_COUNT];  // buffer data in anticipation of a valid frame
-volatile uint8_t  RX_channel = 0;               // we are collecting data for this channel
+volatile uint8_t RX_channel = 0;               // we are collecting data for this channel
 
 constexpr auto RX_PPM_SYNCPULSE_MIN = 7500;   // 2.5ms
 constexpr auto RX_PPM_SYNCPULSE_MAX = 48000;  // 16 ms (seems to be about 13.4ms on the scope)
@@ -82,7 +84,8 @@ extern "C" void ftm1_isr(void) {
     // too short to be data  : pulseWidth < 900us
     // between data and sync : (pulseWidth > 2100us and pulseWidth < RX_PPM_SYNCPULSE_MIN)
     // too long : pulseWidth > RX_PPM_SYNCPULSE_MAX;
-    if (pulseWidth < 2700 || (pulseWidth > 6300 && pulseWidth < RX_PPM_SYNCPULSE_MIN) || pulseWidth > RX_PPM_SYNCPULSE_MAX) {
+    if (pulseWidth < 2700 || (pulseWidth > 6300 && pulseWidth < RX_PPM_SYNCPULSE_MIN) ||
+        pulseWidth > RX_PPM_SYNCPULSE_MAX) {
         RX_errors++;
         RX_channel = RC_CHANNEL_COUNT + 1;           // set RX_channel out of range to drop frame
     } else if (pulseWidth > RX_PPM_SYNCPULSE_MIN) {  // this is the sync pulse
@@ -132,7 +135,7 @@ RcState Receiver::query() {
     }
 
     bool input_is_ready = (RX_freshness > 0);
-    
+
     if (input_is_ready) {
         --RX_freshness;
 
@@ -151,14 +154,14 @@ RcState Receiver::query() {
 
     if (!input_is_ready) {
         // tell state that Receiver is not ready and return
-        rc_state.status = RcStatus::Timeout;
+        rc_state.state = RcState::State::Timeout;
         return rc_state;
     }
 
     updateChannels();
 
     // Translate PPMChannel data into the four command level and aux mask
-    rc_state.status = RcStatus::Ok;
+    rc_state.state = RcState::State::Ok;
 
     rc_state.command.parseBools(AUX1.isLow(), AUX1.isMid(), AUX1.isHigh(), AUX2.isLow(), AUX2.isMid(), AUX2.isHigh());
 
@@ -168,10 +171,10 @@ RcState Receiver::query() {
     roll.trimDeadzone();
     yaw.trimDeadzone();
 
-    rc_state.command.throttle = throttle.decodeAbsoluteWithThreshold();
-    rc_state.command.pitch = pitch.decodeOffset();
-    rc_state.command.roll = roll.decodeOffset();
-    rc_state.command.yaw = yaw.decodeOffset();
+    rc_state.command.setThrottle(throttle.decodeAbsoluteWithThreshold());
+    rc_state.command.setPitch(pitch.decodeOffset());
+    rc_state.command.setRoll(roll.decodeOffset());
+    rc_state.command.setYaw(yaw.decodeOffset());
 
     return rc_state;
 }

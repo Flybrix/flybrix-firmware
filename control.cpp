@@ -9,7 +9,7 @@
 #include "kinematics.h"
 #include "quickmath.h"
 #include "utility/clock.h"
-#include "utility/rcHelpers.h"
+#include "RcMux.h"
 
 namespace {
 enum PID_ID {
@@ -182,13 +182,13 @@ ControlVectors Control::calculateControlVectors(const Vector3<float>& velocity, 
 
     // keep "up" in the global coordinates
     float pose_throttle_adjustment = max(0.8f, quick::cos(feedback.angle.roll) * quick::cos(feedback.angle.pitch));
-    uint16_t adjusted_throttle = constrain((uint16_t)((float)setpoint.throttle / pose_throttle_adjustment), 0, 4095);
+    uint16_t adjusted_throttle = constrain((uint16_t)((float)setpoint.throttle() / pose_throttle_adjustment), 0, 4095);
 
     ControlVectors control;
 
     ClockTime now = ClockTime::now();
 
-    if (setpoint.throttle < 10) {  // throttle is in low condition
+    if (setpoint.throttle() < 10) {  // throttle is in low condition
         up_pid.integralReset();
         forward_pid.integralReset();
         right_pid.integralReset();
@@ -210,9 +210,9 @@ ControlVectors Control::calculateControlVectors(const Vector3<float>& velocity, 
         control.torque_z = 0;
     } else {
         up_pid.setSetpoint((bidirectional_throttle ? adjusted_throttle * (1.0f / 2047.0f) - 1.0f : adjusted_throttle * (1.0f / 4095.0f)) * up_pid.getScalingFactor());
-        forward_pid.setSetpoint(setpoint.pitch * (1.0f / 2047.0f) * forward_pid.getScalingFactor());
-        right_pid.setSetpoint(setpoint.roll * (1.0f / 2047.0f) * right_pid.getScalingFactor());
-        yaw_pid.setSetpoint(setpoint.yaw * (1.0f / 2047.0f) * yaw_pid.getScalingFactor());
+        forward_pid.setSetpoint(setpoint.pitch() * (1.0f / 2047.0f) * forward_pid.getScalingFactor());
+        right_pid.setSetpoint(setpoint.roll() * (1.0f / 2047.0f) * right_pid.getScalingFactor());
+        yaw_pid.setSetpoint(setpoint.yaw() * (1.0f / 2047.0f) * yaw_pid.getScalingFactor());
 
         control.force_z = up_pid.compute(now);
         control.torque_x = forward_pid.compute(now);

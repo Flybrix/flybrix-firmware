@@ -10,7 +10,7 @@
 #include <Arduino.h>
 #include "receiver.h"
 #include "cobs.h"
-#include "utility/rcHelpers.h"
+#include "RcMux.h"
 
 class BMP280;
 class PilotCommand;
@@ -34,16 +34,16 @@ static constexpr uint32_t FLAG(uint8_t field) {
 class SerialRc final {
    public:
     RcState query() {
-        RcStatus status = fresh_ ? RcStatus::Ok : RcStatus::Timeout;
+        RcState::State state = fresh_ ? RcState::State ::Ok : RcState::State ::Timeout;
         fresh_ = false;
-        return {status, command_};
+        return {state, command_};
     }
     void update(uint8_t auxmask, uint16_t throttle, uint16_t pitch, uint16_t roll, uint16_t yaw) {
         command_.parseAuxMask(auxmask);
-        command_.throttle = throttle;
-        command_.pitch = pitch;
-        command_.roll = roll;
-        command_.yaw = yaw;
+        command_.setThrottle(throttle);
+        command_.setPitch(pitch);
+        command_.setRoll(roll);
+        command_.setYaw(yaw);
         fresh_ = true;
     }
     void clear() {

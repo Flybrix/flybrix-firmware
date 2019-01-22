@@ -10,8 +10,8 @@
 #include <Arduino.h>
 
 #include "airframe.h"
-#include "utility/rcHelpers.h"
-#include "utility/ticker.h"
+#include "RcMux.h"
+#include "ticker.h"
 
 struct Systems;
 struct CommandVector;

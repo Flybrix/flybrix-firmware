@@ -10,13 +10,13 @@
 #define receiver_h
 
 #include "Arduino.h"
-#include "utility/rcHelpers.h"
+#include "RcMux.h"
 #include "PPMChannel.h"
 
 constexpr auto RC_CHANNEL_COUNT = 6;
 
 class Receiver {
-   public:
+public:
     Receiver();
     RcState query();
 
@@ -36,7 +36,7 @@ class Receiver {
 
     uint16_t ppm[RC_CHANNEL_COUNT];
 
-   private:
+private:
     // Detects in-flight failure by noticing a pattern that is impossible to perform by hand:
     // * RC sending both an arming AUX and a nonzero throttle
     // * Next frame we send disarm and a zero throttle
@@ -44,11 +44,11 @@ class Receiver {
     // Since that will not happen while normally operating the device, we know that this
     // happens only when receiver switches to default
     class ErrorTracker final {
-       public:
+    public:
         bool check(const RcCommand&);
         void reportFailure();
 
-       private:
+    private:
         bool was_legal_{false};
         bool was_flying_{false};
     } error_tracker_;
