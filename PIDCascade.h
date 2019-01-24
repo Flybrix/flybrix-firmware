@@ -9,86 +9,45 @@
 
 #include <array>
 
-#include "PID.h"
+#include "PIDOption.h"
 #include "PIDSettings.h"
 #include "ClockTime.h"
 
-template <size_t N>
+template<size_t N>
 class PIDCascade final {
-   public:
-    template <typename... Targs>
-    explicit PIDCascade(Targs... terms) : regulators_{terms...} {
-    }
+public:
+    template<typename... Targs>
+    explicit PIDCascade(Targs... terms)
+            : regulators_{terms...} {}
 
-    template <size_t M>
+    template<size_t M>
     const PID& pid() const {
         return std::get<M>(regulators_).pid;
     }
 
-    template <size_t M>
+    template<size_t M>
     PID& pid() {
         return std::get<M>(regulators_).pid;
     }
 
-    template <size_t M>
+    template<size_t M>
     void use(bool should_use) {
         std::get<M>(regulators_).use = should_use;
     }
 
-    float getScalingFactor() const {
-        for (const Regulator& reg : regulators_) {
-            if (reg.use) {
-                return reg.pid.commandToValue();
-            }
-        }
-        return default_scaling_;
-    }
+    float getScalingFactor() const;
+    void setSetpoint(float v);
+    void setDefaultScaling(float v);
+    void integralReset();
+    void timerReset(ClockTime now);
+    float compute(ClockTime now);
 
-    void setSetpoint(float v) {
-        setpoint_ = v;
-    }
-
-    void setDefaultScaling(float v) {
-        default_scaling_ = v;
-    }
-
-    void integralReset() {
-        for (Regulator& reg : regulators_) {
-            reg.pid.IntegralReset();
-        }
-    }
-
-    void timerReset(ClockTime now) {
-        for (Regulator& reg : regulators_) {
-            reg.pid.setTimer(now);
-        }
-    }
-
-    float compute(ClockTime now) {
-        float value{setpoint_};
-        for (Regulator& reg : regulators_) {
-            if (reg.use) {
-                reg.pid.setDesiredSetpoint(value);
-                value = reg.pid.Compute(now);
-            } else {
-                reg.pid.setTimer(now);
-            }
-        }
-        return value;
-    }
-
-   private:
-    struct Regulator {
-        Regulator(const PIDSettings& terms) : use{false}, pid{terms} {
-        }
-
-        bool use;
-        PID pid;
-    };
-
-    std::array<Regulator, N> regulators_;
+private:
+    std::array <PIDOption, N> regulators_;
     float setpoint_{0.0f};
     float default_scaling_{1.0f};
 };
+
+#include "PIDCascade_impl.h"
 
 #endif  // PID_CASCADE_H

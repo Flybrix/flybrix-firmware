@@ -13,8 +13,7 @@ PID::PID(const PIDSettings& settings)
           integral_windup_guard{settings.integral_windup_guard},
           windup_limit{settings.integral_windup_guard / settings.ki},
           d_filter{0.0f, settings.d_filter_time},
-          setpoint_filter{0.0f, settings.setpoint_filter_time},
-          command_to_value{settings.command_to_value} {}
+          setpoint_filter{0.0f, settings.setpoint_filter_time} {}
 
 ClockTime PID::lastTime() const {
     return last_time;
@@ -42,10 +41,6 @@ float PID::filteredSetpoint() const {
 
 float PID::desiredSetpoint() const {
     return desired_setpoint_;
-}
-
-float PID::commandToValue() const {
-    return command_to_value;
 }
 
 void PID::setWrapped(bool wrapped) {

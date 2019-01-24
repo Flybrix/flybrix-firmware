@@ -23,7 +23,6 @@ public:
     float input() const;
     float filteredSetpoint() const;
     float desiredSetpoint() const;
-    float commandToValue() const;
 
     void setWrapped(bool wrapped = true);
     void setInput(float v);
@@ -49,8 +48,6 @@ private:
 
     IIRFilter d_filter;
     IIRFilter setpoint_filter;
-
-    float command_to_value;
 
     float input_{0.0f};
     float desired_setpoint_{0.0f};
