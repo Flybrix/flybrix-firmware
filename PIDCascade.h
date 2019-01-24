@@ -68,7 +68,7 @@ class PIDCascade final {
         float value{setpoint_};
         for (Regulator& reg : regulators_) {
             if (reg.use) {
-                reg.pid.setSetpoint(value);
+                reg.pid.setDesiredSetpoint(value);
                 value = reg.pid.Compute(now);
             } else {
                 reg.pid.setTimer(now);

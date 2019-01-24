@@ -9,7 +9,7 @@
 
 class IIRFilter {
 public:
-    IIRFilter(float output, float time_constant);
+    IIRFilter(float initial_output, float time_constant);
     float update(float in, float dt);
 
 private:

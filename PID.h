@@ -17,32 +17,44 @@ public:
     explicit PID(const PIDSettings& settings);
 
     ClockTime lastTime() const;
-    float p() const;
-    float i() const;
-    float d() const;
+    float pTerm() const;
+    float iTerm() const;
+    float dTerm() const;
     float input() const;
-    float setpoint() const;
+    float filteredSetpoint() const;
     float desiredSetpoint() const;
     float commandToValue() const;
 
     void setWrapped(bool wrapped = true);
     void setInput(float v);
-    void setSetpoint(float v);
+    void setDesiredSetpoint(float v);
     void setTimer(ClockTime now);
     float Compute(ClockTime now);
     void IntegralReset();
 
 private:
+    float wrapDegrees(float value) const;
+    float limitWindup(float value) const;
+
+    float computeDeltaTime(ClockTime now);
+    void computeFilteredSetpoint(float dt);
+    void computeError(float dt);
+    void computeTerms(float dt);
+
     float Kp;
     float Ki;
     float Kd;
     float integral_windup_guard;
+    float windup_limit;
+
     IIRFilter d_filter;
     IIRFilter setpoint_filter;
+
     float command_to_value;
 
-    float input_{0.0f}, setpoint_{0.0f};
+    float input_{0.0f};
     float desired_setpoint_{0.0f};
+    float filtered_setpoint_{0.0f};
 
     ClockTime last_time{ClockTime::zero()};
     float p_term{0.0f};
@@ -51,8 +63,9 @@ private:
 
     bool degrees{false};  // unwrap error terms for angle control in degrees
 
-    float previous_error{0.0f};
-    float error_integral{0.0f};
+    float error_{0.0f};
+    float error_integral_{0.0f};
+    float error_derivative_{0.0f};
 };
 
 #endif

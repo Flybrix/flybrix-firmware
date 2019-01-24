@@ -6,7 +6,9 @@
 
 #include "IIRFilter.h"
 
-IIRFilter::IIRFilter(float output, float time_constant) : out_{output}, tau_{time_constant} {}
+IIRFilter::IIRFilter(float initial_output, float time_constant)
+        : out_{initial_output},
+          tau_{time_constant} {}
 
 float IIRFilter::update(float in, float dt) {
     out_ = (in * dt + out_ * tau_) / (dt + tau_);
