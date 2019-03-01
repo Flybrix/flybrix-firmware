@@ -5,25 +5,25 @@
 
 #include <cmath>
 
-template <typename T, size_t FIELDS>
+template<typename T, size_t FIELDS>
 Vector<T, FIELDS>::Vector() : data{0} {
 }
 
-template <typename T, size_t FIELDS>
+template<typename T, size_t FIELDS>
 Vector<T, FIELDS>::Vector(const Vector<T, FIELDS>& v) {
     for (size_t i = 0; i < FIELDS; ++i) {
         data[i] = v.data[i];
     }
 }
 
-template <typename T, size_t FIELDS>
+template<typename T, size_t FIELDS>
 Vector<T, FIELDS>::Vector(Vector<T, FIELDS>&& v) {
     for (size_t i = 0; i < FIELDS; ++i) {
         data[i] = v.data[i];
     }
 }
 
-template <typename T, size_t FIELDS>
+template<typename T, size_t FIELDS>
 Vector<T, FIELDS>& Vector<T, FIELDS>::operator=(const Vector<T, FIELDS>& v) {
     for (size_t i = 0; i < FIELDS; ++i) {
         data[i] = v.data[i];
@@ -31,7 +31,7 @@ Vector<T, FIELDS>& Vector<T, FIELDS>::operator=(const Vector<T, FIELDS>& v) {
     return *this;
 }
 
-template <typename T, size_t FIELDS>
+template<typename T, size_t FIELDS>
 Vector<T, FIELDS>& Vector<T, FIELDS>::operator=(Vector<T, FIELDS>&& v) {
     for (size_t i = 0; i < FIELDS; ++i) {
         data[i] = v.data[i];
@@ -39,7 +39,7 @@ Vector<T, FIELDS>& Vector<T, FIELDS>::operator=(Vector<T, FIELDS>&& v) {
     return *this;
 }
 
-template <typename T, size_t FIELDS>
+template<typename T, size_t FIELDS>
 Vector<T, FIELDS>& Vector<T, FIELDS>::operator+=(const Vector<T, FIELDS>& v) {
     for (size_t i = 0; i < FIELDS; ++i) {
         data[i] += v.data[i];
@@ -47,7 +47,7 @@ Vector<T, FIELDS>& Vector<T, FIELDS>::operator+=(const Vector<T, FIELDS>& v) {
     return *this;
 }
 
-template <typename T, size_t FIELDS>
+template<typename T, size_t FIELDS>
 Vector<T, FIELDS>& Vector<T, FIELDS>::operator-=(const Vector<T, FIELDS>& v) {
     for (size_t i = 0; i < FIELDS; ++i) {
         data[i] -= v.data[i];
@@ -55,53 +55,63 @@ Vector<T, FIELDS>& Vector<T, FIELDS>::operator-=(const Vector<T, FIELDS>& v) {
     return *this;
 }
 
-template <typename T, size_t FIELDS>
+template<typename T, size_t FIELDS>
 void Vector<T, FIELDS>::addScaled(const Vector<T, FIELDS>& v, T scaling) {
     for (size_t i = 0; i < FIELDS; ++i) {
         data[i] += v.data[i] * scaling;
     }
 }
 
-template <typename T, size_t FIELDS>
+template<typename T, size_t FIELDS>
 void Vector<T, FIELDS>::setScaled(const Vector<T, FIELDS>& v, T scaling) {
     for (size_t i = 0; i < FIELDS; ++i) {
         data[i] = v.data[i] * scaling;
     }
 }
 
-template <typename T, size_t FIELDS>
+template<typename T, size_t FIELDS>
+T Vector<T, FIELDS>::operator[](size_t field) const {
+    return data[field];
+}
+
+template<typename T, size_t FIELDS>
+T& Vector<T, FIELDS>::operator[](size_t field) {
+    return data[field];
+}
+
+template<typename T, size_t FIELDS>
 Vector<T, FIELDS> operator+(const Vector<T, FIELDS>& u, const Vector<T, FIELDS>& v) {
     Vector<T, FIELDS> result{u};
     result += v;
     return result;
 }
 
-template <typename T, size_t FIELDS>
+template<typename T, size_t FIELDS>
 Vector<T, FIELDS> operator-(const Vector<T, FIELDS>& u, const Vector<T, FIELDS>& v) {
     Vector<T, FIELDS> result{u};
     result -= v;
     return result;
 }
 
-template <typename T, size_t ROWS, size_t COLS>
+template<typename T, size_t ROWS, size_t COLS>
 Matrix<T, ROWS, COLS>::Matrix() : data{0} {
 }
 
-template <typename T, size_t ROWS, size_t COLS>
+template<typename T, size_t ROWS, size_t COLS>
 Matrix<T, ROWS, COLS>::Matrix(const Matrix<T, ROWS, COLS>& v) {
     for (size_t i = 0; i < ROWS * COLS; ++i) {
         data[i] = v.data[i];
     }
 }
 
-template <typename T, size_t ROWS, size_t COLS>
+template<typename T, size_t ROWS, size_t COLS>
 Matrix<T, ROWS, COLS>::Matrix(Matrix<T, ROWS, COLS>&& v) {
     for (size_t i = 0; i < ROWS * COLS; ++i) {
         data[i] = v.data[i];
     }
 }
 
-template <typename T, size_t ROWS, size_t COLS>
+template<typename T, size_t ROWS, size_t COLS>
 Matrix<T, ROWS, COLS>& Matrix<T, ROWS, COLS>::operator=(const Matrix<T, ROWS, COLS>& v) {
     for (size_t i = 0; i < ROWS * COLS; ++i) {
         data[i] = v.data[i];
@@ -109,7 +119,7 @@ Matrix<T, ROWS, COLS>& Matrix<T, ROWS, COLS>::operator=(const Matrix<T, ROWS, CO
     return *this;
 }
 
-template <typename T, size_t ROWS, size_t COLS>
+template<typename T, size_t ROWS, size_t COLS>
 Matrix<T, ROWS, COLS>& Matrix<T, ROWS, COLS>::operator=(Matrix<T, ROWS, COLS>&& v) {
     for (size_t i = 0; i < ROWS * COLS; ++i) {
         data[i] = v.data[i];
@@ -117,7 +127,7 @@ Matrix<T, ROWS, COLS>& Matrix<T, ROWS, COLS>::operator=(Matrix<T, ROWS, COLS>&& 
     return *this;
 }
 
-template <typename T, size_t ROWS, size_t COLS>
+template<typename T, size_t ROWS, size_t COLS>
 Matrix<T, ROWS, COLS>& Matrix<T, ROWS, COLS>::operator+=(const Matrix<T, ROWS, COLS>& v) {
     for (size_t i = 0; i < ROWS * COLS; ++i) {
         data[i] += v.data[i];
@@ -125,7 +135,7 @@ Matrix<T, ROWS, COLS>& Matrix<T, ROWS, COLS>::operator+=(const Matrix<T, ROWS, C
     return *this;
 }
 
-template <typename T, size_t ROWS, size_t COLS>
+template<typename T, size_t ROWS, size_t COLS>
 Matrix<T, ROWS, COLS>& Matrix<T, ROWS, COLS>::operator-=(const Matrix<T, ROWS, COLS>& v) {
     for (size_t i = 0; i < ROWS * COLS; ++i) {
         data[i] -= v.data[i];
@@ -133,7 +143,7 @@ Matrix<T, ROWS, COLS>& Matrix<T, ROWS, COLS>::operator-=(const Matrix<T, ROWS, C
     return *this;
 }
 
-template <typename T, size_t ROWS, size_t COLS>
+template<typename T, size_t ROWS, size_t COLS>
 Matrix<T, ROWS, COLS>& Matrix<T, ROWS, COLS>::operator*=(const Matrix<T, COLS, COLS>& v) {
     for (size_t i = 0; i < ROWS; ++i) {
         T row[COLS];
@@ -151,7 +161,7 @@ Matrix<T, ROWS, COLS>& Matrix<T, ROWS, COLS>::operator*=(const Matrix<T, COLS, C
     return *this;
 }
 
-template <typename T, size_t ROWS, size_t COLS>
+template<typename T, size_t ROWS, size_t COLS>
 Matrix<T, ROWS, COLS>& Matrix<T, ROWS, COLS>::operator*=(T v) {
     for (size_t i = 0; i < ROWS * COLS; ++i) {
         data[i] *= v;
@@ -159,14 +169,14 @@ Matrix<T, ROWS, COLS>& Matrix<T, ROWS, COLS>::operator*=(T v) {
     return *this;
 }
 
-template <typename T, size_t ROWS, size_t COLS>
+template<typename T, size_t ROWS, size_t COLS>
 Matrix<T, ROWS, COLS> Matrix<T, ROWS, COLS>::operator*(T v) const {
     Matrix<T, ROWS, COLS> tmp{*this};
     tmp *= v;
     return tmp;
 }
 
-template <typename T, size_t ROWS, size_t COLS, size_t COLS_OTH>
+template<typename T, size_t ROWS, size_t COLS, size_t COLS_OTH>
 Matrix<T, ROWS, COLS_OTH> operator*(const Matrix<T, ROWS, COLS>& u, const Matrix<T, COLS, COLS_OTH>& v) {
     Matrix<T, ROWS, COLS_OTH> result;
     for (size_t i = 0; i < ROWS; ++i) {
@@ -181,7 +191,7 @@ Matrix<T, ROWS, COLS_OTH> operator*(const Matrix<T, ROWS, COLS>& u, const Matrix
     return result;
 }
 
-template <typename T, size_t ROWS, size_t COLS>
+template<typename T, size_t ROWS, size_t COLS>
 Vector<T, ROWS> operator*(const Matrix<T, ROWS, COLS>& u, const Vector<T, COLS>& v) {
     Vector<T, ROWS> result;
     for (size_t i = 0; i < ROWS; ++i) {
@@ -195,7 +205,7 @@ Vector<T, ROWS> operator*(const Matrix<T, ROWS, COLS>& u, const Vector<T, COLS>&
 }
 
 // https://en.wikipedia.org/wiki/Cholesky_decomposition#The_Cholesky.E2.80.93Banachiewicz_and_Cholesky.E2.80.93Crout_algorithms
-template <typename T, size_t ROWS>
+template<typename T, size_t ROWS>
 Matrix<T, ROWS, ROWS> cholesky(const Matrix<T, ROWS, ROWS>& v, T scaling) {
     Matrix<T, ROWS, ROWS> l{};
     for (size_t i = 0; i < ROWS; ++i) {
@@ -214,7 +224,7 @@ Matrix<T, ROWS, ROWS> cholesky(const Matrix<T, ROWS, ROWS>& v, T scaling) {
     return l;
 }
 
-template <typename T, size_t ROWS>
+template<typename T, size_t ROWS>
 static inline void solveLowerTriangleEquationSystem(const Matrix<T, ROWS, ROWS>& l, T data[ROWS]) {
     for (size_t i = 0; i < ROWS; ++i) {
         for (size_t j = 0; j < i; ++j) {
@@ -224,7 +234,7 @@ static inline void solveLowerTriangleEquationSystem(const Matrix<T, ROWS, ROWS>&
     }
 }
 
-template <typename T, size_t ROWS>
+template<typename T, size_t ROWS>
 Matrix<T, ROWS, ROWS> invertRootable(const Matrix<T, ROWS, ROWS>& v) {
     const Matrix<T, ROWS, ROWS> l{cholesky<T, ROWS>(v, 1)};
     Matrix<T, ROWS, ROWS> l_inv_t;
@@ -240,7 +250,7 @@ Matrix<T, ROWS, ROWS> invertRootable(const Matrix<T, ROWS, ROWS>& v) {
     return multMatrixAndTransposeMatrix(l_inv_t, l_inv_t);
 }
 
-template <typename T, size_t ROWS, size_t COLS>
+template<typename T, size_t ROWS, size_t COLS>
 void Matrix<T, ROWS, COLS>::addCorrelation(const Vector<T, ROWS>& u, const Vector<T, COLS>& v, T scaling) {
     for (size_t i = 0; i < ROWS; ++i) {
         for (size_t j = 0; j < COLS; ++j) {
@@ -249,8 +259,9 @@ void Matrix<T, ROWS, COLS>::addCorrelation(const Vector<T, ROWS>& u, const Vecto
     }
 }
 
-template <typename T, size_t ROWS, size_t COLS, size_t ROWS_OTH>
-Matrix<T, ROWS, ROWS_OTH> multMatrixAndTransposeMatrix(const Matrix<T, ROWS, COLS>& u, const Matrix<T, ROWS_OTH, COLS>& v) {
+template<typename T, size_t ROWS, size_t COLS, size_t ROWS_OTH>
+Matrix<T, ROWS, ROWS_OTH>
+multMatrixAndTransposeMatrix(const Matrix<T, ROWS, COLS>& u, const Matrix<T, ROWS_OTH, COLS>& v) {
     Matrix<T, ROWS, ROWS_OTH> result;
     for (size_t i = 0; i < ROWS; ++i) {
         for (size_t j = 0; j < ROWS_OTH; ++j) {

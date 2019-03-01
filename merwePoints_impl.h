@@ -7,8 +7,9 @@
 
 namespace merwe {
 
-template <typename T, size_t N>
-std::array<State<T, N>, 2 * N + 1> calcSigmaPoints(T alpha, T beta, T kappa, const State<T, N>& x, const Covariance<T, N>& p) {
+template<typename T, size_t N>
+std::array<State<T, N>, 2 * N + 1> calcSigmaPoints(
+        T alpha, T beta, T kappa, const State<T, N>& x, const Covariance<T, N>& p) {
     const Covariance<T, N> u(cholesky(p, alpha * alpha * (N + kappa)));
     std::array<State<T, N>, 2 * N + 1> sigmas;
     sigmas[0] = x;
@@ -21,7 +22,7 @@ std::array<State<T, N>, 2 * N + 1> calcSigmaPoints(T alpha, T beta, T kappa, con
     return sigmas;
 }
 
-template <typename T>
+template<typename T>
 Weights<T>::Weights(size_t N, T alpha, T beta, T kappa) {
     T lambda_plus_n{alpha * alpha * (N + kappa)};
     mean_offset = covariance_offset = 0.5 / lambda_plus_n;

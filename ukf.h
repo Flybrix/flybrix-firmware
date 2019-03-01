@@ -9,7 +9,7 @@
 
 #include <cmath>
 
-#include "utility/merwePoints.h"
+#include "merwePoints.h"
 
 class UKF final {
    public:
