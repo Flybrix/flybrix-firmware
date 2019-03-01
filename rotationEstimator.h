@@ -8,8 +8,8 @@
 #define ROTATION_ESTIMATOR_H
 
 #include <array>
-#include "utility/rotation.h"
-#include "utility/vector3.h"
+#include "rotation.h"
+#include "vector3.h"
 
 class RotationEstimator final {
    public:

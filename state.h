@@ -11,7 +11,7 @@
 #include "kinematics.h"
 #include "localization.h"
 #include "ClockTime.h"
-#include "utility/vector3.h"
+#include "vector3.h"
 
 class State {
    public:

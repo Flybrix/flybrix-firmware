@@ -10,8 +10,8 @@
 #include "AK8963.h"
 #include "MPU9250.h"
 #include "ClockTime.h"
-#include "utility/rotation.h"
-#include "utility/vector3.h"
+#include "rotation.h"
+#include "vector3.h"
 #include "rotationEstimator.h"
 
 class State;
@@ -20,8 +20,7 @@ struct __attribute__((packed)) PcbTransform {
     bool verify() const {
         return true;
     }
-    Vector3<float> orientation;  // x/y/z representing pitch/roll/yaw in standard flyer coordinate system
-                                 // --> applied in that order!
+    RotationAngles<float> orientation;  // pitch/roll/yaw in standard flyer coordinate system applied in that order
     Vector3<float> translation;  // translation in standard flyer coordinate system
 };
 
@@ -46,7 +45,7 @@ class Imu final {
     void setAccelerometerCalibrating(bool calibrating, RotationEstimator::Pose pose) {
         if (calibrate_rotation_ && !calibrating) {
             sensor_to_flyer_ = rotation_estimator_.estimate();
-            pcb_transform.orientation = sensor_to_flyer_.pry();
+            pcb_transform.orientation = static_cast<RotationAngles<float>>(sensor_to_flyer_);
             rotation_estimator_.clear();
         }
         if (calibrating && pose == RotationEstimator::Pose::Flat) {

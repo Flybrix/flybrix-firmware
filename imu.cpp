@@ -51,7 +51,7 @@ void Imu::forgetBiasValues() {
 }
 
 void Imu::parseConfig() {
-    sensor_to_flyer_ = RotationMatrix<float>(pcb_transform.orientation.x, pcb_transform.orientation.y, pcb_transform.orientation.z);
+    sensor_to_flyer_ = static_cast<RotationAngles<float>>(pcb_transform.orientation);
     readBiasValues();
 }
 

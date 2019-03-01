@@ -10,7 +10,7 @@
 #include "PIDCascade.h"
 #include "PIDSettings.h"
 #include "controlVectors.h"
-#include "utility/vector3.h"
+#include "vector3.h"
 
 class Kinematics;
 struct RcCommand;

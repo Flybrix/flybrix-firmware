@@ -9,8 +9,8 @@
 
 #include <cstdint>
 #include "ClockTime.h"
-#include "utility/quaternion.h"
-#include "utility/vector3.h"
+#include "quaternion.h"
+#include "vector3.h"
 
 class Ahrs final {
    public:

@@ -9,7 +9,7 @@
 
 #include <Arduino.h>
 
-#include "utility/quaternion.h"
+#include "quaternion.h"
 
 // DEFAULT FILTER SETTINGS
 

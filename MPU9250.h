@@ -9,7 +9,7 @@
 
 #include <functional>
 #include "Arduino.h"
-#include "utility/vector3.h"
+#include "vector3.h"
 
 // we have three coordinate systems here:
 // 1. REGISTER coordinates: native values as read
