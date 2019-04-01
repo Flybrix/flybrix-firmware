@@ -12,11 +12,8 @@
 class Motors {
    public:
     Motors();
-    void updateAllChannels(bool enabled);
 
-    uint16_t get(size_t index) {
-        return output_[index];
-    }
+    void updateAllChannels(bool enabled);
 
     void set(size_t index, uint16_t value) {
         output_[index] = value;
@@ -28,7 +25,7 @@ class Motors {
         }
     };
 
-    template <typename Tstream>
+    template<typename Tstream>
     void writeTo(Tstream& output) const {
         output.Append(output_);
     }
