@@ -18,69 +18,43 @@ class Ahrs final {
         Madgwick = 0,
         Mahony = 1,
     };
-    Ahrs& setType(Type type) {
-        type_ = type;
-        return *this;
-    }
-    Ahrs& setParameters(float p1, float p2) {
-        parameter_1_ = p1;
-        parameter_2_ = p2;
-        return *this;
-    }
-    Ahrs& setMaxDeltaTime(float mdt) {
-        max_delta_time_ = mdt;
-        return *this;
-    }
-    Ahrs& setTimestamp(ClockTime time) {
-        last_update_timestamp_ = time;
-        return *this;
-    }
-    Ahrs& setAccelerometer(float x, float y, float z) {
-        return setAccelerometer(Vector3<float>(x, y, z));
-    }
-    Ahrs& setAccelerometer(const Vector3<float>& v) {
-        accelerometer_.value = v;
-        accelerometer_.ready = true;
-        return *this;
-    }
-    Ahrs& setGyroscope(float x, float y, float z) {
-        return setGyroscope(Vector3<float>(x, y, z));
-    }
-    Ahrs& setGyroscope(const Vector3<float>& v) {
-        gyroscope_.value = v;
-        gyroscope_.ready = true;
-        return *this;
-    }
-    Ahrs& setMagnetometer(float x, float y, float z) {
-        return setMagnetometer(Vector3<float>(x, y, z));
-    }
-    Ahrs& setMagnetometer(const Vector3<float>& v) {
-        if (v.x != 0.0f || v.y != 0.0f || v.z != 0.0f) {
-            magnetometer_.value = v;
-            magnetometer_.ready = true;
-        }
-        return *this;
-    }
-    Quaternion<float>& pose() {
-        return pose_;
-    }
-    Vector3<float> gravity() {
-        return Vector3<float>(2.0f * (pose_.x * pose_.z - pose_.w * pose_.y), 2.0f * (pose_.y * pose_.z + pose_.w * pose_.x), 1.0f - 2.0f * (pose_.x * pose_.x + pose_.y * pose_.y));
-    }
 
-    const Quaternion<float>& pose() const {
-        return pose_;
-    }
-
+    Ahrs& setType(Type type);
+    Ahrs& setParameters(float p1, float p2);
+    Ahrs& setMaxDeltaTime(float mdt);
+    Ahrs& setTimestamp(ClockTime time);
+    Ahrs& setAccelerometer(float x, float y, float z);
+    Ahrs& setAccelerometer(const Vector3<float>& v);
+    Ahrs& setGyroscope(float x, float y, float z);
+    Ahrs& setGyroscope(const Vector3<float>& v);
+    Ahrs& setMagnetometer(float x, float y, float z);
+    Ahrs& setMagnetometer(const Vector3<float>& v);
+    Quaternion<float>& pose();
+    Vector3<float> gravity();
     void update(ClockTime timestamp);
 
+    const Quaternion<float>& pose() const;
+
    private:
-    struct Measurement {
-        bool ready{false};
-        Vector3<float> value;
-        void consume() {
-            ready = false;
+    class Measurement {
+       public:
+        void set(const Vector3<float>& v) {
+            value_ = v;
+            ready_ = true;
         }
+
+        const Vector3<float>& consume() {
+            ready_ = false;
+            return value_;
+        }
+
+        bool isReady() const {
+            return ready_;
+        }
+
+       private:
+        Vector3<float> value_;
+        bool ready_{false};
     };
     Quaternion<float> pose_;
     Vector3<float> integral_feedback_;

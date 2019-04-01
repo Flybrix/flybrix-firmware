@@ -9,9 +9,86 @@
 #include <cmath>
 #include "quickmath.h"
 
-void se_mahony_ahrs_update_imu_with_mag(Vector3<float> g, Vector3<float> a, Vector3<float> m, float delta_time, float ki_2, float kp_2, Vector3<float> fb_i, Quaternion<float>& q);
+Ahrs& Ahrs::setType(Type type) {
+    type_ = type;
+    return *this;
+}
 
-void se_mahony_ahrs_update_imu(Vector3<float> g, Vector3<float> a, float delta_time, float ki_2, float kp_2, Vector3<float> fb_i, Quaternion<float>& q);
+Ahrs& Ahrs::setParameters(float p1, float p2) {
+    parameter_1_ = p1;
+    parameter_2_ = p2;
+    return *this;
+}
+
+Ahrs& Ahrs::setMaxDeltaTime(float mdt) {
+    max_delta_time_ = mdt;
+    return *this;
+}
+
+Ahrs& Ahrs::setTimestamp(ClockTime time) {
+    last_update_timestamp_ = time;
+    return *this;
+}
+
+Ahrs& Ahrs::setAccelerometer(float x, float y, float z) {
+    return setAccelerometer(Vector3<float>(x, y, z));
+}
+
+Ahrs& Ahrs::setAccelerometer(const Vector3<float>& v) {
+    accelerometer_.set(v);
+    return *this;
+}
+
+Ahrs& Ahrs::setGyroscope(float x, float y, float z) {
+    return setGyroscope(Vector3<float>(x, y, z));
+}
+
+Ahrs& Ahrs::setGyroscope(const Vector3<float>& v) {
+    gyroscope_.set(v);
+    return *this;
+}
+
+Ahrs& Ahrs::setMagnetometer(float x, float y, float z) {
+    return setMagnetometer(Vector3<float>(x, y, z));
+}
+
+Ahrs& Ahrs::setMagnetometer(const Vector3<float>& v) {
+    if (v.x != 0.0f || v.y != 0.0f || v.z != 0.0f) {
+        magnetometer_.set(v);
+    }
+    return *this;
+}
+
+Quaternion<float>& Ahrs::pose() {
+    return pose_;
+}
+
+Vector3<float> Ahrs::gravity() {
+    return Vector3<float>(2.0f * (pose_.x * pose_.z - pose_.w * pose_.y),
+                          2.0f * (pose_.y * pose_.z + pose_.w * pose_.x),
+                          1.0f - 2.0f * (pose_.x * pose_.x + pose_.y * pose_.y));
+}
+
+const Quaternion<float>& Ahrs::pose() const {
+    return pose_;
+}
+
+void se_mahony_ahrs_update_imu_with_mag(Vector3<float> g,
+                                        Vector3<float> a,
+                                        Vector3<float> m,
+                                        float delta_time,
+                                        float ki_2,
+                                        float kp_2,
+                                        Vector3<float> fb_i,
+                                        Quaternion<float>& q);
+
+void se_mahony_ahrs_update_imu(Vector3<float> g,
+                               Vector3<float> a,
+                               float delta_time,
+                               float ki_2,
+                               float kp_2,
+                               Vector3<float> fb_i,
+                               Quaternion<float>& q);
 
 namespace {
 inline Quaternion<float> madgwickStepA(const Quaternion<float>& q, Vector3<float> a) {
@@ -58,7 +135,12 @@ inline Quaternion<float> madgwickStepM(const Quaternion<float>& q, Vector3<float
     };
 }
 
-inline Quaternion<float> madgwick(Quaternion<float> q, float beta, float dt, const Vector3<float>& g, const Vector3<float>& a, const Vector3<float>& m = {0, 0, 0}) {
+inline Quaternion<float> madgwick(Quaternion<float> q,
+                                  float beta,
+                                  float dt,
+                                  const Vector3<float>& g,
+                                  const Vector3<float>& a,
+                                  const Vector3<float>& m = {0, 0, 0}) {
     if (a.isZero()) {
         return q;
     }
@@ -70,17 +152,30 @@ inline Quaternion<float> madgwick(Quaternion<float> q, float beta, float dt, con
     return q;
 }
 
-inline void mahony(Quaternion<float>& q, Vector3<float>& ifb, float ki, float kp, float dt, const Vector3<float>& g, const Vector3<float>& a, const Vector3<float>& m) {
+inline void mahony(Quaternion<float>& q,
+                   Vector3<float>& ifb,
+                   float ki,
+                   float kp,
+                   float dt,
+                   const Vector3<float>& g,
+                   const Vector3<float>& a,
+                   const Vector3<float>& m) {
     se_mahony_ahrs_update_imu_with_mag(g, a, m, dt, ki, kp, ifb, q);
 }
 
-inline void mahony(Quaternion<float>& q, Vector3<float>& ifb, float ki, float kp, float dt, const Vector3<float>& g, const Vector3<float>& a) {
+inline void mahony(Quaternion<float>& q,
+                   Vector3<float>& ifb,
+                   float ki,
+                   float kp,
+                   float dt,
+                   const Vector3<float>& g,
+                   const Vector3<float>& a) {
     se_mahony_ahrs_update_imu(g, a, dt, ki, kp, ifb, q);
 }
 }
 
 void Ahrs::update(ClockTime timestamp) {
-    if (!accelerometer_.ready || !gyroscope_.ready) {
+    if (!accelerometer_.isReady() || !gyroscope_.isReady()) {
         return;
     }
 
@@ -97,34 +192,52 @@ void Ahrs::update(ClockTime timestamp) {
         dt = max_delta_time_;
     }
 
-    accelerometer_.consume();
-    gyroscope_.consume();
+    const Vector3<float>& accelerometer_value = accelerometer_.consume();
+    const Vector3<float>& gyroscope_value = gyroscope_.consume();
 
-    if (magnetometer_.ready) {
+    if (magnetometer_.isReady()) {
+        const Vector3<float>& magnetometer_value = magnetometer_.consume();
         switch (type_) {
             case Type::Madgwick: {
-                pose_ = madgwick(pose_, parameter_1_, dt, gyroscope_.value, accelerometer_.value, magnetometer_.value);
-            } break;
+                pose_ = madgwick(pose_, parameter_1_, dt, gyroscope_value, accelerometer_value, magnetometer_value);
+            }
+                break;
             case Type::Mahony: {
-                mahony(pose_, integral_feedback_, parameter_1_, parameter_2_, dt, gyroscope_.value, accelerometer_.value, magnetometer_.value);
-            } break;
+                mahony(pose_,
+                       integral_feedback_,
+                       parameter_1_,
+                       parameter_2_,
+                       dt,
+                       gyroscope_value,
+                       accelerometer_value,
+                       magnetometer_value);
+            }
+                break;
         }
-        magnetometer_.consume();
     } else {
         switch (type_) {
             case Type::Madgwick: {
-                pose_ = madgwick(pose_, parameter_1_, dt, gyroscope_.value, accelerometer_.value, {0, 0, 0});
-            } break;
+                pose_ = madgwick(pose_, parameter_1_, dt, gyroscope_value, accelerometer_value, {0, 0, 0});
+            }
+                break;
             case Type::Mahony: {
-                mahony(pose_, integral_feedback_, parameter_1_, parameter_2_, dt, gyroscope_.value, accelerometer_.value);
-            } break;
+                mahony(pose_, integral_feedback_, parameter_1_, parameter_2_, dt, gyroscope_value, accelerometer_value);
+            }
+                break;
         }
     }
 }
 
 /* IMU algorithm update */
 
-void se_mahony_ahrs_update_imu_with_mag(Vector3<float> g, Vector3<float> a, Vector3<float> m, float delta_time, float ki_2, float kp_2, Vector3<float> fb_i, Quaternion<float>& q) {
+void se_mahony_ahrs_update_imu_with_mag(Vector3<float> g,
+                                        Vector3<float> a,
+                                        Vector3<float> m,
+                                        float delta_time,
+                                        float ki_2,
+                                        float kp_2,
+                                        Vector3<float> fb_i,
+                                        Quaternion<float>& q) {
     float q0q0, q0q1, q0q2, q0q3, q1q1, q1q2, q1q3, q2q2, q2q3, q3q3;
     float hx, hy, bx, bz;
     float halfvx, halfvy, halfvz, halfwx, halfwy, halfwz;
@@ -215,7 +328,13 @@ void se_mahony_ahrs_update_imu_with_mag(Vector3<float> g, Vector3<float> a, Vect
     quick::normalize(q);
 }
 
-void se_mahony_ahrs_update_imu(Vector3<float> g, Vector3<float> a, float delta_time, float ki_2, float kp_2, Vector3<float> fb_i, Quaternion<float>& q) {
+void se_mahony_ahrs_update_imu(Vector3<float> g,
+                               Vector3<float> a,
+                               float delta_time,
+                               float ki_2,
+                               float kp_2,
+                               Vector3<float> fb_i,
+                               Quaternion<float>& q) {
     float halfvx, halfvy, halfvz;
     float halfex, halfey, halfez;
     float qa, qb, qc;
