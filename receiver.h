@@ -64,7 +64,7 @@ class Receiver {
     RcState query();
 
     static constexpr uint8_t recovery_rate{1};
-    static constexpr uint8_t refresh_delay_tolerance{1};
+    static constexpr uint8_t refresh_delay_tolerance{20};
 
     struct __attribute__((packed)) ChannelProperties {
         ChannelProperties();
