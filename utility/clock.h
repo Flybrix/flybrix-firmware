@@ -29,11 +29,7 @@ class __attribute__((packed)) ClockTime final {
         return value_;
     }
 
-    uint32_t operator-(const ClockTime& v) {
-        return value_ - v.value_;
-    }
-
-    uint32_t operator-(ClockTime&& v) {
+    uint32_t operator-(const ClockTime& v) const {
         return value_ - v.value_;
     }
 

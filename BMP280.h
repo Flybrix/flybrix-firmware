@@ -37,6 +37,7 @@ class BMP280 {
     void restart();
 
     bool ready;
+    bool fresh{false};  // set when a new pressure/temperature pair has been read; cleared by the consumer
 
     uint8_t getID();
 

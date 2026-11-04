@@ -41,7 +41,9 @@ class AK8963 {
     bool allZeroes{false}; // if we're seeing (0,0,0) report that we're trapped in the "all zeroes bug condition"
     
    private:
-    void triggerCallback(std::function<void(Vector3<float>)> on_success);
+    void triggerCallback();
+
+    std::function<void(Vector3<float>)> on_success_;
 
     uint8_t getStatusByte();
 

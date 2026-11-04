@@ -26,8 +26,14 @@ class PilotCommand {
    public:
     explicit PilotCommand(Systems& systems);
     RcCommand processCommands(RcState&&);
+    // Applies freshly received stick values to `current` (the last processCommands() result) without waiting for
+    // the next 40Hz processCommands() call -- but only while that call is passing the sticks through unchanged
+    // (armed, flying, radio link up). Otherwise `current` is returned as is. Arm switches are never taken from here.
+    RcCommand refreshSticks(const RcCommand& fresh, const RcCommand& current) const;
     void processMotorEnablingIteration();
     void disableMotors();
+    // Cut the motors now (e.g. the attitude data has gone stale). The pilot must cycle the arm switch to re-arm.
+    void emergencyDisarm();
     void override(bool override);
     bool isOverridden() const;
     void applyControl(const ControlVectors& control_vectors);
@@ -61,6 +67,11 @@ class PilotCommand {
 
     void processMotorEnablingIterationHelper();
     bool canRequestEnabling() const;
+
+    void cutMotors();  // disable the motors without changing the control state
+    void startFailsafe();
+    void endFailsafe(const RcCommand& command);
+    RcCommand failsafeCommand();
     void setControlState(ControlState state);
 
     bool isArmingFailureState() const;
@@ -80,6 +91,10 @@ class PilotCommand {
     Ticker<uint8_t> throttle_hold_off_;  // hold controls low for some time after enabling
     int16_t invalid_count{0};
     uint16_t enable_attempts_{0};  // increment when we're in the STATUS_ARMING state
+    RcCommand last_command_;         // last command passed on while the radio link was up
+    float failsafe_throttle_{0.0f};  // throttle commanded during an RX-loss descent
+    uint16_t failsafe_ticks_{0};
+    bool sticks_pass_through_{false};  // the last processCommands() passed the stick values through unchanged
     bool idle_{false};
 };
 

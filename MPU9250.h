@@ -31,7 +31,13 @@ class MPU9250 {
     // Callback parameters:
     // linear acceleration in g's -- (x,y,z)
     // angular velocity in deg/sec -- (x,y,z)
+    // Returns true if a read of a new sample was queued (the data-ready pin was high).
     bool startMeasurement(std::function<void(Vector3<float>, Vector3<float>)> on_success);
+
+    // Output data rate = 1kHz / (1 + SAMPLE_RATE_DIVIDER); 1 -> 500Hz. The main loop reads every sample and runs
+    // the control loop on it, so this is also the control rate. If the performance report shows the CPU is
+    // overloaded, use 2 (333Hz).
+    static constexpr uint8_t SAMPLE_RATE_DIVIDER = 1;
 
     float getTemp() {
         return (float)temperatureCount[0] / 333.87 + 21.0;
@@ -42,7 +48,9 @@ class MPU9250 {
     void setFilters(uint8_t gyrofilter, uint8_t accelfilter);
 
    private:
-    void triggerCallback(std::function<void(Vector3<float>, Vector3<float>)> on_success);
+    void triggerCallback();
+
+    std::function<void(Vector3<float>, Vector3<float>)> on_success_;
 
     bool dataReadyInterrupt();  // check interrupt
     uint8_t getStatusByte();

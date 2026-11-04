@@ -8,6 +8,7 @@
 #define ROTATION_ESTIMATOR_H
 
 #include <array>
+#include <cstdint>
 #include "utility/rotation.h"
 #include "utility/vector3.h"
 

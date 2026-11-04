@@ -63,6 +63,23 @@ class Imu final {
     bool upright() const;
     bool stable() const;
 
+    // A read of the accelerometer/gyro has been queued and has not completed (or failed) yet.
+    bool inertialMeasurementPending() const {
+        return !accel_and_gyro_.ready;
+    }
+
+    // If no good accelerometer/gyro sample arrives for this long, the attitude data is stale and it is
+    // unsafe to keep flying on it.
+    static constexpr uint32_t MAX_SAMPLE_AGE_USEC = 50000;
+
+    // True if a good accelerometer/gyro sample has arrived within MAX_SAMPLE_AGE_USEC.
+    bool healthy(ClockTime now) const;
+
+    // Number of good accelerometer/gyro samples processed so far.
+    uint32_t sampleCount() const {
+        return sample_count_;
+    }
+
     const Vector3<float>& accel() const;
     const Vector3<float>& gyro() const;
     const Vector3<float>& mag() const;
@@ -88,6 +105,10 @@ class Imu final {
 
     Vector3<float> accel_filter{0.0, 0.0, 0.0}, accel_filter_sq{0.0, 0.0, 0.0};  // for stability variance calculation
     Vector3<float> gyro_filter{0.0, 0.0, 0.0};                                   // for gyro drift correction
+
+    bool has_sample_{false};
+    uint32_t sample_count_{0};
+    ClockTime last_sample_time_{ClockTime::zero()};
 
     Vector3<float> accel_{0.0, 0.0, 0.0};
     Vector3<float> gyro_{0.0, 0.0, 0.0};

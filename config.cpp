@@ -63,6 +63,27 @@ Config readEEPROM() {
             CONFIG = readEEPROM();
         }
     }
+
+    // One-time migration: the Madgwick beta used to default to 1.0, which lets a delayed, acceleration-corrupted
+    // accelerometer reading dominate the gyro. If the board still holds exactly that old default, move it to the new
+    // default and save it, so the configurator shows the value actually in use. Any value set by hand is kept.
+    bool migrated{false};
+    State::Parameters& state_parameters = std::get<State::Parameters>(CONFIG.data);
+    if (state_parameters.state_estimation[0] == 1.0f) {
+        state_parameters.state_estimation[0] = State::Parameters().state_estimation[0];
+        migrated = true;
+    }
+    // Same for the pitch/roll rate P gains: the old default of 5.0 is too twitchy with the faster control loop.
+    Control::PIDParameters& pid = std::get<Control::PIDParameters>(CONFIG.data);
+    const Control::PIDParameters defaults;
+    if (pid.pitch_slave.kp == 5.0f && pid.roll_slave.kp == 5.0f) {
+        pid.pitch_slave.kp = defaults.pitch_slave.kp;
+        pid.roll_slave.kp = defaults.roll_slave.kp;
+        migrated = true;
+    }
+    if (migrated) {
+        CONFIG.writeTo(EEPROMCursor());
+    }
     return CONFIG;
 }
 

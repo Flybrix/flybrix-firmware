@@ -89,7 +89,7 @@ extern "C" void ftm1_isr(void) {
         RX_errors++;
         RX_channel = RC_CHANNEL_COUNT + 1;           // set RX_channel out of range to drop frame
     } else if (pulseWidth > RX_PPM_SYNCPULSE_MIN) {  // this is the sync pulse
-        if (RX_channel <= RC_CHANNEL_COUNT) {        // valid frame = push from our buffer
+        if (RX_channel == RC_CHANNEL_COUNT) {        // valid frame = every channel arrived; a short frame would leave stale values in the missing channels
             for (uint8_t i = 0; i < RC_CHANNEL_COUNT; i++) {
                 RX_freshness = 20;
                 RX[i] = RX_buffer[i];

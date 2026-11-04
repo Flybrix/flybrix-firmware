@@ -34,7 +34,12 @@ class Localization {
 
     void predictFilter(ClockTime time);
 
+    // Fuses the latest barometer sample; does nothing if it has already been fused.
     void updateFilter();
+
+    bool hasNewMeasurement() const {
+        return new_measurement_;
+    }
 
     const Quaternion<float>& getAhrsQuaternion() const;
 
@@ -51,6 +56,7 @@ class Localization {
     UKF::Measurement d_tof_;
     UKF::Measurement h_bar_;
     bool has_measurement_{false};
+    bool new_measurement_{false};  // h_bar_ has not been fused yet
     float gravity_force_;
     float max_delta_time_;
 

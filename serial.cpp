@@ -72,6 +72,7 @@ SerialComm::SerialComm(Systems& systems, const volatile uint16_t* ppm)
 }
 
 bool SerialComm::processBluetoothCommand(){
+    // No longer used by the main loop: messages are now processed as they complete (see bluetooth_getData).
     bool did_something{false};
     CobsReaderBuffer* data_input = bluetooth_readData();
     if (data_input != nullptr) {

@@ -9,11 +9,29 @@
 #include <cmath>
 #include "quickmath.h"
 
-void se_mahony_ahrs_update_imu_with_mag(Vector3<float> g, Vector3<float> a, Vector3<float> m, float delta_time, float ki_2, float kp_2, Vector3<float> fb_i, Quaternion<float>& q);
+// fb_i is the integral feedback state and must persist between calls (it used to be passed by value, so the
+// Mahony integral term never accumulated).
+void se_mahony_ahrs_update_imu_with_mag(Vector3<float> g, Vector3<float> a, Vector3<float> m, float delta_time, float ki_2, float kp_2, Vector3<float>& fb_i, Quaternion<float>& q);
 
-void se_mahony_ahrs_update_imu(Vector3<float> g, Vector3<float> a, float delta_time, float ki_2, float kp_2, Vector3<float> fb_i, Quaternion<float>& q);
+void se_mahony_ahrs_update_imu(Vector3<float> g, Vector3<float> a, float delta_time, float ki_2, float kp_2, Vector3<float>& fb_i, Quaternion<float>& q);
 
 namespace {
+constexpr float GRAVITY = 9.81f;  // the accelerometer is passed in m/s^2
+
+// Accelerometer readings further than this fraction from 1g are dominated by the airframe's own acceleration
+// (punch-outs, bumps, vibration), not gravity, so they are not used to correct roll/pitch.
+constexpr float ACCEL_GATE_FRACTION = 0.15f;
+
+// Fraction of the measured heading error removed per magnetometer sample (~10Hz -> ~2s time constant).
+constexpr float MAG_HEADING_GAIN = 0.05f;
+
+inline bool accelMeasuresGravity(const Vector3<float>& a) {
+    constexpr float lo = (1.0f - ACCEL_GATE_FRACTION) * GRAVITY;
+    constexpr float hi = (1.0f + ACCEL_GATE_FRACTION) * GRAVITY;
+    float length_sq = a.lengthSq();
+    return length_sq > lo * lo && length_sq < hi * hi;
+}
+
 inline Quaternion<float> madgwickStepA(const Quaternion<float>& q, Vector3<float> a) {
     quick::normalize(a);
     // q* * [0 gx gy gz] * q; g = [0 0 1]
@@ -33,41 +51,40 @@ inline Quaternion<float> madgwickStepA(const Quaternion<float>& q, Vector3<float
     };
 }
 
-inline Quaternion<float> madgwickStepM(const Quaternion<float>& q, Vector3<float> m) {
-    if (m.isZero()) {
-        return Quaternion<float>{0, 0, 0, 0};
+// Gyro integration with an accelerometer (gravity) correction of at most `beta` rad/s.
+// The magnetometer is deliberately not used here: see correctHeading().
+inline Quaternion<float> madgwick(Quaternion<float> q, float beta, float dt, const Vector3<float>& g, const Vector3<float>& a) {
+    Quaternion<float> q_dot = q * (g * 0.5);
+    if (!a.isZero() && accelMeasuresGravity(a)) {
+        Quaternion<float> step = madgwickStepA(q, a);
+        if (!step.isZero()) {
+            quick::normalize(step);
+            q_dot -= step * beta;
+        }
     }
-    quick::normalize(m);
-    Quaternion<float> h = q * m * q.conj();
-    if (h.isZero()) {
-        return Quaternion<float>{0, 0, 0, 0};
-    }
-    float b1{2 / quick::invSqrt(h.x * h.x + h.y * h.y)};
-    float b2{2 * h.z};
-    Vector3<float> fm{
-        b1 * (0.5f - q.y * q.y - q.z * q.z) + b2 * (q.x * q.z - q.w * q.y),  // X
-        b1 * (q.x * q.y - q.w * q.z) + b2 * (q.w * q.x + q.y * q.z),         // Y
-        b1 * (q.w * q.y + q.x * q.z) + b2 * (0.5f - q.x * q.x - q.y * q.y)   // Z
-    };
-    fm -= m;
-    return Quaternion<float>{
-        (-b2 * q.y) * fm.x + (-b1 * q.z + b2 * q.x) * fm.y + (b1 * q.y) * fm.z,                                   // W
-        (b2 * q.z) * fm.x + (b1 * q.y + b2 * q.w) * fm.y + (b1 * q.z - 2.f * b2 * q.x) * fm.z,                    // X
-        (-2.f * b1 * q.y - b2 * q.w) * fm.x + (b1 * q.x + b2 * q.z) * fm.y + (b1 * q.w - 2.f * b2 * q.y) * fm.z,  // Y
-        (-2.f * b1 * q.z + b2 * q.x) * fm.x + (-b1 * q.w + b2 * q.y) * fm.y + (b1 * q.x) * fm.z                   // Z
-    };
-}
-
-inline Quaternion<float> madgwick(Quaternion<float> q, float beta, float dt, const Vector3<float>& g, const Vector3<float>& a, const Vector3<float>& m = {0, 0, 0}) {
-    if (a.isZero()) {
-        return q;
-    }
-    Quaternion<float> step = madgwickStepA(q, a) + madgwickStepM(q, m);
-    quick::normalize(step);
-    Quaternion<float> q_dot = q * (g * 0.5) - step * beta;
     q += q_dot * dt;
     quick::normalize(q);
     return q;
+}
+
+// Rotates the estimate about the earth's vertical axis so that the horizontal part of the measured magnetic field
+// points along +X (the reference Madgwick's filter used). Only heading changes; roll and pitch come from the gyro and
+// accelerometer alone, so motor-current interference on the magnetometer can no longer tilt the attitude estimate,
+// and the 10Hz magnetometer updates no longer jolt roll/pitch.
+inline Quaternion<float> correctHeading(const Quaternion<float>& q, const Vector3<float>& m, float gain) {
+    if (m.isZero()) {
+        return q;
+    }
+    Quaternion<float> h = q * m * q.conj();  // measured field in the earth frame
+    float horizontal_sq = h.x * h.x + h.y * h.y;
+    if (horizontal_sq < 1e-4f * (horizontal_sq + h.z * h.z)) {
+        return q;  // field is (almost) vertical: it carries no heading information
+    }
+    float half_angle = -0.5f * gain * std::atan2(h.y, h.x);
+    Quaternion<float> rotation{std::cos(half_angle), 0.0f, 0.0f, std::sin(half_angle)};
+    Quaternion<float> corrected = rotation * q;
+    quick::normalize(corrected);
+    return corrected;
 }
 
 inline void mahony(Quaternion<float>& q, Vector3<float>& ifb, float ki, float kp, float dt, const Vector3<float>& g, const Vector3<float>& a, const Vector3<float>& m) {
@@ -103,7 +120,8 @@ void Ahrs::update(ClockTime timestamp) {
     if (magnetometer_.ready) {
         switch (type_) {
             case Type::Madgwick: {
-                pose_ = madgwick(pose_, parameter_1_, dt, gyroscope_.value, accelerometer_.value, magnetometer_.value);
+                pose_ = madgwick(pose_, parameter_1_, dt, gyroscope_.value, accelerometer_.value);
+                pose_ = correctHeading(pose_, magnetometer_.value, MAG_HEADING_GAIN);
             } break;
             case Type::Mahony: {
                 mahony(pose_, integral_feedback_, parameter_1_, parameter_2_, dt, gyroscope_.value, accelerometer_.value, magnetometer_.value);
@@ -113,7 +131,7 @@ void Ahrs::update(ClockTime timestamp) {
     } else {
         switch (type_) {
             case Type::Madgwick: {
-                pose_ = madgwick(pose_, parameter_1_, dt, gyroscope_.value, accelerometer_.value, {0, 0, 0});
+                pose_ = madgwick(pose_, parameter_1_, dt, gyroscope_.value, accelerometer_.value);
             } break;
             case Type::Mahony: {
                 mahony(pose_, integral_feedback_, parameter_1_, parameter_2_, dt, gyroscope_.value, accelerometer_.value);
@@ -124,7 +142,7 @@ void Ahrs::update(ClockTime timestamp) {
 
 /* IMU algorithm update */
 
-void se_mahony_ahrs_update_imu_with_mag(Vector3<float> g, Vector3<float> a, Vector3<float> m, float delta_time, float ki_2, float kp_2, Vector3<float> fb_i, Quaternion<float>& q) {
+void se_mahony_ahrs_update_imu_with_mag(Vector3<float> g, Vector3<float> a, Vector3<float> m, float delta_time, float ki_2, float kp_2, Vector3<float>& fb_i, Quaternion<float>& q) {
     float q0q0, q0q1, q0q2, q0q3, q1q1, q1q2, q1q3, q2q2, q2q3, q3q3;
     float hx, hy, bx, bz;
     float halfvx, halfvy, halfvz, halfwx, halfwy, halfwz;
@@ -215,7 +233,7 @@ void se_mahony_ahrs_update_imu_with_mag(Vector3<float> g, Vector3<float> a, Vect
     quick::normalize(q);
 }
 
-void se_mahony_ahrs_update_imu(Vector3<float> g, Vector3<float> a, float delta_time, float ki_2, float kp_2, Vector3<float> fb_i, Quaternion<float>& q) {
+void se_mahony_ahrs_update_imu(Vector3<float> g, Vector3<float> a, float delta_time, float ki_2, float kp_2, Vector3<float>& fb_i, Quaternion<float>& q) {
     float halfvx, halfvy, halfvz;
     float halfex, halfey, halfez;
     float qa, qb, qc;

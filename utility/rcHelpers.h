@@ -125,9 +125,15 @@ class RcMux final {
         filter_.update(filter);
     }
 
+    // Index of the source that supplied the last query() result, or -1 if none did.
+    int8_t lastSource() const {
+        return last_source_;
+    }
+
    private:
     template <std::size_t I = 0>
     inline typename std::enable_if<I == sizeof...(Tsrcs), RcState>::type queryHelper() {
+        last_source_ = -1;
         invalid_count_ += 1;
         return RcState{RcStatus::Timeout, {}};
     }
@@ -137,6 +143,7 @@ class RcMux final {
         RcState state = std::get<I>(sources_).query();
         if (state.status != RcStatus::Timeout && filter_.accepts(1 << I)) {
             invalid_count_ -= std::get<I>(sources_).recovery_rate;
+            last_source_ = I;
             return state;
         }
         return queryHelper<I + 1>();
@@ -146,6 +153,7 @@ class RcMux final {
     std::tuple<RcTracker<Tsrcs>...> sources_;
     bool valid_{true};
     int16_t invalid_count_{0};
+    int8_t last_source_{-1};
 };
 
 #endif  // RC_HELPERS_H

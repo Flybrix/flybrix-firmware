@@ -9,6 +9,7 @@
 #include <Arduino.h>
 #include "led.h"
 #include "utility/clock.h"
+#include "watchdog.h"
 
 namespace loops {
 namespace {
@@ -45,6 +46,8 @@ void stop() {
     if (starts_needed++) {
         return;
     }
+    // deliberate long blocking work (SD card, EEPROM, reports) follows: don't let the watchdog reset us
+    watchdog::suspend();
     last_stop_micros = ClockTime::now();
     updateIndicator();
 }
@@ -56,6 +59,7 @@ void start() {
     last_start_micros = ClockTime::now();
     overall_delay += last_start_micros - last_stop_micros;
     starts_needed = 0;
+    watchdog::resume();
     updateIndicator();
 }
 

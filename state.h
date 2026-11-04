@@ -24,6 +24,8 @@ class State {
     void updateLocalization(ClockTime currentTime, const Vector3<float>& accel, const Vector3<float>& rate_scaled);
     void readStatePT(uint32_t p0, uint32_t pressure, uint16_t temperature);
     void updateStateMag(const Vector3<float>& data);
+    // The altitude filter only gains information when the barometer delivers a sample (~26Hz).
+    bool hasNewAltitudeMeasurement() const;
     void predictFilter(ClockTime time);
     void updateFilter();
 
