@@ -2,8 +2,11 @@
 
 Flybrix is currently shipping with version 1.5.1 installed.
 
-> **This branch** adds stability, latency and safety changes, and builds with a current Teensyduino (1.59) via
-> `arduino-cli`. See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for build steps, architecture, safety behaviour,
+> **Firmware 2.0** (this branch) adds stability, latency and safety changes, and builds with a current Teensyduino
+> (1.59) via `arduino-cli`. A ready-to-flash `.hex` is on the
+> [Releases page](https://github.com/ukbodypilot/flybrix-firmware/releases). "2.0" is the release name only: the
+> board still reports version 1.6.0 (`version.h`), because changing that number would wipe the settings saved on
+> the board. See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for build steps, architecture, safety behaviour,
 > tuning and known issues. AI coding agents: start with [CLAUDE.md](CLAUDE.md).
 
 ## Dependencies (original toolchain)

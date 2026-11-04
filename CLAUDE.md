@@ -38,6 +38,10 @@ test by the owner.
   so ship such changes as a one-time migration in `readEEPROM()` (`config.cpp`): replace the value only if it exactly
   equals the old default. Don't change the packed config structs' layout; their sizes are `static_assert`ed and the
   configurator protocol depends on them.
+- **Don't change `version.h` casually.** The version is saved in EEPROM, and `readEEPROM()` resets all settings,
+  including calibration, when the stored version doesn't match. The board reports 1.6.0. The GitHub release is
+  named "2.0" but the code wasn't changed. If the number ever must change, add a migration that accepts the old
+  version first.
 - **Keep work out of the flight chain.** `runFlightControl()` runs at 500 Hz on a CPU without an FPU. After adding
   work there, check CPU load with the performance report ("print tasks" task).
 - **Quaternion naming:** `Quaternion::pitch()` is the rotation about X and `roll()` about Y. The UKF uses the opposite
