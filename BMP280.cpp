@@ -68,9 +68,18 @@ boolean BMP280::validateCalibation() {
 #define BMP280_REG_RESULT 0xF7  // 0xF7(msb) , 0xF8(lsb) , 0xF9(xlsb) : stores the pressure data.
                                 // 0xFA(msb) , 0xFB(lsb) , 0xFC(xlsb) : stores the temperature data.
 bool BMP280::startMeasurement(void) {
-    ready = false;
     data_to_send[0] = BMP280_REG_RESULT;
-    i2c().addTransfer(BMP280_ADDR, 1, data_to_send, 6, data_to_read, [this]() { triggerCallback(); });
+    ready = false;
+    if (!i2c().addTransfer(BMP280_ADDR, 1, data_to_send, 6, data_to_read, [this](bool ok) {
+            if (ok) {
+                triggerCallback();
+            } else {
+                ready = true;
+            }
+        })) {
+        ready = true;
+        return false;
+    }
     return true;
 }
 
@@ -80,6 +89,7 @@ void BMP280::triggerCallback() {
     rawT = (((int32_t)data_to_read[3]) << 12) + (((int32_t)data_to_read[4]) << 4) + (((int32_t)data_to_read[5]) >> 4);
     temperature = compensate_T_int32(rawT);  // calculate temp first to update t_fine
     pressure = compensate_P_int64(rawP);
+    fresh = true;
     ready = true;
 }
 

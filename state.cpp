@@ -19,7 +19,12 @@
 #define STATE_T_SCALE 0.01f
 #define STATE_P_SCALE 0.000039063f
 
-State::Parameters::Parameters() : state_estimation{1.0, 0.01}, enable{0.001, 30.0} {
+// state_estimation[0] is the Madgwick beta: the fastest rate (rad/s) at which the accelerometer may pull the attitude
+// estimate. The old default of 1.0 (57 deg/s) let a delayed, acceleration-corrupted gravity reading dominate the
+// gyro; typical values are 0.03 - 0.1.
+// NOTE: this is stored in EEPROM, so existing boards keep their saved value until it is changed in the configurator
+// or the EEPROM is reinitialized.
+State::Parameters::Parameters() : state_estimation{0.1, 0.01}, enable{0.001, 30.0} {
 }
 
 State::State() : localization(0.0f, 1.0f, 0.0f, 0.0f, STATE_EXPECTED_TIME_STEP, Ahrs::Type::Madgwick, parameters.state_estimation, STATE_BARO_VARIANCE) {
@@ -46,6 +51,10 @@ void State::updateLocalization(ClockTime currentTime, const Vector3<float>& acce
 
 void State::readStatePT(uint32_t p0, uint32_t pressure, uint16_t temperature) {
     localization.ProcessMeasurementPT(STATE_P_SCALE * p0, STATE_P_SCALE * pressure, STATE_T_SCALE * temperature);
+}
+
+bool State::hasNewAltitudeMeasurement() const {
+    return localization.hasNewMeasurement();
 }
 
 void State::predictFilter(ClockTime time) {

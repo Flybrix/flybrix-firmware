@@ -76,17 +76,20 @@ class Channel{
         data_output = new ChannelBuffer(bufferCount, bufferChunk);
     };
 
-    virtual uint8_t _serial_available();
-    virtual uint8_t _serial_read();
-    virtual uint8_t _serial_write(const uint8_t *data, size_t length);
-    virtual void _serial_flush();
+    virtual uint8_t _serial_available() = 0;
+    virtual uint8_t _serial_read() = 0;
+    virtual uint8_t _serial_write(const uint8_t *data, size_t length) = 0;
+    virtual void _serial_flush() = 0;
 
-    bool get() {
+    bool get(MessageHandler on_message = nullptr) {
         bool did_work{false};
         while (_serial_available()) { // we can't seem to keep up with incoming data...
             bytes_read++;
             data_input.AppendToBuffer(_serial_read());
             did_work = true;
+            if (on_message && data_input.IsDone()) {
+                on_message(data_input);  // before the next byte starts overwriting it
+            }
         }
         return did_work;
     }
@@ -289,8 +292,8 @@ bool bluetooth_sendData(){
     return bluetooth.send();
 }
 
-bool bluetooth_getData(){
-    return bluetooth.get();
+bool bluetooth_getData(MessageHandler on_message){
+    return bluetooth.get(on_message);
 }
 
 CobsReaderBuffer* bluetooth_readData(){

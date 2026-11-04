@@ -45,6 +45,15 @@ class SerialRc final {
         command_.roll = roll;
         command_.yaw = yaw;
         fresh_ = true;
+        ++update_count_;
+    }
+    // Latest command without consuming it (query() keeps driving the timeout logic).
+    const RcCommand& latest() const {
+        return command_;
+    }
+    // Increments on every received command, so a caller can tell when a new one has arrived.
+    uint32_t updateCount() const {
+        return update_count_;
     }
     void clear() {
         fresh_ = false;
@@ -54,6 +63,7 @@ class SerialRc final {
 
    private:
     bool fresh_{false};
+    uint32_t update_count_{0};
     RcCommand command_;
 };
 

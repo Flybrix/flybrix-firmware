@@ -32,6 +32,7 @@
 #include "debug.h"
 #include "i2cManager.h"
 #include "led.h"
+#include "ledDriver.h"
 #include "localization.h"
 #include "loop_stopper.h"
 #include "motors.h"
@@ -45,6 +46,7 @@
 #include "usbModeSelector.h"
 #include "utility/clock.h"
 #include "version.h"
+#include "watchdog.h"
 
 Systems sys;
 int8_t low_battery_counter = 0;
@@ -68,15 +70,24 @@ bool processPressureSensor() {
     if (!sys.bmp.ready) {
         return false;
     }
-    sys.state.readStatePT(sys.bmp.p0, sys.bmp.pressure, sys.bmp.temperature);
+    if (sys.bmp.fresh) {  // skip if the last read failed, so a stale sample is not fed in as new
+        sys.bmp.fresh = false;
+        sys.state.readStatePT(sys.bmp.p0, sys.bmp.pressure, sys.bmp.temperature);
+    }
     sys.bmp.startMeasurement();
     return true;
 }
 
 bool predict_phase{true};
 
+// Altitude/velocity filter (UKF). It only gains information when the barometer delivers a sample (~26Hz), so it
+// runs one predict + update per sample, split over two calls so neither blocks the flight control chain for long.
+// It used to run at 640Hz, taking about half the CPU and re-fusing each barometer sample ~12 times.
 bool updateStateEstimate() {
     if (predict_phase) {
+        if (!sys.state.hasNewAltitudeMeasurement()) {
+            return false;
+        }
         sys.state.predictFilter(ClockTime::now());
     } else {
         sys.state.updateFilter();
@@ -156,8 +167,32 @@ bool updateMagnetometer() {
     return sys.imu.startMagnetFieldMeasurement();
 }
 
-bool performInertialMeasurement() {
-    return sys.imu.startInertialMeasurement();
+// The latency-critical chain, checked before every scheduled task: as soon as the MPU9250 flags a new sample, read it,
+// update the attitude estimate, run the PID cascade and write the motors, all in one go. Previously each step waited
+// for its own scheduled task, which added several milliseconds between a gyro sample and the motors reacting.
+bool runFlightControl() {
+    uint32_t samples_before = sys.imu.sampleCount();
+    if (!sys.imu.startInertialMeasurement()) {
+        return false;  // no new sample yet, or a read is already in progress
+    }
+    // Perform queued transfers until ours has completed or failed (a magnetometer/barometer read queued ahead of it
+    // runs first). Each transfer is bounded by the I2C timeout and the queue is finite, so this terminates.
+    while (sys.imu.inertialMeasurementPending() && i2c().busy()) {
+        i2c().update();
+    }
+    if (sys.imu.sampleCount() == samples_before) {
+        return false;  // the read failed: don't rerun the controller on old data
+    }
+    return updateControlVectors();
+}
+
+// Flying on frozen attitude data ends in a flip or a flyaway, so cut the motors if samples stop arriving.
+bool checkImuHealth() {
+    if (sys.imu.healthy(ClockTime::now())) {
+        return false;
+    }
+    sys.pilot.emergencyDisarm();
+    return true;
 }
 
 bool printTasks();
@@ -192,42 +227,55 @@ bool bluetooth_send() {
     return bluetooth_sendData();
 }
 
-bool bluetooth_get() {
-    return bluetooth_getData();
+uint32_t serial_rc_updates_seen{0};
+
+// Runs for each Bluetooth message the moment it is complete. Previously the bytes were read at 300Hz but messages
+// were only decoded at 40Hz from a single-message buffer, so stick commands arriving in between were overwritten
+// (dropped) and the rest waited up to 25ms, then up to another 25ms for the pilot input task.
+void onBluetoothMessage(CobsReaderBuffer& message) {
+    sys.conf.ProcessData(message, true);
+    uint32_t updates = sys.serialRc().updateCount();
+    if (updates != serial_rc_updates_seen) {
+        serial_rc_updates_seen = updates;
+        // New stick values: apply them now if Bluetooth is the active RC source and the pilot state machine is
+        // passing sticks through (armed and flying). Arming, failsafe and timeouts still run in "pilot input".
+        if (sys.rc_mux.lastSource() == 0) {
+            sys.command_vector = sys.pilot.refreshSticks(sys.serialRc().latest(), sys.command_vector);
+        }
+    }
 }
 
-bool bluetooth_processCommand() {
-    return sys.conf.processBluetoothCommand();
+bool bluetooth_get() {
+    return bluetooth_getData(onBluetoothMessage);
 }
 
 #define AVERAGE_DELAY_TARGET_USEC 1400
 
 TaskRunner tasks[] = {
     {"print tasks       ", printTasks, 20/*sec*/*1000*1000, false, true},  // ( pause ) debug printing interval, enabled? (t/f), force to always log stats
+    {"flight control    ", runFlightControl, 0},                          // polled before every task; "work" count = gyro samples handled (500Hz)
     {"loop count        ", updateLoopCount, AVERAGE_DELAY_TARGET_USEC},   // (<   5us)
     {"pilot input       ", processPilotInput, hzToMicros(40)},            // (< 160us) cPPM signals come at ~40Hz
     {"send bluetooth    ", bluetooth_send, 33000 /*usec*/},               // (<  20us) Rigado BMDWare limited to 20B each 30msec
-    {"process bluetooth ", bluetooth_processCommand, hzToMicros(40)},     // (< 265us) we expect 20Hz rcData; oversample
-    {"control vectors   ", updateControlVectors, hzToMicros(320)},        // (< 260us) match state updates
+    {"bluetooth rx      ", bluetooth_get, hzToMicros(300)},               // (< 300us) read bytes and process each message as it completes
     {"send SD block     ", sd_send, hzToMicros(300)},                     // (< 220us) slower requires larger buffer
     {"update lights     ", updateIndicatorLights, hzToMicros(30)},        // (< 160us) keep at 30Hz for visual effects
     {"SD state out      ", sd_writeState, hzToMicros(1)},                 // (< 200us) set dynamically; set index in #define below [8]
-    {"update i2c        ", updateI2C, hzToMicros(300)},                   // (< 465us) update often
-    {"get bluetooth     ", bluetooth_get, hzToMicros(300)},               // (<  85us)
-    {"serial state out  ", serial_writeState, hzToMicros(1)},             // (<  55us) set dynamically; set index in #define below [11]
-    {"run imu           ", performInertialMeasurement, hzToMicros(160)},  // (<  30us) gyro rate is 184Hz
+    {"update i2c        ", updateI2C, hzToMicros(300)},                   // (< 465us) background magnetometer/barometer reads
+    {"serial state out  ", serial_writeState, hzToMicros(1)},             // (<  55us) set dynamically; set index in #define below [10]
+    {"imu health        ", checkImuHealth, hzToMicros(100)},              // disarm if attitude data goes stale
     {"pressure sensor   ", processPressureSensor, hzToMicros(26.3)},      // (<  30us) bmp280 datasheet output data rate
     {"check battery     ", checkBatteryUse, hzToMicros(10)},              // (<  30us)
     {"update magnet     ", updateMagnetometer, hzToMicros(10)},           // (<  30us)
     {"get usb           ", usb_get, hzToMicros(100)},                     // (?)
     {"send usb          ", usb_send, hzToMicros(100)},                    // (?)
     {"autopilot         ", runAutopilot, hzToMicros(1), false},           // (?) future feature; turn off for now
-    {"state estimate    ", updateStateEstimate, hzToMicros(640)},         // (1340us + 700us) split in two calls; should be ~2x gyro rate
+    {"state estimate    ", updateStateEstimate, hzToMicros(100)},         // (1340us + 700us) one predict+update per barometer sample
 };
-#define TASK_COUNT 20
+#define TASK_COUNT 19
+#define FLIGHT_CONTROL tasks[1]
 #define SD_STATE_OUT tasks[8]
-#define SERIAL_STATE_OUT tasks[11]
-#define STATE_ESTIMATE tasks[19]
+#define SERIAL_STATE_OUT tasks[10]
 
 float sd_max_rate_Hz = 200.0f; // actual rate is ~197Hz
 
@@ -302,6 +350,7 @@ bool printTasks() {
 }
 
 void setup() {
+    LED_driver.begin();  // first: register the LED strip (see LEDDriver::begin)
     loops::setLedIndicator(&sys.led);
     CRGB green = LED::fade(CRGB::Green);
     CRGB red = LED::fade(CRGB::Red);
@@ -310,6 +359,7 @@ void setup() {
 
     // MPU9250 is limited to 400kHz bus speed.
     Wire.begin(I2C_MASTER, 0x00, board::I2C_PINS, board::I2C_PULLUP, I2C_RATE_400);  // For I2C pins 18 and 19
+    i2c().begin();  // bus timeouts
 
     //EEPROM.write(0, 255); //mark EEPROM empty for factory reset
     bool go_to_test_mode{isEmptyEEPROM()};
@@ -389,56 +439,48 @@ void setup() {
     }
 
     loops::start();
+
+    // last, after the multi-second boot steps above (SD card probe, Bluetooth AT mode, test mode)
+    watchdog::begin();
 }
 
-uint32_t average_delay_usec = 0;
-bool state_update_only = true;
+// After a deliberate pause (loops::Stopper), restart every task's timer so nothing runs a burst of catch-up work.
+void handleLoopStop() {
+    if (loops::used()) {
+        for (TaskRunner& task : tasks) {
+            task.reset(loops::lastStart());
+        }
+        loops::reset();
+    }
+}
 
 void loop() {
-
-    ClockTime start = ClockTime::now();
-
     if (loops::stopped()) {
         sys.led.errorStart(LEDPattern::SOLID, CRGB::White, CRGB::Red, 2);
         sys.led.errorStop();
         return;
     }
 
-    // state updates take about as long as everything else combined; so we will force every odd iteration to run only the update
-    if (state_update_only) {
-        SERIAL_STATE_OUT.setDesiredInterval(sys.conf.GetSendStateDelay() * 1000, 1000*1000);
-        SD_STATE_OUT.setDesiredInterval(max( hzToMicros(sd_max_rate_Hz), sys.conf.GetSdCardStateDelay() * 1000), 1000*1000);
-        STATE_ESTIMATE.process(0); // don't run consecutively if we squeezed in an update last time
-        state_update_only = false;
-        return;
-    }
-    state_update_only = true;
+    watchdog::feed();
 
-    // on the even updates, we will run the state estimation last if there is time
+    SERIAL_STATE_OUT.setDesiredInterval(sys.conf.GetSendStateDelay() * 1000, 1000*1000);
+    SD_STATE_OUT.setDesiredInterval(max( hzToMicros(sd_max_rate_Hz), sys.conf.GetSdCardStateDelay() * 1000), 1000*1000);
+
+    // Every pass visits every background task. The flight control chain is polled before each one, so a new gyro
+    // sample waits at most one task's duration. (The old loop ran tasks in a fixed priority order and stopped when
+    // the pass ran long, so the IMU read -- near the end of the list -- was the first thing starved.)
     for (size_t i = 0; i < TASK_COUNT; ++i) {
-
         TaskRunner& task = tasks[i];
-
-        if (task.isEnabled()){
-            task.process( 1000 ); // state estimation expected runtime in usec
-
-            if (loops::used()) { // process any stop immediately in case other tasks run during this iteration!
-                for (TaskRunner& task : tasks) {
-                    task.reset(loops::lastStart());
-                }
-                start = ClockTime::now();
-                loops::reset();
-            }
-
-            uint32_t delay_usec = ClockTime::now() - start;
-
-            if ( delay_usec > AVERAGE_DELAY_TARGET_USEC ) {
-                average_delay_usec = ( average_delay_usec*15 + delay_usec ) >> 4;
-                if (average_delay_usec > (1860)) {
-                    DebugPrintf("Main loop is slower than expected (%d usec)!", average_delay_usec);
-                }
-                break;
-            }
+        if (&task == &FLIGHT_CONTROL || !task.isEnabled()) {
+            continue;
         }
+
+        FLIGHT_CONTROL.process(0);
+        handleLoopStop();
+
+        // Background tasks may run up to 1ms early. That only shifts their timing slightly and keeps their rates as
+        // before; the latency-critical work above is driven by the sensor's data-ready signal, not by this timer.
+        task.process(1000);
+        handleLoopStop();
     }
 }

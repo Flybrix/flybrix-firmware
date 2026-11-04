@@ -11,6 +11,9 @@ LEDDriver LED_driver;
 LEDDriver::LEDDriver() {
     setColor(CRGB::Black);
     setPattern(LEDPattern::SOLID);
+}
+
+void LEDDriver::begin() {
     FastLED.addLeds<WS2812B, board::led::DATA_PIN>(leds, board::led::COUNT);
 }
 

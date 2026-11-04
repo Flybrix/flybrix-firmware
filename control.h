@@ -70,6 +70,17 @@ class Control {
     PIDCascade<2> yaw_pid;
 
     bool bidirectional_throttle{false};
+
+   private:
+    // Stick commands arrive in steps (~20Hz over Bluetooth). Fed straight into the setpoints, every step is a small
+    // jolt; a short low-pass smooths them for ~25ms of added delay.
+    static constexpr float STICK_SMOOTHING_SEC = 0.025f;
+    void resetStickFilters(ClockTime now);
+    IIRfilter throttle_filter_{0.0f, STICK_SMOOTHING_SEC};
+    IIRfilter pitch_filter_{0.0f, STICK_SMOOTHING_SEC};
+    IIRfilter roll_filter_{0.0f, STICK_SMOOTHING_SEC};
+    IIRfilter yaw_filter_{0.0f, STICK_SMOOTHING_SEC};
+    ClockTime last_stick_time_{ClockTime::zero()};
 };
 
 #endif

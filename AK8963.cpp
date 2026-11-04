@@ -44,9 +44,19 @@ uint8_t AK8963::getStatusByte() {
 
 // writes values to state in milligauss
 bool AK8963::startMeasurement(std::function<void(Vector3<float>)> on_success) {
-    ready = false;
+    on_success_ = on_success;
     data_to_send[0] = AK8963_XOUT_L;
-    i2c().addTransfer(AK8963_ADDRESS, 1, data_to_send, 7, data_to_read, [this, on_success]() { triggerCallback(on_success); });
+    ready = false;
+    if (!i2c().addTransfer(AK8963_ADDRESS, 1, data_to_send, 7, data_to_read, [this](bool ok) {
+            if (ok) {
+                triggerCallback();
+            } else {
+                ready = true;
+            }
+        })) {
+        ready = true;
+        return false;
+    }
     return true;
 }
 
@@ -91,7 +101,7 @@ void AK8963::calibrate(const Vector3<float>& measurement) {
 
 bool hideAllZeroesWarning{false};
 
-void AK8963::triggerCallback(std::function<void(Vector3<float>)> on_success) {
+void AK8963::triggerCallback() {
     uint8_t c = data_to_read[6];  // ST2 register
     if (!(c & 0x08)) {            // Check if magnetic sensor overflow set, if not then report data
         // convert from REGISTER system to IC/PCB system
@@ -125,7 +135,7 @@ void AK8963::triggerCallback(std::function<void(Vector3<float>)> on_success) {
         Vector3<float> measurement = Vector3<float>(magCount) * RAW_TO_uT;
         calibrate(measurement);
         measurement -= mag_bias.offset;
-        on_success(measurement);
+        on_success_(measurement);
     } else {
         DebugPrintf("ERROR: Magnetometer overflow!");
     }

@@ -15,6 +15,18 @@
 #include "stateFlag.h"
 #include "systems.h"
 
+namespace {
+// RX-loss failsafe, evaluated at the 40Hz pilot input rate. These are starting values: check them with a tethered test.
+// Each tick the throttle is multiplied by this (0.99 -> ~-33% per second), so the craft settles into a descent.
+constexpr float FAILSAFE_THROTTLE_DECAY = 0.99f;
+// Below this the controller treats the throttle as off anyway.
+constexpr float FAILSAFE_CUTOFF_THROTTLE = 10.0f;
+// Cut the motors after this long in failsafe even if the throttle has not decayed yet (400 ticks = 10s).
+constexpr uint16_t FAILSAFE_MAX_TICKS = 400;
+// Holding level, a larger tilt than this means the craft has crashed or tumbled: cut the motors.
+constexpr float FAILSAFE_CRASH_ANGLE_RAD = 60.0f * 0.01745329252f;
+}  // namespace
+
 PilotCommand::PilotCommand(Systems& systems) : bmp_(systems.bmp), state_(systems.state), imu_(systems.imu), flag_(systems.flag), led_{systems.led} {
     setControlState(ControlState::AwaitingAuxDisable);
 }
@@ -84,6 +96,12 @@ void PilotCommand::processMotorEnablingIterationHelper() {
 
     enable_attempts_++;  // we call this routine from "command" at 40Hz
 
+    // never arm on frozen sensor data: the upright/stable checks below would pass on stale values
+    if (!imu_.healthy(ClockTime::now())) {
+        setControlState(ControlState::FailStability);
+        return;
+    }
+
     if (!upright()) {
         setControlState(ControlState::FailAngle);
         return;
@@ -130,11 +148,67 @@ bool PilotCommand::canRequestEnabling() const {
     return true;
 }
 
-void PilotCommand::disableMotors() {
+void PilotCommand::cutMotors() {
     airframe_.disableMotors();
-    setControlState(ControlState::Disabled);
     sdcard::writing::close();
     flag_.assign(Status::RECORDING_SD, sdcard::getState() == sdcard::State::WriteStates);
+}
+
+void PilotCommand::disableMotors() {
+    cutMotors();
+    setControlState(ControlState::Disabled);
+}
+
+void PilotCommand::emergencyDisarm() {
+    if (isOverridden() || !airframe_.motorsEnabled()) {
+        return;
+    }
+    cutMotors();
+    // an arming-failure state: the pilot has to cycle the arm switch before the motors can be enabled again
+    setControlState(ControlState::FailStability);
+}
+
+void PilotCommand::startFailsafe() {
+    // Only descend if we were actually flying; otherwise there is nothing to keep spinning.
+    bool flying{airframe_.motorsEnabled() && control_state_ == ControlState::Enabled};
+    failsafe_throttle_ = flying ? last_command_.throttle : 0.0f;
+    failsafe_ticks_ = 0;
+    setControlState(ControlState::FailRx);
+}
+
+void PilotCommand::endFailsafe(const RcCommand& command) {
+    if (airframe_.motorsEnabled() && command.aux1 == RcCommand::AUX::Low) {
+        // Still in the air and the pilot is still asking to be armed: hand control back.
+        // (This used to go to AwaitingAuxDisable with the motors still live, while the LEDs showed "not armed".)
+        setControlState(ControlState::Enabled);
+    } else {
+        cutMotors();
+        setControlState(ControlState::AwaitingAuxDisable);
+    }
+}
+
+RcCommand PilotCommand::failsafeCommand() {
+    ++failsafe_ticks_;
+    failsafe_throttle_ *= FAILSAFE_THROTTLE_DECAY;
+
+    if (airframe_.motorsEnabled()) {
+        const Kinematics& kinematics = state_.getKinematics();
+        bool crashed{fabsf(kinematics.angle.pitch) > FAILSAFE_CRASH_ANGLE_RAD || fabsf(kinematics.angle.roll) > FAILSAFE_CRASH_ANGLE_RAD};
+        if (failsafe_throttle_ < FAILSAFE_CUTOFF_THROTTLE || failsafe_ticks_ > FAILSAFE_MAX_TICKS || crashed) {
+            cutMotors();
+        }
+    }
+    if (!airframe_.motorsEnabled()) {
+        failsafe_throttle_ = 0.0f;
+    }
+
+    // Level attitude, no yaw, decaying throttle. (Previously the timed-out source delivered an all-zero command,
+    // so the throttle decay had nothing to act on and the motors stopped instantly.)
+    RcCommand command;
+    command.aux1 = last_command_.aux1;
+    command.aux2 = last_command_.aux2;
+    command.throttle = (int16_t)failsafe_throttle_;
+    return command;
 }
 
 uint8_t count{0};
@@ -143,13 +217,11 @@ RcCommand PilotCommand::processCommands(RcState&& rc_state) {
     bool timeout{rc_state.status == RcStatus::Timeout};
 
     if (timeout) {
-        if (!isOverridden()) {
-            setControlState(ControlState::FailRx);
+        if (!isOverridden() && control_state_ != ControlState::FailRx) {
+            startFailsafe();
         }
-    } else {
-        if (control_state_ == ControlState::FailRx) {
-            setControlState(ControlState::AwaitingAuxDisable);
-        }
+    } else if (control_state_ == ControlState::FailRx) {
+        endFailsafe(rc_state.command);
     }
 
     bool attempting_to_enable{rc_state.command.aux1 == RcCommand::AUX::Low};
@@ -184,7 +256,7 @@ RcCommand PilotCommand::processCommands(RcState&& rc_state) {
             }
         } break;
         case ControlState::FailRx: {
-            rc_state.command.throttle *= 0.99;
+            rc_state.command = failsafeCommand();
         } break;
     }
 
@@ -194,16 +266,32 @@ RcCommand PilotCommand::processCommands(RcState&& rc_state) {
         disableMotors();
     }
 
+    bool zeroed{false};
     if (!timeout) {
         if (throttle_hold_off_.tick() || rc_state.command.throttle == 0 || control_state_ == ControlState::ThrottleLocked) {
             rc_state.command.throttle = 0;
             rc_state.command.pitch = 0;
             rc_state.command.roll = 0;
             rc_state.command.yaw = 0;
+            zeroed = true;
         }
+        last_command_ = rc_state.command;
     }
+    sticks_pass_through_ = !timeout && !zeroed && control_state_ == ControlState::Enabled;
 
     return rc_state.command;
+}
+
+RcCommand PilotCommand::refreshSticks(const RcCommand& fresh, const RcCommand& current) const {
+    if (!sticks_pass_through_) {
+        return current;
+    }
+    RcCommand command = current;  // keeps the aux (arm/mode) switches from the state machine
+    command.throttle = fresh.throttle;
+    command.pitch = fresh.pitch;
+    command.roll = fresh.roll;
+    command.yaw = fresh.yaw;
+    return command;
 }
 
 bool PilotCommand::isArmingFailureState() const {

@@ -18,7 +18,12 @@ void setBluetoothUart(const DeviceName& name);
 bool usb_sendData();
 bool usb_getData();
 bool bluetooth_sendData();
-bool bluetooth_getData();
+// Called for each complete message the moment its last byte arrives.
+using MessageHandler = void (*)(CobsReaderBuffer& message);
+
+// Reads all waiting bytes. The receive buffer holds a single message and the next byte starts overwriting it,
+// so pass a handler to process each message as soon as it completes (otherwise messages can be dropped).
+bool bluetooth_getData(MessageHandler on_message = nullptr);
 
 CobsReaderBuffer* bluetooth_readData();
 

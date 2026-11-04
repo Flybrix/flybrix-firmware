@@ -73,8 +73,8 @@ Control::PIDParameters::PIDParameters()
       roll_master{3.5, 0.5, 0.0, 300.0, 0.005, 0.005, 30.0},
       yaw_master{1.0, 0.0, 0.0, 300.0, 0.001, 0.001, 180.0},
       thrust_slave{1.0, 0.0, 0.0, 0.0, 0.001, 0.001, 1.0},
-      pitch_slave{5.0, 2.0, 0.0, 300.0, 0.001, 0.001, 150.0},
-      roll_slave{5.0, 2.0, 0.0, 300.0, 0.001, 0.001, 150.0},
+      pitch_slave{3.5, 2.0, 0.0, 300.0, 0.001, 0.001, 150.0},  // P was 5.0: too twitchy once the loop latency dropped
+      roll_slave{3.5, 2.0, 0.0, 300.0, 0.001, 0.001, 150.0},   // P was 5.0: too twitchy once the loop latency dropped
       yaw_slave{40.0, 10.0, 0.0, 300.0, 0.001, 0.001, 240.0},
       thrust_gain{4095.0},
       pitch_gain{2047.0},
@@ -162,6 +162,14 @@ void Control::parseConfig() {
     bidirectional_throttle = (velocity_pid_parameters.pid_bypass & 0x44) == 0x04;
 }
 
+void Control::resetStickFilters(ClockTime now) {
+    throttle_filter_ = IIRfilter(0.0f, STICK_SMOOTHING_SEC);
+    pitch_filter_ = IIRfilter(0.0f, STICK_SMOOTHING_SEC);
+    roll_filter_ = IIRfilter(0.0f, STICK_SMOOTHING_SEC);
+    yaw_filter_ = IIRfilter(0.0f, STICK_SMOOTHING_SEC);
+    last_stick_time_ = now;
+}
+
 float radToDeg(float v) {
     return v * 57.2957795f;
 }
@@ -180,15 +188,13 @@ ControlVectors Control::calculateControlVectors(const Vector3<float>& velocity, 
     right_pid.pid<1>().setInput(velocity.y);
     up_pid.pid<1>().setInput(velocity.z);
 
-    // keep "up" in the global coordinates
-    float pose_throttle_adjustment = max(0.8f, quick::cos(feedback.angle.roll) * quick::cos(feedback.angle.pitch));
-    uint16_t adjusted_throttle = constrain((uint16_t)((float)setpoint.throttle / pose_throttle_adjustment), 0, 4095);
-
     ControlVectors control;
 
     ClockTime now = ClockTime::now();
 
-    if (setpoint.throttle < 10) {  // throttle is in low condition
+    if (setpoint.throttle < 10) {  // throttle is in low condition (checked unsmoothed, so cutting the throttle is immediate)
+        resetStickFilters(now);
+
         up_pid.integralReset();
         forward_pid.integralReset();
         right_pid.integralReset();
@@ -209,10 +215,24 @@ ControlVectors Control::calculateControlVectors(const Vector3<float>& velocity, 
         control.torque_y = 0;
         control.torque_z = 0;
     } else {
+        float dt = (now - last_stick_time_) / 1000000.0f;
+        last_stick_time_ = now;
+        if (dt > 0.02f) {
+            dt = 0.02f;  // e.g. after a loop pause; IIRfilter handles dt == 0 (no change)
+        }
+        float throttle = throttle_filter_.update(setpoint.throttle, dt);
+        float pitch = pitch_filter_.update(setpoint.pitch, dt);
+        float roll = roll_filter_.update(setpoint.roll, dt);
+        float yaw = yaw_filter_.update(setpoint.yaw, dt);
+
+        // keep "up" in the global coordinates
+        float pose_throttle_adjustment = max(0.8f, quick::cos(feedback.angle.roll) * quick::cos(feedback.angle.pitch));
+        float adjusted_throttle = constrain(throttle / pose_throttle_adjustment, 0.0f, 4095.0f);
+
         up_pid.setSetpoint((bidirectional_throttle ? adjusted_throttle * (1.0f / 2047.0f) - 1.0f : adjusted_throttle * (1.0f / 4095.0f)) * up_pid.getScalingFactor());
-        forward_pid.setSetpoint(setpoint.pitch * (1.0f / 2047.0f) * forward_pid.getScalingFactor());
-        right_pid.setSetpoint(setpoint.roll * (1.0f / 2047.0f) * right_pid.getScalingFactor());
-        yaw_pid.setSetpoint(setpoint.yaw * (1.0f / 2047.0f) * yaw_pid.getScalingFactor());
+        forward_pid.setSetpoint(pitch * (1.0f / 2047.0f) * forward_pid.getScalingFactor());
+        right_pid.setSetpoint(roll * (1.0f / 2047.0f) * right_pid.getScalingFactor());
+        yaw_pid.setSetpoint(yaw * (1.0f / 2047.0f) * yaw_pid.getScalingFactor());
 
         control.force_z = up_pid.compute(now);
         control.torque_x = forward_pid.compute(now);

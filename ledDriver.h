@@ -25,6 +25,9 @@ enum Pattern : uint8_t {
 class LEDDriver {
    public:
     LEDDriver();
+    // Registers the LED strip with FastLED. Must be called from setup(), not from a global constructor:
+    // the FastLED object may not be constructed yet at that point (newer FastLED versions hang).
+    void begin();
 
     void setPattern(LEDPattern::Pattern pattern);
     void setColor(CRGB color, board::led::Position lower_left = {-128, -128}, board::led::Position upper_right = {127, 127});

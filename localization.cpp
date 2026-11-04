@@ -41,6 +41,7 @@ Localization::Localization(float q0, float q1, float q2, float q3, float deltaTi
 void Localization::ProcessMeasurementElevation(float elevation) {
     h_bar_ = UKF::Measurement(elevation, elevation_variance_);
     has_measurement_ = true;
+    new_measurement_ = true;
 }
 
 void Localization::ProcessMeasurementPT(float p_sl, float p, float t) {
@@ -57,16 +58,22 @@ void Localization::predictFilter(ClockTime time) {
         return;
     }
     float dt{delta / 1000000.0f};
-    if (dt > max_delta_time_) {
-        dt = max_delta_time_;
+    // The altitude filter now runs once per barometer sample (~38ms), so it cannot share the AHRS's 8ms limit.
+    constexpr float UKF_MAX_DELTA_TIME = 0.1f;
+    if (dt > UKF_MAX_DELTA_TIME) {
+        dt = UKF_MAX_DELTA_TIME;
     }
     ukf_.predict(dt);
 }
 
 void Localization::updateFilter() {
-    if (!has_measurement_) {
+    // Fusing the same barometer sample repeatedly (it used to be fused ~12x per sample) makes the filter
+    // far more confident in it than its variance says.
+    if (!new_measurement_) {
         return;
     }
+    new_measurement_ = false;
+    // Not a swap: UKF::update's "roll" is the rotation about X, which Quaternion calls pitch() (and vice versa).
     ukf_.update(vu_, vv_, d_tof_, h_bar_, ahrs_.pose().pitch(), ahrs_.pose().roll());
 }
 

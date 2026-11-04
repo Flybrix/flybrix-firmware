@@ -73,16 +73,27 @@ void MPU9250::forgetBiasValues() {
 
 // writes values to state in g's and in degrees per second
 bool MPU9250::startMeasurement(std::function<void(Vector3<float>, Vector3<float>)> on_success) {
-    if (dataReadyInterrupt()) {
-        ready = false;
-        data_to_send[0] = ACCEL_XOUT_H;
-        i2c().addTransfer(MPU9250_ADDRESS, 1, data_to_send, 14, data_to_read, [this, on_success]() { triggerCallback(on_success); });
-        return true;
+    if (!dataReadyInterrupt()) {
+        return false;
     }
-    return false;
+    on_success_ = on_success;
+    data_to_send[0] = ACCEL_XOUT_H;
+    ready = false;
+    // on failure just become ready again; persistent failures are caught by Imu::healthy()
+    if (!i2c().addTransfer(MPU9250_ADDRESS, 1, data_to_send, 14, data_to_read, [this](bool ok) {
+            if (ok) {
+                triggerCallback();
+            } else {
+                ready = true;
+            }
+        })) {
+        ready = true;
+        return false;
+    }
+    return true;
 }
 
-void MPU9250::triggerCallback(std::function<void(Vector3<float>, Vector3<float>)> on_success) {
+void MPU9250::triggerCallback() {
     // convert from REGISTER system to IC/PCB system
     int16_t registerValuesAccel[3];
     // be careful not to misinterpret 2's complement registers
@@ -107,7 +118,7 @@ void MPU9250::triggerCallback(std::function<void(Vector3<float>, Vector3<float>)
 
     ready = true;
 
-    on_success(Vector3<float>(accelCount) * aRes - accelBias, Vector3<float>(gyroCount) * gRes - gyroBias);
+    on_success_(Vector3<float>(accelCount) * aRes - accelBias, Vector3<float>(gyroCount) * gRes - gyroBias);
 }
 
 void MPU9250::reset() {
@@ -201,16 +212,19 @@ void MPU9250::configure() {
     delay(200);
     // get stable time source
     i2c().writeByte(MPU9250_ADDRESS, PWR_MGMT_1, 0x01);  // Set clock source to be PLL with x-axis gyroscope reference, bits 2:0 = 001
-    // there's no downside to updating the registers at the internal sample rate of 1kHz (even though we read more slowly)
-    i2c().writeByte(MPU9250_ADDRESS, SMPLRT_DIV, 0x00);
-    // set up the FIFO, ext. SYNC and set gyro filter to 184Hz lowpass / 1kHz output rate (before SMPLRT_DIV)
-    i2c().writeByte(MPU9250_ADDRESS, MPU9250_CONFIG, 0x01);
+    // Output rate = 1kHz / (1 + SAMPLE_RATE_DIVIDER). Every sample is read exactly once, so the output rate
+    // must not be faster than we read, or skipped samples alias motor vibration into the control band.
+    i2c().writeByte(MPU9250_ADDRESS, SMPLRT_DIV, SAMPLE_RATE_DIVIDER);
+    // Gyro low pass 92Hz (3.9ms delay): attenuates vibration above the 250Hz Nyquist limit of a 500Hz read rate.
+    // (The previous 184Hz filter was read at ~170Hz, which aliased vibration straight into the rate loop.)
+    i2c().writeByte(MPU9250_ADDRESS, MPU9250_CONFIG, 0x02);
     // Set gyroscope to +/-1000dps resolutions and enable the low pass filter for gyro and temp
     i2c().writeByte(MPU9250_ADDRESS, GYRO_CONFIG, 0x10);
     // Set accelerometer to +/-8g resolution
     i2c().writeByte(MPU9250_ADDRESS, ACCEL_CONFIG, 0x10);  // 0x00=+/-2g; Ox08=+/-4g;0x10=+/-8g,0x18=+/-16g
-    // Set accelerometer to 5Hz low pass / 1kHz output rate (before SMPLRT_DIV)
-    i2c().writeByte(MPU9250_ADDRESS, ACCEL_CONFIG2, 0x06);
+    // Accelerometer low pass 41Hz (11.8ms delay). The previous 5Hz filter delayed the gravity reference by ~67ms,
+    // which pulled the attitude estimate toward where the craft was rather than where it is.
+    i2c().writeByte(MPU9250_ADDRESS, ACCEL_CONFIG2, 0x03);
     // Configure Interrupts and Bypass Enable
     // Set interrupt pin active high, push-pull, enable I2C_BYPASS_EN so additional chips
     // can join the I2C bus and all can be controlled by the Arduino as master

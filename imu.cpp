@@ -55,13 +55,27 @@ void Imu::parseConfig() {
     readBiasValues();
 }
 
+namespace {
+// The IIRs below feed bias calibration and the arming checks. The original 0.1 weight was used at a
+// ~170Hz sample rate (time constant ~60ms); scale it with the sample rate to keep that time constant.
+constexpr float IMU_SAMPLE_RATE_HZ = 1000.0f / (1 + MPU9250::SAMPLE_RATE_DIVIDER);
+constexpr float FILTER_WEIGHT = 0.1f * 170.0f / IMU_SAMPLE_RATE_HZ;
+}  // namespace
+
+bool Imu::healthy(ClockTime now) const {
+    return has_sample_ && (now - last_sample_time_) < MAX_SAMPLE_AGE_USEC;
+}
+
 void Imu::updateAccelGyro(ClockTime time, const Vector3<float>& accel, const Vector3<float>& gyro) {
-    // update IIRs (@500Hz)
+    has_sample_ = true;
+    ++sample_count_;
+    last_sample_time_ = time;
+
     accel_ = accel;
     gyro_ = gyro;
-    gyro_filter = gyro * 0.1 + gyro_filter * 0.9;
-    accel_filter = accel * 0.1 + accel_filter * 0.9;
-    accel_filter_sq = accel.squared() * 0.1 + accel_filter_sq * 0.9;
+    gyro_filter = gyro * FILTER_WEIGHT + gyro_filter * (1.0f - FILTER_WEIGHT);
+    accel_filter = accel * FILTER_WEIGHT + accel_filter * (1.0f - FILTER_WEIGHT);
+    accel_filter_sq = accel.squared() * FILTER_WEIGHT + accel_filter_sq * (1.0f - FILTER_WEIGHT);
 
     Vector3<float> rate_scaled = gyro * DEG2RAD;
 

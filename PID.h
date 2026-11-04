@@ -8,6 +8,7 @@
 #define PID_h
 
 #include <cstdint>
+#include <math.h>
 #include "utility/clock.h"
 
 class IIRfilter {
@@ -102,43 +103,54 @@ class PID {
         desired_setpoint_ = v;
     }
 
+    // Called whenever the regulator is idle (bypassed, or throttle low). The input history is stale after that,
+    // so the next derivative starts fresh instead of spiking.
     void setTimer(ClockTime now) {
         last_time = now;
+        has_previous_input_ = false;
     }
 
+    // Longest time step the regulator will integrate over, e.g. after the main loop was paused for an SD/EEPROM write.
+    static constexpr float MAX_DELTA_TIME = 0.02f;
+
     float Compute(ClockTime now) {
-        float delta_time = (now - last_time) / 1000000.0;
+        float delta_time = (now - last_time) / 1000000.0f;
+        last_time = now;
+        if (delta_time <= 0.0f) {
+            return p_term + i_term + d_term;  // no time has passed; avoid dividing by zero
+        }
+        if (delta_time > MAX_DELTA_TIME) {
+            delta_time = MAX_DELTA_TIME;
+        }
 
         setpoint_ = setpoint_filter.update(desired_setpoint_, delta_time);
 
-        float error = setpoint_ - input_;
-
-        if (degrees) {
-            while (error < -180.0f) {
-                error += 360.0f;
-            }
-            while (error >= 180.0f) {
-                error -= 360.0f;
-            }
-        }
+        float error = wrap(setpoint_ - input_);
 
         p_term = Kp * error;
 
+        if (Ki != 0.0f) {
+            error_integral += error * delta_time;
+            float windup_limit = integral_windup_guard / fabsf(Ki);
+            if (error_integral > windup_limit) {
+                error_integral = windup_limit;
+            } else if (error_integral < -windup_limit) {
+                error_integral = -windup_limit;
+            }
+        } else {
+            error_integral = 0.0f;  // guard / Ki would divide by zero
+        }
         i_term = Ki * error_integral;
 
-        error_integral += error * delta_time;
-
-        float windup_limit = integral_windup_guard / Ki;
-        if (error_integral > windup_limit) {
-            error_integral = windup_limit;
-        } else if (error_integral < -windup_limit) {
-            error_integral = -windup_limit;
+        // Derivative on measurement rather than on error: same damping, but no kick when the setpoint steps
+        // (stick moves, or the master regulator's output changes).
+        float derivative{0.0f};
+        if (has_previous_input_) {
+            derivative = -wrap(input_ - previous_input_) / delta_time;
         }
-
-        d_term = d_filter.update(Kd * ((error - previous_error) / delta_time), delta_time);
-
-        previous_error = error;
-        last_time = now;
+        previous_input_ = input_;
+        has_previous_input_ = true;
+        d_term = d_filter.update(Kd * derivative, delta_time);
 
         return p_term + i_term + d_term;
     };
@@ -148,6 +160,19 @@ class PID {
     };
 
    private:
+    // unwrap angle differences into [-180, 180) for angle regulators
+    float wrap(float value) const {
+        if (degrees) {
+            while (value < -180.0f) {
+                value += 360.0f;
+            }
+            while (value >= 180.0f) {
+                value -= 360.0f;
+            }
+        }
+        return value;
+    }
+
     float Kp;
     float Ki;
     float Kd;
@@ -166,7 +191,8 @@ class PID {
 
     bool degrees{false};  // unwrap error terms for angle control in degrees
 
-    float previous_error{0.0f};
+    float previous_input_{0.0f};
+    bool has_previous_input_{false};
     float error_integral{0.0f};
 };
 
