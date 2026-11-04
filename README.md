@@ -2,7 +2,11 @@
 
 Flybrix is currently shipping with version 1.5.1 installed.
 
-## Dependencies
+> **This branch** adds stability, latency and safety changes, and builds with a current Teensyduino (1.59) via
+> `arduino-cli`. See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for build steps, architecture, safety behaviour,
+> tuning and known issues. AI coding agents: start with [CLAUDE.md](CLAUDE.md).
+
+## Dependencies (original toolchain)
 
 * Arduino 1.8.5 from https://www.arduino.cc/en/Main/Software
 * Teensyduino 1.41 from https://www.pjrc.com/teensy/td_download.html
